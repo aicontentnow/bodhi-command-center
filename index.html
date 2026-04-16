@@ -462,9 +462,14 @@ function SectionHdr({ title, count }) {
   return (<div className="section-hdr"><h2>{title}</h2><div className="section-hdr-line" />{count != null && <span className="badge">{count}</span>}</div>);
 }
 
+const PROJECT_DASHBOARDS = {
+  ldag: 'https://latedxaudhdguy.com/dashboard.html',
+};
+
 function ProjectCard({ project, selected, onClick }) {
   const statusLabel = { active: 'Active', progress: 'In Progress', blocked: 'Blocked', idle: 'Idle' };
   const st = project.status || 'idle';
+  const dashUrl = PROJECT_DASHBOARDS[project.id];
   return (
     <div className={`glass glass--clickable project-card ${selected ? 'project-card--selected' : ''}`} onClick={() => onClick(project.id)}>
       <div className="project-card-top">
@@ -475,6 +480,13 @@ function ProjectCard({ project, selected, onClick }) {
         <span className={`status-chip status-chip--${st}`}><span className={`status-dot status-dot--${st}`} />{statusLabel[project.status]}</span>
         <span className="project-time">{project.lastActivity}</span>
       </div>
+      {dashUrl && (
+        <a href={dashUrl} target="_blank" rel="noopener noreferrer"
+          onClick={e => e.stopPropagation()}
+          style={{ display:'block', marginTop:'10px', padding:'6px 12px', background: project.accent + '18', border:'1px solid ' + project.accent + '44', borderRadius:'8px', color: project.accent, fontSize:'12px', fontWeight:'700', letterSpacing:'1px', textTransform:'uppercase', textDecoration:'none', textAlign:'center' }}>
+          OPEN DASHBOARD &#8599;
+        </a>
+      )}
     </div>
   );
 }
