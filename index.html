@@ -327,14 +327,6 @@
 <script type="text/babel">
 const { useState, useEffect, useCallback, useMemo } = React;
 
-/* AUTH */
-const PASSWORD_HASH = 'e70e0d890f07a0209eb45a43cf428280538cf62fcac8e7bf667f14e26ed5090b';
-async function sha256(message) {
-  const msgBuffer = new TextEncoder().encode(message);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-  return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
 /* DATA */
 const PROJECTS = [
   { id: 'seasons', name: 'SEAS\u00d8NS', status: 'active', lastActivity: '25 min ago', accent: '#5BC0BE', icon: '\u266B' },
@@ -448,32 +440,6 @@ const DEBRIEF = {
 };
 
 /* COMPONENTS */
-function LoginScreen({ onAuth }) {
-  const [pw, setPw] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const handleSubmit = async (e) => {
-    e.preventDefault(); setLoading(true); setError('');
-    const hash = await sha256(pw);
-    if (hash === PASSWORD_HASH) { onAuth(); } else { setError('Access denied'); setPw(''); }
-    setLoading(false);
-  };
-  return (
-    <div className="login-shell">
-      <div className="glass login-card login-fade-in">
-        <div className="login-title">COMMAND CENTER</div>
-        <div className="login-subtitle">Authenticated access required</div>
-        <form onSubmit={handleSubmit}>
-          <div className="login-input-wrap">
-            <input className="login-input" type="password" placeholder="Password" value={pw} onChange={e => setPw(e.target.value)} autoFocus />
-          </div>
-          <button className="login-btn" type="submit" disabled={loading}>{loading ? '...' : 'ENTER'}</button>
-        </form>
-        <div className="login-error">{error}</div>
-      </div>
-    </div>
-  );
-}
 
 function Clock() {
   const [time, setTime] = useState(new Date());
@@ -684,7 +650,6 @@ function DashboardView({ selectedProject }) {
 }
 
 function App() {
-  const [authenticated, setAuthenticated] = useState(false);
   const [theme, setTheme] = useState('dark');
   const [view, setView] = useState('debrief');
   const [selectedProject, setSelectedProject] = useState('all');
@@ -704,10 +669,6 @@ function App() {
     setSelectedProject(prev => prev === id ? 'all' : id);
     setView('dashboard');
   }, []);
-
-  if (!authenticated) {
-    return <LoginScreen onAuth={() => setAuthenticated(true)} />;
-  }
 
   return (
     <div className="app-shell">
