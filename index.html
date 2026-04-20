@@ -78,6 +78,33 @@ body {
 .roadmap-item.done .phase { color: var(--text-3); }
 .roadmap-item a { color: var(--text); text-decoration: none; }
 .roadmap-item a:hover { color: var(--accent-hover); }
+.roadmap-btn {
+  display: block;
+  margin-top: 10px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  padding: 9px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  width: 100%;
+  text-align: center;
+  letter-spacing: 0.02em;
+}
+.roadmap-btn:hover { background: var(--accent-hover); }
+.roadmap-btn:active { transform: scale(0.98); }
+.roadmap-btn.ok { background: var(--ok); }
+.roadmap-btn.ok:hover { background: #6da05f; }
+.roadmap-status {
+  display: block;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--text-3);
+  font-style: italic;
+}
 
 .main { padding: 40px 56px; max-width: 1100px; }
 .header {
@@ -425,22 +452,27 @@ body {
     <div class="roadmap-item done">
       <div class="phase">Phase 1 · Done</div>
       Full inventory written
+      <span class="roadmap-status">_command-center/reorg/INVENTORY_2026-04-20.md</span>
     </div>
     <div class="roadmap-item done">
       <div class="phase">Phase 2 · Done</div>
       CoS skill errors corrected
+      <span class="roadmap-status">4 wrong TODO entries fixed in bodhi-chief-of-staff SKILL.md</span>
     </div>
     <div class="roadmap-item active">
-      <div class="phase">Phase 3 · Next session</div>
+      <div class="phase">Phase 3 · Do this next</div>
       Canonical structure proposal
+      <button class="roadmap-btn" onclick="copyPrompt('skills_reorg_p3', 'Phase 3 starter copied — paste into a new Cowork session')">Copy starter prompt</button>
     </div>
     <div class="roadmap-item">
-      <div class="phase">Phase 4</div>
-      Migration (archive + move)
+      <div class="phase">Phase 4 · After Phase 3 approved</div>
+      Migration + archive
+      <span class="roadmap-status">Starter prompt unlocks after Phase 3 proposal is approved</span>
     </div>
     <div class="roadmap-item">
       <div class="phase">Cleanup</div>
       Rogue Hard Hat Healthcare/ folder
+      <button class="roadmap-btn ok" onclick="copyPrompt('hhh_cleanup', 'HHH cleanup prompt copied')">Copy cleanup prompt</button>
     </div>
 
     <h2>Live Surfaces</h2>
@@ -551,9 +583,9 @@ body {
           <div class="prompt-card-label">Design PRD · into Claude Designer</div>
           <div class="prompt-card-desc">Product requirements doc for UI design handoff</div>
         </div>
-        <div class="prompt-card" onclick="copyPrompt('skills_reorg', 'Skills reorg Phase 3 prompt copied')">
-          <div class="prompt-card-label">Skills reorg · Phase 3 proposal</div>
-          <div class="prompt-card-desc">Read inventory, write canonical structure proposal. No files moved.</div>
+        <div class="prompt-card" onclick="copyPrompt('skills_reorg_p3', 'Skills reorg Phase 3 prompt copied')">
+          <div class="prompt-card-label">Skills reorg · Phase 3</div>
+          <div class="prompt-card-desc">Canonical structure proposal. Also on the sidebar.</div>
         </div>
       </div>
     </div>
@@ -605,6 +637,38 @@ Update _brain/bodhi-state.md with anything that changes portfolio state.
 
 Here's what happened:
 [talk]`,
+
+  skills_reorg_p3: `Skills reorganization audit -- Phase 3: canonical structure proposal.
+
+Read this first:
+_command-center/reorg/INVENTORY_2026-04-20.md
+
+Phase 1 (inventory) and Phase 2 (CoS skill error corrections) are complete.
+
+Phase 3 task: write a canonical structure proposal to:
+_command-center/reorg/PROPOSAL_2026-04-20.md
+
+The proposal must cover:
+1. Recommended canonical location for all 26 skill files
+2. YAML frontmatter standard for SKILL.md files
+3. Which skills move where (migration map)
+4. Which legacy session skills (.skills/skills/) can be archived
+5. What to do with the hidden .claude/skills/ folder
+
+Do NOT move any files. Do NOT edit any CLAUDE.md. Proposal only.
+Stop and wait for Bodhi approval before Phase 4.`,
+
+  hhh_cleanup: `Archive the rogue Hard Hat Healthcare/ folder at the workspace root.
+
+Canonical location for HHH is: framezero/clients/hhh/
+
+Steps:
+1. Snapshot any CLAUDE.md files inside Hard Hat Healthcare/ before moving (brain file protection protocol)
+2. Compare Hard Hat Healthcare/framezero/clients/hhh/CLAUDE.md against the canonical framezero/clients/hhh/CLAUDE.md -- flag any content in the rogue copy that is NOT in the canonical copy
+3. If the canonical copy has everything, move the entire Hard Hat Healthcare/ folder to:
+   _archive/rogue-duplicates/Hard-Hat-Healthcare-root-2026-04-20/
+4. Do NOT delete anything
+5. Report what was archived and confirm the canonical copy is intact`,
 
   skills_reorg: `Skills reorganization audit -- Phase 3: canonical structure proposal.
 
