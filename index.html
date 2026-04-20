@@ -307,7 +307,7 @@ body {
         <span>Copy Red Phone prompt</span>
       </button>
       <div class="red-phone-hint">
-        Paste into a new <code>Cowork</code> or <code>Claude chat</code> session. Your Chief of Staff takes it from there.
+        Paste into a new <code>Cowork session</code> (not a regular chat). The Cowork sandbox can read your local skill files; a normal chat cannot. Your Chief of Staff takes it from there.
       </div>
     </div>
 
@@ -411,7 +411,7 @@ function copyPrompt(key, message) {
   const text = PROMPTS[key];
   if (!text) return;
   navigator.clipboard.writeText(text).then(() => {
-    showToast(message || "Copied", "Now paste into a new Cowork or Claude chat session");
+    showToast(message || "Copied", "Paste into a new Cowork session (not regular chat)");
   }).catch(() => {
     const ta = document.createElement("textarea");
     ta.value = text;
@@ -419,7 +419,7 @@ function copyPrompt(key, message) {
     ta.select();
     document.execCommand("copy");
     document.body.removeChild(ta);
-    showToast(message || "Copied", "Now paste into a new Cowork or Claude chat session");
+    showToast(message || "Copied", "Paste into a new Cowork session (not regular chat)");
   });
 }
 
