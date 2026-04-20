@@ -421,6 +421,28 @@ body {
       Agent orchestration + PRD routing
     </div>
 
+    <h2>Skills Reorg Audit</h2>
+    <div class="roadmap-item done">
+      <div class="phase">Phase 1 · Done</div>
+      Full inventory written
+    </div>
+    <div class="roadmap-item done">
+      <div class="phase">Phase 2 · Done</div>
+      CoS skill errors corrected
+    </div>
+    <div class="roadmap-item active">
+      <div class="phase">Phase 3 · Next session</div>
+      Canonical structure proposal
+    </div>
+    <div class="roadmap-item">
+      <div class="phase">Phase 4</div>
+      Migration (archive + move)
+    </div>
+    <div class="roadmap-item">
+      <div class="phase">Cleanup</div>
+      Rogue Hard Hat Healthcare/ folder
+    </div>
+
     <h2>Live Surfaces</h2>
     <div class="roadmap-item">
       <a href="https://latedxaudhdguy.com/dashboard.html">LDAG dashboard</a>
@@ -529,6 +551,10 @@ body {
           <div class="prompt-card-label">Design PRD · into Claude Designer</div>
           <div class="prompt-card-desc">Product requirements doc for UI design handoff</div>
         </div>
+        <div class="prompt-card" onclick="copyPrompt('skills_reorg', 'Skills reorg Phase 3 prompt copied')">
+          <div class="prompt-card-label">Skills reorg · Phase 3 proposal</div>
+          <div class="prompt-card-desc">Read inventory, write canonical structure proposal. No files moved.</div>
+        </div>
       </div>
     </div>
   </main>
@@ -580,6 +606,26 @@ Update _brain/bodhi-state.md with anything that changes portfolio state.
 Here's what happened:
 [talk]`,
 
+  skills_reorg: `Skills reorganization audit -- Phase 3: canonical structure proposal.
+
+Read this first:
+_command-center/reorg/INVENTORY_2026-04-20.md
+
+Phase 1 (inventory) and Phase 2 (CoS skill error corrections) are complete.
+
+Phase 3 task: write a canonical structure proposal to:
+_command-center/reorg/PROPOSAL_2026-04-20.md
+
+The proposal must cover:
+1. Recommended canonical location for all 26 skill files
+2. YAML frontmatter standard for SKILL.md files
+3. Which skills move where (migration map)
+4. Which legacy session skills (.skills/skills/) can be archived
+5. What to do with the hidden .claude/skills/ folder
+
+Do NOT move any files. Do NOT edit any CLAUDE.md. Proposal only.
+Stop and wait for Bodhi approval before Phase 4.`,
+
   design_prd: `I need a Product Requirements Doc for a visual design handoff to Claude Designer.
 
 Read:
@@ -609,7 +655,12 @@ const DEFAULT_TASKS = [
   { id: "t2", title: "Test the red phone in a Cowork session", meta: "Confirm the CoS skill loads properly", project: "360", done: false, context: [] },
   { id: "t3", title: "Hardcover proof review · glitch-effect version", meta: "Proof rejected 2026-04-19. What's wrong, what's next round.", project: "Book", done: false, context: [] },
   { id: "t4", title: "Rocky Mountaineer logistics with Lee", meta: "Early May trip with Dad", project: "Family", done: false, context: [] },
-  { id: "t5", title: "Harmonic priorities for the week", meta: "Work sync cadence, Sarah timezone handoff", project: "Harmonic", done: false, context: [] }
+  { id: "t5", title: "Harmonic priorities for the week", meta: "Work sync cadence, Sarah timezone handoff", project: "Harmonic", done: false, context: [] },
+  { id: "t6", title: "Skills reorg Phase 1: inventory", meta: "Full scan of all SKILL.md files across Mac. Inventory at _command-center/reorg/INVENTORY_2026-04-20.md", project: "360", done: true, context: [] },
+  { id: "t7", title: "Skills reorg Phase 2: fix CoS skill errors", meta: "4 skills incorrectly marked TODO. All corrected in bodhi-chief-of-staff SKILL.md", project: "360", done: true, context: [] },
+  { id: "t8", title: "Skills reorg Phase 3: canonical structure proposal", meta: "26 skill files across 9 location patterns. Proposal doc needed before migration.", project: "360", done: false, context: [] },
+  { id: "t9", title: "Skills reorg Phase 4: migration + archive", meta: "Dedicated session. Archive-before-move. Requires Bodhi present.", project: "360", done: false, context: [] },
+  { id: "t10", title: "Archive rogue Hard Hat Healthcare/ folder at workspace root", meta: "Duplicate of framezero/clients/hhh/. 3 rogue CLAUDE.md files inside.", project: "360", done: false, context: [] }
 ];
 
 function loadTasks() {
