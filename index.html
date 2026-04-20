@@ -517,13 +517,9 @@ body {
           <div class="prompt-card-label">LDAG · pick up production</div>
           <div class="prompt-card-desc">Transcripts, episodes, dashboard</div>
         </div>
-        <div class="prompt-card" onclick="copyPrompt('mirror_signal', 'Signal writer prompt copied')">
-          <div class="prompt-card-label">MIRROR · write a transmission</div>
-          <div class="prompt-card-desc">Signal writer, full draft in one pass</div>
-        </div>
-        <div class="prompt-card" onclick="copyPrompt('harmonic_blog', 'Harmonic blog prompt copied')">
-          <div class="prompt-card-label">Harmonic · draft a blog</div>
-          <div class="prompt-card-desc">harmonic-blog-seo skill, full format</div>
+        <div class="prompt-card" onclick="copyPrompt('ldag_episode', 'LDAG episode script prompt copied')">
+          <div class="prompt-card-label">LDAG · draft an episode</div>
+          <div class="prompt-card-desc">Concept + moments to Opus Agent brief</div>
         </div>
         <div class="prompt-card" onclick="copyPrompt('status_update', 'Status update prompt copied')">
           <div class="prompt-card-label">Status update · something changed</div>
@@ -556,21 +552,23 @@ body {
 <script>
 const PROMPTS = {
   red_phone: `Load this skill and follow its instructions:
-~/.claude/skills/bodhi-chief-of-staff/SKILL.md
+skills/bodhi-chief-of-staff/SKILL.md
+
+(Resolve the full path if needed: ~/Library/Mobile Documents/com~apple~CloudDocs/Claude-Workspace/skills/bodhi-chief-of-staff/SKILL.md)
 
 State: [green / yellow / red / potato day / workday / describe]
 What's on my mind: [one line, or "I don't know, tell me"]`,
 
   ldag: `Load this skill and follow its instructions:
-~/.claude/skills/ldag-cos/SKILL.md`,
+skills/ldag-cos/SKILL.md
 
-  mirror_signal: `Load this skill and follow its instructions:
-~/.claude/skills/signal-transmission-writer/SKILL.md`,
+(Resolve the full path if needed: ~/Library/Mobile Documents/com~apple~CloudDocs/Claude-Workspace/skills/ldag-cos/SKILL.md)`,
 
-  harmonic_blog: `Load this skill and follow its instructions:
-~/.claude/skills/harmonic-blog-seo/SKILL.md
+  ldag_episode: `Load this skill and follow its instructions:
+skills/ldag-episode-script/SKILL.md
 
-Post topic: [describe what the blog is about]`,
+Episode concept: [describe]
+Moment IDs (if any): [paste]`,
 
   status_update: `I have a status update. Something shipped or shifted and I want the system to know.
 
