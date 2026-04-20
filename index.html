@@ -10,6 +10,7 @@
   --bg: #0a0a0a;
   --surface: #1a1a1a;
   --surface-2: #252525;
+  --surface-3: #2e2e2e;
   --border: #3d3d3d;
   --text: #ffffff;
   --text-2: #d4d4d4;
@@ -18,6 +19,7 @@
   --accent-hover: #f05555;
   --warn: #f0b960;
   --ok: #7fb56f;
+  --info: #6fa8dc;
   --radius: 12px;
 }
 body {
@@ -29,8 +31,7 @@ body {
   min-height: 100vh;
 }
 .layout { display: grid; grid-template-columns: 300px 1fr; min-height: 100vh; }
-
-@media (max-width: 768px) { .layout { grid-template-columns: 1fr; } .sidebar { display: none; } }
+@media (max-width: 768px) { .layout { grid-template-columns: 1fr; } .sidebar { border-right: none; border-bottom: 1px solid var(--border); } }
 
 .sidebar {
   background: var(--surface);
@@ -57,7 +58,6 @@ body {
   background: var(--surface-2);
 }
 .roadmap-item.active {
-  background: var(--surface-2);
   color: var(--text);
   border-left-color: var(--accent);
   font-weight: 500;
@@ -79,7 +79,7 @@ body {
 .roadmap-item a { color: var(--text); text-decoration: none; }
 .roadmap-item a:hover { color: var(--accent-hover); }
 
-.main { padding: 40px 56px; max-width: 1000px; }
+.main { padding: 40px 56px; max-width: 1100px; }
 .header {
   display: flex;
   justify-content: space-between;
@@ -90,15 +90,16 @@ body {
 }
 .header .date { font-size: 17px; color: var(--text-2); letter-spacing: 0.02em; font-weight: 500; }
 .header h1 { font-size: 40px; font-weight: 600; margin-top: 8px; letter-spacing: -0.01em; }
-.state-pill {
-  display: inline-block;
-  padding: 10px 20px;
-  border-radius: 999px;
-  font-size: 15px;
-  font-weight: 500;
+.state-select {
   background: var(--surface-2);
   color: var(--warn);
+  font-size: 15px;
+  font-weight: 500;
+  padding: 10px 20px;
+  border-radius: 999px;
   border: 1px solid var(--border);
+  font-family: inherit;
+  cursor: pointer;
 }
 
 .red-phone-section {
@@ -129,7 +130,6 @@ body {
   font-size: 22px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s;
   font-family: inherit;
 }
 .red-phone-button:hover { background: var(--accent-hover); }
@@ -148,7 +148,7 @@ body {
   border: 1px solid var(--border);
 }
 
-.section { margin-bottom: 32px; }
+.section { margin-bottom: 40px; }
 .section-header {
   display: flex;
   justify-content: space-between;
@@ -164,18 +164,103 @@ body {
 }
 .section-header .count { font-size: 15px; color: var(--text-2); font-weight: 500; }
 
+.buckets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+.bucket {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  cursor: pointer;
+  border-left: 4px solid var(--info);
+  transition: transform 0.1s, border-color 0.15s;
+}
+.bucket:hover { border-color: var(--text-3); }
+.bucket:active { transform: scale(0.99); }
+.bucket-name { font-size: 17px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+.bucket-desc { font-size: 14px; color: var(--text-2); line-height: 1.5; }
+.bucket[data-color="harmonic"] { border-left-color: #6fa8dc; }
+.bucket[data-color="creative"] { border-left-color: #e04b4b; }
+.bucket[data-color="family"] { border-left-color: #7fb56f; }
+.bucket[data-color="audhd"] { border-left-color: #f0b960; }
+.bucket[data-color="book"] { border-left-color: #b074dc; }
+.bucket[data-color="ldag"] { border-left-color: #f59742; }
+.bucket[data-color="unsorted"] { border-left-color: #a8a8a8; }
+
+.dump-modal-bg {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  z-index: 200;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.dump-modal-bg.show { display: flex; }
+.dump-modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px;
+  max-width: 700px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.dump-modal h3 { font-size: 22px; margin-bottom: 8px; color: var(--text); }
+.dump-modal .bucket-path { font-size: 14px; color: var(--text-3); margin-bottom: 18px; font-family: ui-monospace, monospace; }
+.dump-modal textarea {
+  width: 100%;
+  min-height: 200px;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  font-size: 17px;
+  font-family: inherit;
+  line-height: 1.6;
+  resize: vertical;
+}
+.dump-modal textarea:focus { outline: none; border-color: var(--accent); }
+.dump-modal-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+  justify-content: flex-end;
+}
+.dump-modal button {
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  border: 1px solid var(--border);
+}
+.dump-modal .btn-cancel { background: var(--surface-2); color: var(--text-2); }
+.dump-modal .btn-send { background: var(--accent); color: white; border-color: var(--accent); }
+.dump-modal .btn-send:hover { background: var(--accent-hover); }
+.dump-modal .hint { font-size: 14px; color: var(--text-3); margin-top: 10px; }
+
 .task {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+.task-row {
   display: flex;
   align-items: flex-start;
   gap: 14px;
   padding: 18px 20px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  margin-bottom: 10px;
-  transition: opacity 0.2s;
 }
-.task.done { opacity: 0.45; }
+.task.done { opacity: 0.55; }
 .task.done .task-title { text-decoration: line-through; }
 .task-checkbox {
   width: 24px;
@@ -189,12 +274,8 @@ body {
   align-items: center;
   justify-content: center;
   background: transparent;
-  transition: all 0.15s;
 }
-.task.done .task-checkbox {
-  background: var(--ok);
-  border-color: var(--ok);
-}
+.task.done .task-checkbox { background: var(--ok); border-color: var(--ok); }
 .task.done .task-checkbox::after {
   content: "✓";
   color: white;
@@ -204,6 +285,51 @@ body {
 .task-body { flex: 1; }
 .task-title { font-size: 17px; color: var(--text); font-weight: 500; }
 .task-meta { font-size: 15px; color: var(--text-2); margin-top: 4px; }
+.task-project {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 3px 10px;
+  border-radius: 999px;
+  margin-top: 8px;
+  color: var(--text);
+  background: var(--surface-3);
+}
+.task-context-toggle {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-2);
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  margin-top: 10px;
+  font-family: inherit;
+}
+.task-context-toggle:hover { color: var(--text); border-color: var(--text-3); }
+.task-context {
+  padding: 0 20px 16px 58px;
+  display: none;
+}
+.task-context.show { display: block; }
+.task-context textarea {
+  width: 100%;
+  min-height: 80px;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 15px;
+  font-family: inherit;
+  resize: vertical;
+}
+.task-context-saved { font-size: 14px; color: var(--ok); margin-top: 6px; }
+.task-context-existing { background: var(--surface-2); border-left: 3px solid var(--info); padding: 10px 14px; border-radius: 6px; margin-top: 10px; font-size: 15px; color: var(--text-2); }
+.task-context-existing .context-date { font-size: 12px; color: var(--text-3); display: block; margin-bottom: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
+
 .prompts-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -237,7 +363,7 @@ body {
   opacity: 0;
   pointer-events: none;
   transition: all 0.3s;
-  z-index: 100;
+  z-index: 300;
   max-width: 90%;
   text-align: center;
 }
@@ -256,64 +382,123 @@ body {
     </div>
     <div class="roadmap-item done">
       <div class="phase">Phase 0 · Done</div>
-      bodhi-chief-of-staff skill built
+      bodhi-chief-of-staff skill
+    </div>
+    <div class="roadmap-item done">
+      <div class="phase">Phase 1 · Done</div>
+      Command Center MVP (red phone)
     </div>
     <div class="roadmap-item active">
-      <div class="phase">Phase 1 · Now</div>
-      MVP command center (this page)
+      <div class="phase">Phase 2 · Now</div>
+      Brain dump buckets + task feedback
     </div>
     <div class="roadmap-item">
-      <div class="phase">Phase 2 · Next</div>
-      Supabase-connected state
-    </div>
-    <div class="roadmap-item">
-      <div class="phase">Phase 3</div>
-      Voice input via Wispr Flow
+      <div class="phase">Phase 3 · Next</div>
+      Visual design system (Claude designer)
     </div>
     <div class="roadmap-item">
       <div class="phase">Phase 4</div>
-      Bell and red phone notifications
+      Supabase-backed state (cross-device)
     </div>
     <div class="roadmap-item">
       <div class="phase">Phase 5</div>
-      Agent orchestration and PRD routing
+      Harmonic sub-hub
     </div>
     <div class="roadmap-item">
       <div class="phase">Phase 6</div>
-      Sub-dashboards drill-through
+      LDAG website rebuild
+    </div>
+    <div class="roadmap-item">
+      <div class="phase">Phase 7</div>
+      Wispr Flow direct integration
+    </div>
+    <div class="roadmap-item">
+      <div class="phase">Phase 8</div>
+      Bell and red phone push notifications
+    </div>
+    <div class="roadmap-item">
+      <div class="phase">Phase 9</div>
+      Agent orchestration + PRD routing
     </div>
 
     <h2>Live Surfaces</h2>
     <div class="roadmap-item">
-      <a href="https://latedxaudhdguy.com/dashboard.html" style="color: inherit; text-decoration: none;">LDAG dashboard</a>
+      <a href="https://latedxaudhdguy.com/dashboard.html">LDAG dashboard</a>
     </div>
     <div class="roadmap-item">
-      <a href="https://ops.thebookofoneness.com" style="color: inherit; text-decoration: none;">MIRROR ops</a>
+      <a href="https://ops.thebookofoneness.com">MIRROR ops</a>
+    </div>
+    <div class="roadmap-item">
+      <a href="https://thebookofoneness.com">Book of Oneness</a>
     </div>
   </aside>
 
   <main class="main">
     <div class="header">
       <div>
-        <div class="date" id="date-line">Sunday, April 19, 2026</div>
+        <div class="date" id="date-line">Loading</div>
         <h1>Bodhi 360°</h1>
       </div>
-      <div class="state-pill">Potato day</div>
+      <select class="state-select" id="state-select" onchange="saveState()">
+        <option value="green">Green · ship mode</option>
+        <option value="yellow">Yellow · maintenance</option>
+        <option value="red">Red · rest / process only</option>
+        <option value="potato">Potato day</option>
+        <option value="hyperfocus">Hyperfocus</option>
+        <option value="crashed">Crashed</option>
+        <option value="workday">Work day (Harmonic)</option>
+      </select>
     </div>
 
     <div class="red-phone-section">
       <div class="red-phone-label">Red Phone · Start every session here</div>
       <button class="red-phone-button" onclick="copyRedPhone()">
-        <span>Copy Red Phone prompt</span>
+        Copy Red Phone prompt
       </button>
       <div class="red-phone-hint">
-        Paste into a new <code>Cowork session</code> (not a regular chat). The Cowork sandbox can read your local skill files; a normal chat cannot. Your Chief of Staff takes it from there.
+        Paste into a new <code>Cowork session</code>. Not a regular chat.
       </div>
     </div>
 
     <div class="section">
       <div class="section-header">
-        <h3>Today · do this now</h3>
+        <h3>Brain dump · pick a bucket, talk or type, send</h3>
+      </div>
+      <div class="buckets-grid">
+        <div class="bucket" data-color="harmonic" onclick="openDump('harmonic','Harmonic','_inbox/harmonic')">
+          <div class="bucket-name">Harmonic</div>
+          <div class="bucket-desc">Day job · stakeholders, campaigns, deliverables</div>
+        </div>
+        <div class="bucket" data-color="creative" onclick="openDump('creative','Creative','_inbox/creative')">
+          <div class="bucket-name">Creative</div>
+          <div class="bucket-desc">SEASØNS, FRAMEZERØ, music, ideas</div>
+        </div>
+        <div class="bucket" data-color="ldag" onclick="openDump('ldag','LDAG','_inbox/ldag')">
+          <div class="bucket-name">LDAG</div>
+          <div class="bucket-desc">Episodes, transcripts, production, brand</div>
+        </div>
+        <div class="bucket" data-color="book" onclick="openDump('book','Book / MIRROR','_inbox/book')">
+          <div class="bucket-name">Book / MIRROR</div>
+          <div class="bucket-desc">Outreach, cover, Signal, Charles, publishing</div>
+        </div>
+        <div class="bucket" data-color="family" onclick="openDump('family','Family','_inbox/family')">
+          <div class="bucket-name">Family</div>
+          <div class="bucket-desc">Dad, kids, Amy, logistics, grief</div>
+        </div>
+        <div class="bucket" data-color="audhd" onclick="openDump('audhd','Personal / AuDHD','_inbox/audhd')">
+          <div class="bucket-name">Personal · AuDHD</div>
+          <div class="bucket-desc">Unmasking, regulation, health, self</div>
+        </div>
+        <div class="bucket" data-color="unsorted" onclick="openDump('unsorted','Unsorted','_inbox/unsorted')">
+          <div class="bucket-name">Unsorted</div>
+          <div class="bucket-desc">Not sure yet. Route on open.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">
+        <h3>Today · click to check off, expand to add context</h3>
         <span class="count" id="task-count">0 of 0</span>
       </div>
       <div id="task-list"></div>
@@ -324,46 +509,109 @@ body {
         <h3>Key prompts · click to copy</h3>
       </div>
       <div class="prompts-grid">
-        <div class="prompt-card" onclick="copyPrompt('red_phone', 'Red phone copied. Paste into a new Cowork session.')">
+        <div class="prompt-card" onclick="copyPrompt('red_phone', 'Red phone copied')">
           <div class="prompt-card-label">Morning · where am I</div>
-          <div class="prompt-card-desc">Chief of staff reads your state, gives one next action</div>
+          <div class="prompt-card-desc">Chief of staff reads state, gives one next action</div>
         </div>
-        <div class="prompt-card" onclick="copyPrompt('brain_dump', 'Brain dump prompt copied. Paste, then talk.')">
-          <div class="prompt-card-label">Brain dump · route this</div>
-          <div class="prompt-card-desc">For voice notes, Otter exports, raw thoughts</div>
-        </div>
-        <div class="prompt-card" onclick="copyPrompt('ldag', 'LDAG chief of staff prompt copied.')">
+        <div class="prompt-card" onclick="copyPrompt('ldag', 'LDAG chief of staff prompt copied')">
           <div class="prompt-card-label">LDAG · pick up production</div>
           <div class="prompt-card-desc">Transcripts, episodes, dashboard</div>
         </div>
-        <div class="prompt-card" onclick="copyPrompt('status_update', 'Status update prompt copied. Talk through what changed.')">
-          <div class="prompt-card-label">Status update · something shipped or shifted</div>
-          <div class="prompt-card-desc">Captures what changed so the system knows</div>
+        <div class="prompt-card" onclick="copyPrompt('mirror_signal', 'Signal writer prompt copied')">
+          <div class="prompt-card-label">MIRROR · write a transmission</div>
+          <div class="prompt-card-desc">Signal writer, full draft in one pass</div>
+        </div>
+        <div class="prompt-card" onclick="copyPrompt('harmonic_blog', 'Harmonic blog prompt copied')">
+          <div class="prompt-card-label">Harmonic · draft a blog</div>
+          <div class="prompt-card-desc">harmonic-blog-seo skill, full format</div>
+        </div>
+        <div class="prompt-card" onclick="copyPrompt('status_update', 'Status update prompt copied')">
+          <div class="prompt-card-label">Status update · something changed</div>
+          <div class="prompt-card-desc">Captures what shifted so the brains update</div>
+        </div>
+        <div class="prompt-card" onclick="copyPrompt('design_prd', 'Design PRD prompt copied')">
+          <div class="prompt-card-label">Design PRD · into Claude Designer</div>
+          <div class="prompt-card-desc">Product requirements doc for UI design handoff</div>
         </div>
       </div>
     </div>
   </main>
 </div>
 
+<div class="dump-modal-bg" id="dump-modal-bg" onclick="if(event.target===this)closeDump()">
+  <div class="dump-modal">
+    <h3 id="dump-title">Brain dump</h3>
+    <div class="bucket-path" id="dump-path"></div>
+    <textarea id="dump-text" placeholder="Talk or type. Wispr Flow works here. Send when done."></textarea>
+    <div class="hint">On Send: copies a prompt to clipboard. Paste into a Cowork session. The chief of staff writes it to the right inbox folder.</div>
+    <div class="dump-modal-actions">
+      <button class="btn-cancel" onclick="closeDump()">Cancel</button>
+      <button class="btn-send" onclick="sendDump()">Send</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
 const PROMPTS = {
-  red_phone: `Load this skill and follow its instructions:\n~/.claude/skills/bodhi-chief-of-staff/SKILL.md\n\nState: [green / yellow / red / potato day / describe]\nWhat's on my mind: [one line, or "I don't know, tell me"]`,
+  red_phone: `Load this skill and follow its instructions:
+~/.claude/skills/bodhi-chief-of-staff/SKILL.md
 
-  brain_dump: `I have a brain dump / voice note / transcript to process. Route it into the right project brain.\n\nFirst, load the chief of staff so you know the project landscape:\n~/.claude/skills/bodhi-chief-of-staff/SKILL.md\n\nThen I'll paste the content. Tell me which brain each piece belongs in and move it.`,
+State: [green / yellow / red / potato day / workday / describe]
+What's on my mind: [one line, or "I don't know, tell me"]`,
 
-  ldag: `Load this skill and follow its instructions:\n~/.claude/skills/ldag-cos/SKILL.md`,
+  ldag: `Load this skill and follow its instructions:
+~/.claude/skills/ldag-cos/SKILL.md`,
 
-  status_update: `Something shipped or changed. Capture it so the system knows.\n\nWrite a status update to:\n_inbox/_processed/STATUS_UPDATE_YYYY-MM-DD.md (use today's date)\n\nAlso update _brain/bodhi-state.md to reflect the change.\n\nHere's what changed:\n[talk]`
+  mirror_signal: `Load this skill and follow its instructions:
+~/.claude/skills/signal-transmission-writer/SKILL.md`,
+
+  harmonic_blog: `Load this skill and follow its instructions:
+~/.claude/skills/harmonic-blog-seo/SKILL.md
+
+Post topic: [describe what the blog is about]`,
+
+  status_update: `I have a status update. Something shipped or shifted and I want the system to know.
+
+Write a status file at:
+_inbox/_processed/STATUS_UPDATE_[today].md
+
+Update _brain/bodhi-state.md with anything that changes portfolio state.
+
+Here's what happened:
+[talk]`,
+
+  design_prd: `I need a Product Requirements Doc for a visual design handoff to Claude Designer.
+
+Read:
+- _brain/BODHI_360_BRAIN.md (who I am, how my brain works)
+- Any relevant project brain (ask me which)
+- Any existing brand assets in the project folder
+
+Then write a PRD at:
+_command-center/design-prds/PRD_[project]_[date].md
+
+The PRD must include:
+1. Who this is for (me, my AuDHD, my vision needs)
+2. What the surface is and what it must do
+3. Existing assets and inspiration references I'll provide
+4. Accessibility non-negotiables (large text, AAA contrast, dark mode, no dark gray on black)
+5. Tech stack constraints (GitHub Pages, Supabase planned, no Netlify)
+6. Success criteria
+
+Ask me clarifying questions before writing. Do not invent visual direction.`
 };
 
-const TASKS_KEY = "bodhi_mvp_tasks_v1";
+const TASKS_KEY = "bodhi_mvp_tasks_v2";
+const STATE_KEY = "bodhi_mvp_state_v1";
+
 const DEFAULT_TASKS = [
-  { id: "t1", title: "Test the red phone once in a new Cowork session", meta: "Confirms the CoS skill loads and behaves", done: false },
-  { id: "t2", title: "Check in with Lee about Rocky Mountaineer logistics", meta: "Early May trip with Dad", done: false },
-  { id: "t3", title: "Look at the latest hardcover proof and note what's wrong", meta: "Blocks Operation Black Box", done: false },
-  { id: "t4", title: "Harmonic: Monday workday start, open bodhi-chief-of-staff first", meta: "Let the CoS surface the priority", done: false }
+  { id: "t1", title: "Build brain dump buckets into the dashboard", meta: "So dumping into a bucket routes automatically", project: "360", done: true, context: [] },
+  { id: "t2", title: "Test the red phone in a Cowork session", meta: "Confirm the CoS skill loads properly", project: "360", done: false, context: [] },
+  { id: "t3", title: "Hardcover proof review · glitch-effect version", meta: "Proof rejected 2026-04-19. What's wrong, what's next round.", project: "Book", done: false, context: [] },
+  { id: "t4", title: "Rocky Mountaineer logistics with Lee", meta: "Early May trip with Dad", project: "Family", done: false, context: [] },
+  { id: "t5", title: "Harmonic priorities for the week", meta: "Work sync cadence, Sarah timezone handoff", project: "Harmonic", done: false, context: [] }
 ];
 
 function loadTasks() {
@@ -371,10 +619,21 @@ function loadTasks() {
     const saved = localStorage.getItem(TASKS_KEY);
     if (saved) return JSON.parse(saved);
   } catch(e) {}
-  return DEFAULT_TASKS;
+  return JSON.parse(JSON.stringify(DEFAULT_TASKS));
 }
 function saveTasks(tasks) {
   try { localStorage.setItem(TASKS_KEY, JSON.stringify(tasks)); } catch(e) {}
+}
+function loadState() {
+  try { return localStorage.getItem(STATE_KEY) || "workday"; } catch(e) { return "workday"; }
+}
+function saveState() {
+  const v = document.getElementById("state-select").value;
+  try { localStorage.setItem(STATE_KEY, v); } catch(e) {}
+}
+
+function escapeHtml(s) {
+  return (s || "").replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]));
 }
 
 function renderTasks() {
@@ -384,13 +643,26 @@ function renderTasks() {
   tasks.forEach(t => {
     const el = document.createElement("div");
     el.className = "task" + (t.done ? " done" : "");
-    el.innerHTML = `
-      <div class="task-checkbox" onclick="toggleTask('${t.id}')"></div>
-      <div class="task-body">
-        <div class="task-title">${t.title}</div>
-        <div class="task-meta">${t.meta || ""}</div>
-      </div>
-    `;
+    const existing = (t.context || []).map(c =>
+      '<div class="task-context-existing"><span class="context-date">' + escapeHtml(c.date) + '</span>' + escapeHtml(c.text) + '</div>'
+    ).join("");
+    el.innerHTML =
+      '<div class="task-row">' +
+        '<div class="task-checkbox" onclick="toggleTask(\'' + t.id + '\')"></div>' +
+        '<div class="task-body">' +
+          '<div class="task-title">' + escapeHtml(t.title) + '</div>' +
+          '<div class="task-meta">' + escapeHtml(t.meta || "") + '</div>' +
+          (t.project ? '<div class="task-project">' + escapeHtml(t.project) + '</div>' : '') +
+          ' <button class="task-context-toggle" onclick="toggleContext(\'' + t.id + '\')">Add context / note</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="task-context" id="ctx-' + t.id + '">' +
+        existing +
+        '<textarea id="ctx-text-' + t.id + '" placeholder="Follow-up context. What happened, what\'s next, what the CoS needs to know."></textarea>' +
+        '<div class="dump-modal-actions">' +
+          '<button class="btn-send" onclick="saveContext(\'' + t.id + '\')">Save context</button>' +
+        '</div>' +
+      '</div>';
     list.appendChild(el);
   });
   const doneCount = tasks.filter(t => t.done).length;
@@ -400,18 +672,81 @@ function renderTasks() {
 function toggleTask(id) {
   const tasks = loadTasks();
   const task = tasks.find(t => t.id === id);
-  if (task) {
-    task.done = !task.done;
-    saveTasks(tasks);
-    renderTasks();
-  }
+  if (task) { task.done = !task.done; saveTasks(tasks); renderTasks(); }
+}
+
+function toggleContext(id) {
+  const el = document.getElementById("ctx-" + id);
+  if (el) el.classList.toggle("show");
+}
+
+function saveContext(id) {
+  const tasks = loadTasks();
+  const task = tasks.find(t => t.id === id);
+  const ta = document.getElementById("ctx-text-" + id);
+  if (!task || !ta || !ta.value.trim()) return;
+  task.context = task.context || [];
+  task.context.push({
+    date: new Date().toISOString().slice(0,16).replace("T"," "),
+    text: ta.value.trim()
+  });
+  saveTasks(tasks);
+  ta.value = "";
+  renderTasks();
+  showToast("Context saved on task", "Next Cowork session will see this");
+}
+
+let currentDump = null;
+function openDump(bucket, name, path) {
+  currentDump = { bucket, name, path };
+  document.getElementById("dump-title").textContent = "Dump · " + name;
+  document.getElementById("dump-path").textContent = "Writes to: " + path + "/<timestamp>.md";
+  document.getElementById("dump-text").value = "";
+  document.getElementById("dump-modal-bg").classList.add("show");
+  setTimeout(() => document.getElementById("dump-text").focus(), 50);
+}
+
+function closeDump() {
+  document.getElementById("dump-modal-bg").classList.remove("show");
+  currentDump = null;
+}
+
+function sendDump() {
+  if (!currentDump) return;
+  const text = document.getElementById("dump-text").value.trim();
+  if (!text) { showToast("Nothing to send", "Type or dictate something first"); return; }
+  const today = new Date().toISOString().slice(0, 10);
+  const time = new Date().toTimeString().slice(0, 5).replace(":", "");
+  const filename = "dump_" + today + "_" + time + ".md";
+  const fullPath = currentDump.path + "/" + filename;
+  const prompt =
+    "I'm dumping into my " + currentDump.name + " bucket from the command center.\n\n" +
+    "Write this content to:\n" +
+    fullPath + "\n\n" +
+    "Use the full iCloud path:\n" +
+    "~/Library/Mobile Documents/com~apple~CloudDocs/Claude-Workspace/" + fullPath + "\n\n" +
+    "Then process it: extract action items, flag anything urgent, update _brain/bodhi-state.md if portfolio state changed, and tell me what you did.\n\n" +
+    "Content:\n---\n" + text + "\n---";
+  navigator.clipboard.writeText(prompt).then(() => {
+    showToast("Dump prompt copied", "Paste into a Cowork session to save and process");
+    closeDump();
+  }).catch(() => {
+    const ta = document.createElement("textarea");
+    ta.value = prompt;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand("copy");
+    document.body.removeChild(ta);
+    showToast("Dump prompt copied", "Paste into a Cowork session to save and process");
+    closeDump();
+  });
 }
 
 function copyPrompt(key, message) {
   const text = PROMPTS[key];
   if (!text) return;
   navigator.clipboard.writeText(text).then(() => {
-    showToast(message || "Copied", "Paste into a new Cowork session (not regular chat)");
+    showToast(message || "Copied", "Paste into a new Cowork session");
   }).catch(() => {
     const ta = document.createElement("textarea");
     ta.value = text;
@@ -419,17 +754,15 @@ function copyPrompt(key, message) {
     ta.select();
     document.execCommand("copy");
     document.body.removeChild(ta);
-    showToast(message || "Copied", "Paste into a new Cowork session (not regular chat)");
+    showToast(message || "Copied", "Paste into a new Cowork session");
   });
 }
 
-function copyRedPhone() {
-  copyPrompt("red_phone", "Red phone copied");
-}
+function copyRedPhone() { copyPrompt("red_phone", "Red phone copied"); }
 
 function showToast(message, next) {
   const toast = document.getElementById("toast");
-  toast.innerHTML = message + (next ? '<span class="next">' + next + '</span>' : '');
+  toast.innerHTML = escapeHtml(message) + (next ? '<span class="next">' + escapeHtml(next) + '</span>' : '');
   toast.classList.add("show");
   setTimeout(() => toast.classList.remove("show"), 3500);
 }
@@ -442,7 +775,13 @@ function updateDate() {
 
 document.addEventListener("DOMContentLoaded", () => {
   updateDate();
+  const sel = document.getElementById("state-select");
+  if (sel) sel.value = loadState();
   renderTasks();
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") closeDump();
 });
 </script>
 </body>
