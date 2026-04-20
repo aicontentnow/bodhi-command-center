@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BODHI COMMAND CENTER</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --font-display: 'Outfit', sans-serif;
+    --font-body: 'Sora', sans-serif;
+    --accent-pink: #FFB6C1;
+    --accent-teal: #5BC0BE;
+    --accent-lavender: #B8B8FF;
+    --accent-coral: #FF9A8B;
+    --accent-mint: #88D8B0;
+    --glass-blur: 24px;
+    --card-radius: 20px;
+    --transition-smooth: 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    --status-active: #34D399;
+    --status-active-bg: rgba(52, 211, 153, 0.12);
+    --status-progress: #FBBF24;
+    --status-progress-bg: rgba(251, 191, 36, 0.12);
+    --status-blocked: #F87171;
+    --status-blocked-bg: rgba(248, 113, 113, 0.12);
+    --status-idle: #6B7280;
+    --status-idle-bg: rgba(107, 114, 128, 0.08);
+  }
+
+  [data-theme="light"] {
+    --bg-primary: #F0F1F6; --bg-secondary: #E4E5ED;
+    --bg-glass: rgba(255, 255, 255, 0.5); --bg-glass-hover: rgba(255, 255, 255, 0.7);
+    --bg-glass-strong: rgba(255, 255, 255, 0.75); --bg-sidebar: rgba(255, 255, 255, 0.4);
+    --border-glass: rgba(255, 255, 255, 0.6); --border-subtle: rgba(0, 0, 0, 0.06);
+    --text-primary: #1A1A2E; --text-secondary: #4A4A6A; --text-tertiary: #7A7A9A;
+    --shadow-card: 0 4px 30px rgba(0, 0, 0, 0.05), 0 1px 6px rgba(0, 0, 0, 0.03);
+    --shadow-card-hover: 0 8px 44px rgba(0, 0, 0, 0.1), 0 2px 10px rgba(0, 0, 0, 0.05);
+    --shadow-glow: 0 0 80px rgba(91, 192, 190, 0.12);
+    --mesh-opacity: 0.35;
+    --notif-bg: rgba(248, 113, 113, 0.08); --notif-border: rgba(248, 113, 113, 0.2);
+  }
+  [data-theme="dark"] {
+    --bg-primary: #0B0B18; --bg-secondary: #111126;
+    --bg-glass: rgba(22, 22, 48, 0.6); --bg-glass-hover: rgba(30, 30, 65, 0.75);
+    --bg-glass-strong: rgba(18, 18, 42, 0.8); --bg-sidebar: rgba(15, 15, 35, 0.5);
+    --border-glass: rgba(255, 255, 255, 0.08); --border-subtle: rgba(255, 255, 255, 0.06);
+    --text-primary: #F0F0FF; --text-secondary: #B8B8D8; --text-tertiary: #8080A8;
+    --shadow-card: 0 4px 30px rgba(0, 0, 0, 0.25), 0 1px 6px rgba(0, 0, 0, 0.18);
+    --shadow-card-hover: 0 8px 44px rgba(0, 0, 0, 0.4), 0 2px 10px rgba(0, 0, 0, 0.25);
+    --shadow-glow: 0 0 80px rgba(91, 192, 190, 0.06);
+    --mesh-opacity: 0.2;
+    --notif-bg: rgba(248, 113, 113, 0.06); --notif-border: rgba(248, 113, 113, 0.15);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 18px; scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
+  body {
+    font-family: var(--font-body); background: var(--bg-primary); color: var(--text-primary);
+    min-height: 100vh; overflow-x: hidden;
+    transition: background var(--transition-smooth), color var(--transition-smooth);
+  }
+
+  /* AMBIENT BACKGROUND */
+  .ambient-bg { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; opacity: var(--mesh-opacity); transition: opacity var(--transition-smooth); }
+  .ambient-orb { position: absolute; border-radius: 50%; filter: blur(120px); will-change: transform; }
+  .ambient-orb--1 { width: 700px; height: 700px; background: radial-gradient(circle, var(--accent-pink), transparent 70%); top: -12%; left: -8%; animation: orb-drift-1 25s ease-in-out infinite; }
+  .ambient-orb--2 { width: 600px; height: 600px; background: radial-gradient(circle, var(--accent-teal), transparent 70%); top: 25%; right: -10%; animation: orb-drift-2 30s ease-in-out infinite; }
+  .ambient-orb--3 { width: 550px; height: 550px; background: radial-gradient(circle, var(--accent-lavender), transparent 70%); bottom: -8%; left: 25%; animation: orb-drift-3 28s ease-in-out infinite; }
+  .ambient-orb--4 { width: 400px; height: 400px; background: radial-gradient(circle, var(--accent-mint), transparent 70%); top: 55%; left: 5%; animation: orb-drift-4 22s ease-in-out infinite; }
+  @keyframes orb-drift-1 { 0%, 100% { transform: translate(0,0) scale(1); } 33% { transform: translate(80px,50px) scale(1.1); } 66% { transform: translate(-30px,80px) scale(0.95); } }
+  @keyframes orb-drift-2 { 0%, 100% { transform: translate(0,0) scale(1); } 33% { transform: translate(-60px,40px) scale(1.05); } 66% { transform: translate(40px,-60px) scale(0.9); } }
+  @keyframes orb-drift-3 { 0%, 100% { transform: translate(0,0) scale(1); } 33% { transform: translate(50px,-40px) scale(1.08); } 66% { transform: translate(-40px,-30px) scale(0.95); } }
+  @keyframes orb-drift-4 { 0%, 100% { transform: translate(0,0) scale(1); } 33% { transform: translate(-40px,-50px) scale(1.1); } 66% { transform: translate(60px,30px) scale(0.92); } }
+
+  /* GLASS SYSTEM */
+  .glass {
+    background: var(--bg-glass); backdrop-filter: blur(var(--glass-blur)); -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--border-glass); border-radius: var(--card-radius);
+    box-shadow: var(--shadow-card); transition: all var(--transition-smooth); position: relative; overflow: hidden;
+  }
+  .glass::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent); }
+  .glass:hover { background: var(--bg-glass-hover); box-shadow: var(--shadow-card-hover); }
+  .glass--clickable { cursor: pointer; }
+  .glass--clickable:hover { transform: translateY(-3px); }
+  .glass--clickable:active { transform: translateY(-1px); }
+
+  /* MAIN LAYOUT */
+  .app-shell { position: relative; z-index: 1; display: grid; grid-template-columns: 280px 1fr; grid-template-rows: auto 1fr; min-height: 100vh; gap: 0; }
+
+  /* HEADER */
+  .header { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; padding: 20px 36px; flex-wrap: wrap; gap: 16px; border-bottom: 1px solid var(--border-subtle); }
+  .header-left { display: flex; align-items: center; gap: 24px; }
+  .header-title { font-family: var(--font-display); font-weight: 800; font-size: 1.5rem; letter-spacing: 0.08em; background: linear-gradient(135deg, var(--accent-teal), var(--accent-lavender), var(--accent-pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .header-clock { font-family: var(--font-display); font-weight: 500; font-size: 0.95rem; color: var(--text-secondary); letter-spacing: 0.03em; }
+  .header-status { display: flex; align-items: center; gap: 10px; font-size: 0.9rem; color: var(--text-secondary); font-weight: 500; }
+  .pulse-dot { width: 10px; height: 10px; border-radius: 50%; animation: pulse-glow 2s ease-in-out infinite; }
+  .pulse-dot--green { background: var(--status-active); }
+  @keyframes pulse-glow { 0%, 100% { box-shadow: 0 0 0 0 rgba(52,211,153,0.45); } 50% { box-shadow: 0 0 0 7px rgba(52,211,153,0); } }
+  .header-right { display: flex; align-items: center; gap: 16px; }
+
+  /* Theme toggle */
+  .theme-toggle { width: 56px; height: 32px; border-radius: 16px; background: var(--bg-secondary); border: 1px solid var(--border-subtle); cursor: pointer; position: relative; transition: all var(--transition-smooth); display: flex; align-items: center; padding: 0 5px; }
+  .theme-toggle:hover { border-color: var(--accent-teal); }
+  .theme-toggle-knob { width: 22px; height: 22px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-teal), var(--accent-lavender)); transition: transform var(--transition-bounce); display: flex; align-items: center; justify-content: center; font-size: 13px; }
+  [data-theme="dark"] .theme-toggle-knob { transform: translateX(24px); }
+  .theme-label { font-size: 0.85rem; color: var(--text-secondary); font-weight: 500; letter-spacing: 0.05em; }
+
+  /* SIDEBAR */
+  .sidebar { padding: 16px 14px; border-right: 1px solid var(--border-subtle); overflow-y: auto; max-height: calc(100vh - 80px); display: flex; flex-direction: column; gap: 8px; }
+  .sidebar::-webkit-scrollbar { width: 4px; }
+  .sidebar::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 2px; }
+
+  /* NAV ITEMS */
+  .nav-section { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+  .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 14px; font-family: var(--font-display); font-weight: 600; font-size: 0.95rem; color: var(--text-secondary); cursor: pointer; transition: all var(--transition-smooth); border: 1px solid transparent; letter-spacing: 0.02em; }
+  .nav-item:hover { background: var(--bg-glass); color: var(--text-primary); }
+  .nav-item--active { background: var(--bg-glass-hover); color: var(--text-primary); border-color: var(--accent-teal); box-shadow: 0 0 0 1px var(--accent-teal), var(--shadow-card); }
+  .nav-icon { font-size: 1.2rem; width: 24px; text-align: center; }
+  .nav-label { flex: 1; }
+  .nav-badge { font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 10px; background: var(--accent-coral); color: #0B0B18; }
+  .nav-divider { height: 1px; background: var(--border-subtle); margin: 8px 8px; }
+
+  /* SECTION HEADERS */
+  .section-hdr { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .section-hdr h2 { font-family: var(--font-display); font-weight: 700; font-size: 0.9rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-tertiary); white-space: nowrap; }
+  .section-hdr-line { flex: 1; height: 1px; background: linear-gradient(90deg, var(--border-subtle), transparent); }
+  .badge { font-family: var(--font-display); font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); background: var(--bg-glass); padding: 3px 10px; border-radius: 10px; border: 1px solid var(--border-subtle); }
+
+  /* PROJECT CARDS */
+  .project-list { display: flex; flex-direction: column; gap: 8px; }
+  .project-card { padding: 14px 16px; cursor: pointer; border-radius: 14px; }
+  .project-card--selected { background: var(--bg-glass-hover) !important; border-color: var(--accent-teal) !important; box-shadow: var(--shadow-card-hover), 0 0 0 1px var(--accent-teal); }
+  .project-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  .project-name { font-family: var(--font-display); font-weight: 700; font-size: 1rem; color: var(--text-primary); }
+  .project-icon { width: 32px; height: 32px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 1rem; opacity: 0.8; }
+  .project-meta { display: flex; align-items: center; gap: 10px; }
+  .status-chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; font-family: var(--font-display); letter-spacing: 0.04em; text-transform: uppercase; }
+  .status-chip--active { background: var(--status-active-bg); color: var(--status-active); }
+  .status-chip--progress { background: var(--status-progress-bg); color: var(--status-progress); }
+  .status-chip--blocked { background: var(--status-blocked-bg); color: var(--status-blocked); }
+  .status-chip--idle { background: var(--status-idle-bg); color: var(--status-idle); }
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; }
+  .status-dot--active { background: var(--status-active); }
+  .status-dot--progress { background: var(--status-progress); }
+  .status-dot--blocked { background: var(--status-blocked); }
+  .status-dot--idle { background: var(--status-idle); }
+  .project-time { font-size: 0.8rem; color: var(--text-tertiary); }
+
+  /* MAIN CONTENT */
+  .main-content { padding: 24px 36px; overflow-y: auto; max-height: calc(100vh - 80px); display: flex; flex-direction: column; gap: 24px; }
+  .main-content::-webkit-scrollbar { width: 6px; }
+  .main-content::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 3px; }
+
+  /* NOTIFICATION BAR */
+  .notif-bar { background: var(--notif-bg); border: 1px solid var(--notif-border); border-radius: var(--card-radius); padding: 20px 28px; position: relative; overflow: hidden; }
+  .notif-bar::before { content: ''; position: absolute; top: 0; left: 0; bottom: 0; width: 4px; background: linear-gradient(180deg, var(--status-blocked), var(--status-progress)); border-radius: 0 2px 2px 0; }
+  .notif-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+  .notif-title { font-family: var(--font-display); font-weight: 700; font-size: 1rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--status-blocked); }
+  .notif-count { font-family: var(--font-display); font-size: 0.8rem; font-weight: 700; background: var(--status-blocked); color: #fff; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+  .notif-pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--status-blocked); animation: pulse-red 2s ease-in-out infinite; }
+  @keyframes pulse-red { 0%, 100% { box-shadow: 0 0 0 0 rgba(248,113,113,0.5); } 50% { box-shadow: 0 0 0 6px rgba(248,113,113,0); } }
+  .notif-items { display: flex; flex-direction: column; gap: 12px; }
+  .notif-item { display: flex; align-items: flex-start; gap: 14px; padding: 14px 18px; border-radius: 12px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); cursor: pointer; transition: all var(--transition-smooth); }
+  .notif-item:hover { background: rgba(255,255,255,0.06); border-color: var(--accent-teal); transform: translateX(4px); }
+  .notif-item-dot { width: 8px; height: 8px; min-width: 8px; border-radius: 50%; margin-top: 8px; }
+  .notif-item-content { flex: 1; }
+  .notif-item-text { font-size: 1rem; color: var(--text-primary); line-height: 1.5; font-weight: 400; }
+  .notif-item-meta { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
+  .notif-item-time { font-size: 0.8rem; color: var(--text-tertiary); font-family: var(--font-display); }
+  .notif-item-source { font-size: 0.8rem; color: var(--accent-teal); font-family: var(--font-display); font-weight: 600; }
+  .notif-item-arrow { font-size: 1.1rem; color: var(--text-tertiary); margin-top: 4px; transition: all var(--transition-smooth); }
+  .notif-item:hover .notif-item-arrow { color: var(--accent-teal); transform: translateX(4px); }
+
+  /* ACTIVITY FEED */
+  .feed-panel { flex: 1; }
+  .feed-list { display: flex; flex-direction: column; gap: 4px; }
+  .feed-item { display: flex; align-items: flex-start; gap: 18px; padding: 14px 18px; border-radius: 14px; transition: all var(--transition-smooth); cursor: default; border: 1px solid transparent; }
+  .feed-item:hover { background: var(--bg-glass); border-color: var(--border-glass); }
+  .feed-time { width: 90px; min-width: 90px; text-align: right; font-size: 0.85rem; font-weight: 500; color: var(--text-tertiary); font-family: var(--font-display); padding-top: 3px; }
+  .feed-dot-wrap { display: flex; flex-direction: column; align-items: center; padding-top: 6px; }
+  .feed-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .feed-line { width: 2px; flex: 1; min-height: 20px; background: linear-gradient(180deg, var(--border-subtle), transparent); margin-top: 4px; }
+  .feed-body { flex: 1; padding-top: 1px; }
+  .feed-source { font-family: var(--font-display); font-weight: 700; font-size: 0.95rem; margin-bottom: 4px; }
+  .feed-text { font-size: 1rem; color: var(--text-secondary); line-height: 1.55; }
+
+  /* AGENT SECTION */
+  .agent-groups { display: flex; flex-direction: column; gap: 14px; }
+  .agent-group-label { font-family: var(--font-display); font-weight: 600; font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 4px; padding-left: 2px; }
+  .agent-list { display: flex; flex-direction: column; gap: 4px; }
+  .agent-row { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 10px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-subtle); transition: all var(--transition-smooth); cursor: default; }
+  .agent-row:hover { background: var(--bg-glass); border-color: var(--border-glass); }
+  .agent-dot { width: 8px; height: 8px; min-width: 8px; border-radius: 50%; }
+  .agent-dot--active { background: var(--status-active); }
+  .agent-dot--idle { background: var(--status-idle); }
+  .agent-dot--running { background: var(--accent-teal); animation: pulse-running 1.5s ease-in-out infinite; }
+  @keyframes pulse-running { 0%, 100% { box-shadow: 0 0 0 0 rgba(91,192,190,0.5); opacity: 1; } 50% { box-shadow: 0 0 0 5px rgba(91,192,190,0); opacity: 0.7; } }
+  .agent-info { flex: 1; min-width: 0; }
+  .agent-name { font-family: var(--font-display); font-weight: 600; font-size: 0.85rem; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .agent-row--disabled .agent-name { color: var(--text-tertiary); }
+  .agent-schedule { font-size: 0.75rem; color: var(--text-tertiary); margin-top: 1px; }
+  .agent-last { font-size: 0.75rem; color: var(--text-tertiary); white-space: nowrap; }
+
+  /* LOGIN SCREEN */
+  .login-shell { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; background: var(--bg-primary); }
+  .login-card { width: 380px; max-width: 90vw; padding: 48px 40px; text-align: center; }
+  .login-title { font-family: var(--font-display); font-weight: 800; font-size: 1.5rem; letter-spacing: 0.1em; background: linear-gradient(135deg, var(--accent-teal), var(--accent-lavender), var(--accent-pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 8px; }
+  .login-subtitle { font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 36px; }
+  .login-input { width: 100%; padding: 14px 20px; border-radius: 14px; background: var(--bg-secondary); border: 1px solid var(--border-subtle); color: var(--text-primary); font-family: var(--font-body); font-size: 1rem; outline: none; transition: all var(--transition-smooth); letter-spacing: 0.08em; }
+  .login-input:focus { border-color: var(--accent-teal); box-shadow: 0 0 0 3px rgba(91,192,190,0.15); }
+  .login-input::placeholder { color: var(--text-tertiary); }
+  .login-input-wrap { margin-bottom: 20px; }
+  .login-btn { width: 100%; padding: 14px; border-radius: 14px; border: none; background: linear-gradient(135deg, var(--accent-teal), var(--accent-lavender)); color: #0B0B18; font-family: var(--font-display); font-weight: 700; font-size: 1rem; letter-spacing: 0.08em; cursor: pointer; transition: all var(--transition-smooth); }
+  .login-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(91,192,190,0.3); }
+  .login-error { color: var(--status-blocked); font-size: 0.85rem; margin-top: 12px; font-weight: 500; min-height: 20px; }
+  .login-fade-in { animation: login-appear 0.6s cubic-bezier(0.16,1,0.3,1) forwards; }
+  @keyframes login-appear { from { opacity: 0; transform: translateY(20px) scale(0.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+  /* DEBRIEF VIEW */
+  .debrief-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; flex-wrap: wrap; gap: 12px; }
+  .debrief-title { font-family: var(--font-display); font-weight: 800; font-size: 1.6rem; letter-spacing: 0.04em; color: var(--text-primary); }
+  .debrief-meta { display: flex; align-items: center; gap: 16px; font-size: 0.9rem; color: var(--text-secondary); font-family: var(--font-display); }
+  .debrief-context { padding: 18px 24px; margin-bottom: 8px; border-left: 3px solid var(--accent-coral); background: rgba(255,154,139,0.08); border-radius: 0 14px 14px 0; font-size: 1rem; color: var(--text-primary); line-height: 1.5; flex-shrink: 0; }
+  .debrief-context strong { color: var(--accent-coral); font-weight: 600; }
+
+  /* COLLAPSIBLE DEBRIEF SECTIONS */
+  .debrief-section { border-radius: var(--card-radius); position: relative; border: 1px solid; flex-shrink: 0; }
+  .debrief-section::before { content: ''; position: absolute; top: 0; left: 0; bottom: 0; width: 4px; border-radius: 0 2px 2px 0; }
+  .debrief-section--urgent::before { background: linear-gradient(180deg, #F87171, #FF9A8B); }
+  .debrief-section--urgent { background: rgba(248,113,113,0.06); border-color: rgba(248,113,113,0.18); }
+  .debrief-section--priority::before { background: linear-gradient(180deg, var(--accent-teal), #60A5FA); }
+  .debrief-section--priority { background: rgba(91,192,190,0.06); border-color: rgba(91,192,190,0.15); }
+  .debrief-section--delegated::before { background: linear-gradient(180deg, var(--accent-lavender), var(--accent-pink)); }
+  .debrief-section--delegated { background: rgba(184,184,255,0.06); border-color: rgba(184,184,255,0.15); }
+  .debrief-section--info::before { background: linear-gradient(180deg, var(--accent-mint), var(--accent-teal)); }
+  .debrief-section--info { background: rgba(136,216,176,0.06); border-color: rgba(136,216,176,0.12); }
+  .debrief-section--upcoming::before { background: linear-gradient(180deg, var(--accent-pink), var(--accent-lavender)); }
+  .debrief-section--upcoming { background: rgba(255,182,193,0.06); border-color: rgba(255,182,193,0.12); }
+
+  /* Clickable section header */
+  .debrief-section-hdr {
+    display: flex; align-items: center; gap: 12px;
+    padding: 20px 28px; cursor: pointer; user-select: none;
+    transition: background var(--transition-smooth);
+  }
+  .debrief-section-hdr:hover { background: rgba(255,255,255,0.03); }
+  .debrief-section-icon { font-size: 1.3rem; }
+  .debrief-section-title { font-family: var(--font-display); font-weight: 700; font-size: 1rem; letter-spacing: 0.08em; text-transform: uppercase; flex: 1; }
+  .debrief-section-count { font-family: var(--font-display); font-size: 0.8rem; font-weight: 700; padding: 3px 10px; border-radius: 10px; }
+  .debrief-chevron { font-size: 1.2rem; transition: transform var(--transition-smooth); color: var(--text-tertiary); }
+  .debrief-chevron--closed { transform: rotate(-90deg); }
+
+  /* Section title colors */
+  .debrief-section--urgent .debrief-section-title { color: #F87171; }
+  .debrief-section--urgent .debrief-section-count { background: rgba(248,113,113,0.15); color: #F87171; }
+  .debrief-section--priority .debrief-section-title { color: var(--accent-teal); }
+  .debrief-section--priority .debrief-section-count { background: rgba(91,192,190,0.15); color: var(--accent-teal); }
+  .debrief-section--delegated .debrief-section-title { color: var(--accent-lavender); }
+  .debrief-section--delegated .debrief-section-count { background: rgba(184,184,255,0.15); color: var(--accent-lavender); }
+  .debrief-section--info .debrief-section-title { color: var(--accent-mint); }
+  .debrief-section--info .debrief-section-count { background: rgba(136,216,176,0.15); color: var(--accent-mint); }
+  .debrief-section--upcoming .debrief-section-title { color: var(--accent-pink); }
+  .debrief-section--upcoming .debrief-section-count { background: rgba(255,182,193,0.15); color: var(--accent-pink); }
+
+  /* Collapsible body */
+  .debrief-section-body { padding: 0 28px 24px 28px; }
+
+  /* Debrief task items - BIGGER TEXT, FULL WRAP */
+  .debrief-tasks { display: flex; flex-direction: column; gap: 10px; }
+  .debrief-task { display: flex; align-items: flex-start; gap: 14px; padding: 16px 20px; border-radius: 14px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); transition: all var(--transition-smooth); word-wrap: break-word; overflow-wrap: break-word; }
+  .debrief-task:hover { background: rgba(255,255,255,0.06); }
+  .debrief-task-num { font-family: var(--font-display); font-weight: 800; font-size: 1.3rem; min-width: 28px; text-align: center; line-height: 1.4; opacity: 0.4; }
+  .debrief-task-body { flex: 1; min-width: 0; }
+  .debrief-task-text { font-size: 1.05rem; color: var(--text-primary); line-height: 1.55; font-weight: 500; word-wrap: break-word; overflow-wrap: break-word; }
+  .debrief-task-detail { font-size: 0.95rem; color: var(--text-secondary); margin-top: 4px; line-height: 1.5; word-wrap: break-word; overflow-wrap: break-word; }
+  .debrief-task-tags { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .debrief-tag { font-family: var(--font-display); font-size: 0.72rem; font-weight: 600; padding: 3px 10px; border-radius: 8px; letter-spacing: 0.04em; text-transform: uppercase; }
+  .debrief-tag--person { background: rgba(91,192,190,0.15); color: var(--accent-teal); }
+  .debrief-tag--asset { background: rgba(184,184,255,0.15); color: var(--accent-lavender); }
+  .debrief-tag--hold { background: rgba(251,191,36,0.15); color: var(--status-progress); }
+  .debrief-tag--platform { background: rgba(96,165,250,0.15); color: #60A5FA; }
+
+  /* Transcript bar */
+  .transcript-bar { padding: 20px 28px; border-radius: var(--card-radius); background: var(--bg-glass); border: 1px solid var(--border-glass); backdrop-filter: blur(var(--glass-blur)); -webkit-backdrop-filter: blur(var(--glass-blur)); }
+  .transcript-bar-hdr { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+  .transcript-bar-title { font-family: var(--font-display); font-weight: 700; font-size: 0.9rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-secondary); }
+  .transcript-bar-count { font-family: var(--font-display); font-size: 1rem; font-weight: 800; color: var(--accent-teal); }
+  .transcript-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+  .transcript-chip { font-family: var(--font-display); font-size: 0.8rem; font-weight: 500; padding: 6px 14px; border-radius: 10px; background: rgba(255,255,255,0.04); border: 1px solid var(--border-subtle); color: var(--text-secondary); transition: all var(--transition-smooth); }
+  .transcript-chip:hover { border-color: var(--accent-teal); color: var(--text-primary); }
+  .transcript-chip--day { font-weight: 700; color: var(--accent-teal); border-color: rgba(91,192,190,0.25); }
+
+  /* ENTRANCE ANIMATIONS */
+  .animate-in { opacity: 0; transform: translateY(12px); animation: slide-in 0.5s cubic-bezier(0.16,1,0.3,1) forwards; }
+  @keyframes slide-in { to { opacity: 1; transform: translateY(0); } }
+  .version { position: fixed; bottom: 12px; right: 16px; font-family: var(--font-display); font-size: 0.65rem; font-weight: 500; letter-spacing: 0.08em; color: var(--text-tertiary); opacity: 0.4; z-index: 10; }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 3px; }
+  .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px; color: var(--text-tertiary); text-align: center; }
+  .empty-state-icon { font-size: 2.5rem; margin-bottom: 16px; opacity: 0.4; }
+  .empty-state-text { font-family: var(--font-display); font-size: 1.1rem; font-weight: 500; }
+
+  @media (max-width: 900px) {
+    .app-shell { grid-template-columns: 1fr; grid-template-rows: auto auto 1fr; }
+    .sidebar { max-height: none; border-right: none; border-bottom: 1px solid var(--border-subtle); flex-direction: row; overflow-x: auto; gap: 8px; padding: 12px; }
+    .sidebar > * { min-width: 200px; }
+    .main-content { max-height: none; }
+  }
+</style>
+</head>
+<body>
+<div class="ambient-bg">
+  <div class="ambient-orb ambient-orb--1"></div>
+  <div class="ambient-orb ambient-orb--2"></div>
+  <div class="ambient-orb ambient-orb--3"></div>
+  <div class="ambient-orb ambient-orb--4"></div>
+</div>
+<div id="root"></div>
+<div class="version">COMMAND CENTER v0.3.1</div>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script type="text/babel">
+const { useState, useEffect, useCallback, useMemo } = React;
+
+/* DATA */
+const PROJECTS = [
+  { id: 'seasons', name: 'SEAS\u00d8NS', status: 'active', lastActivity: '25 min ago', accent: '#5BC0BE', icon: '\u266B' },
+  { id: 'bodhi360', name: 'Bodhi 360', status: 'active', lastActivity: '10 min ago', accent: '#60A5FA', icon: '\u2B21' },
+  { id: 'mirror', name: 'THE BOOK OF ONENESS', status: 'active', lastActivity: '1h ago', accent: '#FFB6C1', icon: '\u25C7' },
+  { id: 'harmonic', name: 'Harmonic 360', status: 'active', lastActivity: '4h ago', accent: '#88D8B0', icon: '\u25CE' },
+  { id: 'ldag', name: 'Late Dx AuDHD Guy', status: 'active', lastActivity: 'today', accent: '#FFCC00', icon: '\u25C9' },
+  { id: 'career', name: 'Bodhi Career', status: 'progress', lastActivity: '2h ago', accent: '#B8B8FF', icon: '\u2191' },
+  { id: 'framezero', name: 'FRAMEZER\u00d8 CREATIVE', status: 'idle', lastActivity: '2 days ago', accent: '#FF9A8B', icon: '\u25B3' },
+  { id: 'hhh', name: 'Hard Hat Healthcare', status: 'idle', lastActivity: '5 days ago', accent: '#FBBF24', icon: '\u2616' },
+];
+
+const AGENT_GROUPS = [
+  { label: 'Mirror Publishing', agents: [
+    { name: 'Inbox Monitor', schedule: '9am / 2pm / 7pm', status: 'active', lastRun: '1h ago' },
+    { name: 'Outreach Cadence', schedule: 'MWF 10am', status: 'active', lastRun: '6h ago' },
+    { name: 'Social Listening', schedule: 'Daily 6pm', status: 'active', lastRun: 'yesterday' },
+  ]},
+  { label: 'Daily Ops', agents: [
+    { name: 'Morning Brief', schedule: 'Daily 7am', status: 'running', lastRun: 'just now' },
+    { name: 'Afternoon Recap', schedule: 'Daily 2pm', status: 'active', lastRun: '20h ago' },
+    { name: 'Session Watchdog', schedule: '2h, M-F', status: 'active', lastRun: '45 min' },
+    { name: 'Brain Export', schedule: 'Daily 11am', status: 'active', lastRun: '22h ago' },
+  ]},
+  { label: 'Monitors', agents: [
+    { name: 'KB Audit', schedule: 'Daily 6am', status: 'active', lastRun: '4h ago' },
+    { name: 'Seasons Web', schedule: '1st of month', status: 'active', lastRun: '24d ago' },
+    { name: 'Fragments Brief', schedule: 'Daily 7am', status: 'active', lastRun: '3h ago' },
+  ]},
+  { label: 'LDAG Build Queue', agents: [
+    { name: 'ldag-episode-script skill', schedule: 'Build when ready', status: 'idle', lastRun: 'not built' },
+    { name: 'ldag-sequence-check skill', schedule: 'After episode-script', status: 'idle', lastRun: 'not built' },
+    { name: 'Executive Producer agent', schedule: 'After both skills', status: 'idle', lastRun: 'not built' },
+    { name: 'Supabase backend (dashboard)', schedule: 'When volume justifies', status: 'idle', lastRun: 'not built' },
+  ]},
+  { label: 'Disabled', agents: [
+    { name: 'Brain Dump (Mid)', schedule: 'Paused', status: 'idle', lastRun: 'n/a' },
+    { name: 'Brain Dump (Eve)', schedule: 'Paused', status: 'idle', lastRun: 'n/a' },
+  ]}
+];
+
+const ATTENTION_ITEMS = [
+  { text: 'LDAG: 9 scripted episodes ready for Opus Agent -- start with "The Threat". 200 free credits/day.', severity: 'progress', time: 'today', source: 'LDAG' },
+  { text: 'LDAG: Keep recording brain dumps -- need 100-200 episodes before public launch', severity: 'progress', time: 'today', source: 'LDAG' },
+  { text: 'Book cover redesign blocks all physical shipments (~3-4 weeks)', severity: 'blocked', time: '2h ago', source: 'Mirror' },
+  { text: '3 outreach drafts awaiting approval', severity: 'progress', time: '1h ago', source: 'Mirror' },
+];
+
+const ACTIVITY_FEED = [
+  { time: 'today', source: 'LDAG', text: 'Dashboard v4 deployed -- per-episode clip quotes + era Suno prompts, amber toggle, full contrast pass', color: '#FFCC00', project: 'ldag' },
+  { time: 'today', source: 'LDAG', text: '22 episodes in pipeline (2 done, 9 scripted, 11 concept) -- next up: Opus Agent on "The Threat"', color: '#FFCC00', project: 'ldag' },
+  { time: '10 min ago', source: 'Bodhi 360', text: 'Command Center v0.3 deployed to Netlify', color: '#60A5FA', project: 'bodhi360' },
+  { time: '25 min ago', source: 'SEAS\u00d8NS', text: 'Spring album analytics pulled \u2014 847 streams this week', color: '#5BC0BE', project: 'seasons' },
+  { time: '45 min ago', source: 'Session Watchdog', text: 'All active sessions healthy. No context burn risk detected.', color: '#88D8B0', project: 'bodhi360' },
+  { time: '1h ago', source: 'Mirror Inbox', text: 'Flagged 2 new outreach replies \u2014 1 positive, 1 follow-up needed', color: '#FFB6C1', project: 'mirror' },
+  { time: '2h ago', source: 'Career', text: 'Updated Master Profile with AI Systems Architect positioning', color: '#B8B8FF', project: 'career' },
+  { time: '3h ago', source: 'Fragments Brief', text: 'Day 4 of current Fracture cycle \u2014 nano prompts generated', color: '#FFB6C1', project: 'mirror' },
+  { time: '4h ago', source: 'KB Audit', text: '3 stale references found in SEAS\u00d8NS knowledge base', color: '#5BC0BE', project: 'seasons' },
+  { time: '6h ago', source: 'Outreach Cadence', text: '4 follow-ups staged for Wednesday delivery', color: '#FFB6C1', project: 'mirror' },
+  { time: '8h ago', source: 'Morning Brief', text: 'Daily priorities compiled \u2014 3 high priority, 2 medium', color: '#60A5FA', project: 'bodhi360' },
+  { time: 'yesterday', source: 'File Ops', text: 'Consolidation complete \u2014 21 files moved to iCloud canonical paths', color: '#88D8B0', project: 'bodhi360' },
+  { time: 'yesterday', source: 'Harmonic', text: 'SensAI landing page copy review submitted to Sarah', color: '#88D8B0', project: 'harmonic' },
+  { time: '2 days ago', source: 'FRAMEZER\u00d8', text: 'HHH strategy document updated with Peter feedback', color: '#FF9A8B', project: 'framezero' },
+];
+
+/* DEBRIEF DATA */
+const DEBRIEF = {
+  week: 'Mar 24 - 28, 2026',
+  transcriptsProcessed: 13,
+  doToday: [
+    { text: 'Send brand visual deck + assets to Kelli', detail: 'She needs it before heading to SF trade show', tags: [{ label: 'Kelli', type: 'person' }, { label: 'Brand Deck', type: 'asset' }] },
+    { text: 'Put Beacon solution brief in Confluence', detail: "For Sarah's review", tags: [{ label: 'Sarah', type: 'person' }, { label: 'Confluence', type: 'platform' }] },
+  ],
+  priorityMonday: [
+    { text: 'Update Sensei landing page', detail: 'Reframe from Beacon-only to full cOS platform (Beacon + Pathfinder + L-Forest as QoE bundle). Match new positioning/messaging from leadership. THE priority.', tags: [{ label: 'Sensei', type: 'platform' }, { label: 'cOS', type: 'asset' }] },
+    { text: 'Update solution brief copy', detail: 'Match the new positioning and messaging', tags: [{ label: 'Solution Brief', type: 'asset' }] },
+    { text: 'Blog posts draft work', detail: 'ON HOLD for publishing but draft work continues', tags: [{ label: 'On Hold', type: 'hold' }] },
+    { text: 'Present brand visual exploration to DH', detail: "Dayner Hall. Kelli's request.", tags: [{ label: 'Kelli', type: 'person' }, { label: 'DH', type: 'person' }] },
+    { text: "Get Amir's 7-8 use cases for character assignment", detail: '', tags: [{ label: 'Amir', type: 'person' }] },
+    { text: 'Follow up with Anna re: content Huard mentioned', detail: 'Meeting March 30', tags: [{ label: 'Anna', type: 'person' }, { label: 'Mar 30', type: 'hold' }] },
+    { text: 'Beacon call follow-ups', detail: 'Ask about sales outreach details, get access to customer tracking spreadsheet', tags: [{ label: 'Beacon', type: 'platform' }] },
+    { text: 'Need sales team SME contact for landing page', detail: "Jeff's team, possibly Guy's CS team, Ehud from product", tags: [{ label: 'Jeff', type: 'person' }, { label: 'Ehud', type: 'person' }] },
+  ],
+  coveredWhileOut: [
+    { text: 'Sarah: Updated Beacon infographic graphics to Kelli/DH', detail: 'Ehud/Asaf feedback incorporated', tags: [{ label: 'Sarah', type: 'person' }] },
+    { text: 'Gabe: Extracting stills from Beacon demo videos', detail: 'Plus first pass on ANGA soft demo video refresh', tags: [{ label: 'Gabe', type: 'person' }] },
+    { text: 'Sarah + Kelli: Sensei asset updates', detail: '', tags: [{ label: 'Sarah', type: 'person' }, { label: 'Kelli', type: 'person' }] },
+    { text: 'Gabe + Itai: Ryan Beck customer interview prep', detail: 'Next week, CNOC + C-Deploy, two separate interviews', tags: [{ label: 'Gabe', type: 'person' }, { label: 'Itai', type: 'person' }] },
+    { text: 'Kelli: Wiz booth recon at SF trade show', detail: '', tags: [{ label: 'Kelli', type: 'person' }] },
+    { text: "Blog post: ON HOLD per Bodhi's instruction to Jen", detail: '', tags: [{ label: 'On Hold', type: 'hold' }, { label: 'Jen', type: 'person' }] },
+  ],
+  fyi: [
+    { text: 'Performance review complete', detail: 'Positive overall, Sarah advocating for raise', tags: [] },
+    { text: 'Brand presentation to Yaniv went great', detail: 'Ninjas favorite, "Sensei Sentinels" naming', tags: [] },
+    { text: 'MediaKind closing pushed to first week of June', detail: '', tags: [] },
+    { text: 'Video agent research (Claude + Remotion)', detail: 'Filed for future', tags: [] },
+    { text: 'Yaniv offered enterprise Claude license', detail: 'Pending Nimrod/Jason CTO approval', tags: [] },
+  ],
+  upcoming: [
+    { text: 'Apr 7: Sensei Webinar + new intern Jocelyn starts', detail: 'SEO focus, SEMrush licenses coming', tags: [] },
+    { text: 'Week of Apr 13: ANGA + Fiber Connect staging', detail: '', tags: [] },
+    { text: 'April: MediaKind integration meetings begin', detail: '', tags: [] },
+    { text: 'Website product pages scope evolving', detail: 'Yaniv wants individual product info per device', tags: [] },
+  ],
+  transcripts: [
+    { day: 'Wed', items: ['Beacon ISM/cOS Campaign Pod', 'MediaKind All-Hands', 'Sarah/Bodhi pre-days-off sync', 'Brand Visual review w/ leadership', 'Kelli brand follow-up'] },
+    { day: 'Tue', items: ['Performance Review w/ Sarah', 'Brand Visual to Pam/Kelli', 'Fiber Connect/ANGA Events'] },
+    { day: 'Mon', items: ['Beacon Asset Review + SensAI', 'Dad catch-up', 'Claude for Video research'] },
+    { day: 'Other', items: ['Jensen Huang/NVIDIA transcript', 'Performance Review (duplicate)'] },
+  ],
+};
+
+/* COMPONENTS */
+
+function Clock() {
+  const [time, setTime] = useState(new Date());
+  useEffect(() => { const iv = setInterval(() => setTime(new Date()), 1000); return () => clearInterval(iv); }, []);
+  const d = time.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  const t = time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+  return <span className="header-clock">{d} // {t}</span>;
+}
+
+function ThemeToggle({ theme, onToggle }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      <span className="theme-label">{theme === 'light' ? '\u2600' : '\u263E'}</span>
+      <button className="theme-toggle" onClick={onToggle} aria-label="Toggle theme"><div className="theme-toggle-knob" /></button>
+    </div>
+  );
+}
+
+function SectionHdr({ title, count }) {
+  return (<div className="section-hdr"><h2>{title}</h2><div className="section-hdr-line" />{count != null && <span className="badge">{count}</span>}</div>);
+}
+
+const PROJECT_DASHBOARDS = {
+  ldag: 'https://latedxaudhdguy.com/dashboard.html',
+  mirror: 'https://ops.thebookofoneness.com/',
+};
+
+function ProjectCard({ project, selected, onClick }) {
+  const statusLabel = { active: 'Active', progress: 'In Progress', blocked: 'Blocked', idle: 'Idle' };
+  const st = project.status || 'idle';
+  const dashUrl = PROJECT_DASHBOARDS[project.id];
+  return (
+    <div className={`glass glass--clickable project-card ${selected ? 'project-card--selected' : ''}`} onClick={() => onClick(project.id)}>
+      <div className="project-card-top">
+        <span className="project-name">{project.name}</span>
+        <span className="project-icon" style={{ background: project.accent + '18', color: project.accent }}>{project.icon}</span>
+      </div>
+      <div className="project-meta">
+        <span className={`status-chip status-chip--${st}`}><span className={`status-dot status-dot--${st}`} />{statusLabel[project.status]}</span>
+        <span className="project-time">{project.lastActivity}</span>
+      </div>
+      {dashUrl && (
+        <a href={dashUrl} target="_blank" rel="noopener noreferrer"
+          onClick={e => e.stopPropagation()}
+          style={{ display:'block', marginTop:'10px', padding:'6px 12px', background: project.accent + '18', border:'1px solid ' + project.accent + '44', borderRadius:'8px', color: project.accent, fontSize:'12px', fontWeight:'700', letterSpacing:'1px', textTransform:'uppercase', textDecoration:'none', textAlign:'center' }}>
+          OPEN DASHBOARD &#8599;
+        </a>
+      )}
+    </div>
+  );
+}
+
+function AgentSection({ groups }) {
+  return (
+    <div className="agent-groups">
+      {groups.map((g, gi) => (
+        <div key={gi}>
+          <div className="agent-group-label">{g.label}</div>
+          <div className="agent-list">
+            {g.agents.map((a, ai) => {
+              const dotCls = a.status === 'running' ? 'running' : a.status === 'active' ? 'active' : 'idle';
+              return (
+                <div key={ai} className={`agent-row ${a.status === 'idle' ? 'agent-row--disabled' : ''}`}>
+                  <span className={`agent-dot agent-dot--${dotCls}`} />
+                  <div className="agent-info"><div className="agent-name">{a.name}</div><div className="agent-schedule">{a.schedule}</div></div>
+                  <span className="agent-last">{a.lastRun}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function NotificationBar({ items }) {
+  return (
+    <div className="notif-bar animate-in" style={{ animationDelay: '0.1s' }}>
+      <div className="notif-header"><span className="notif-pulse" /><span className="notif-title">Needs Attention</span><span className="notif-count">{items.length}</span></div>
+      <div className="notif-items">
+        {items.map((item, i) => (
+          <div key={i} className="notif-item">
+            <span className="notif-item-dot" style={{ background: item.severity === 'blocked' ? 'var(--status-blocked)' : 'var(--status-progress)' }} />
+            <div className="notif-item-content">
+              <div className="notif-item-text">{item.text}</div>
+              <div className="notif-item-meta"><span className="notif-item-source">{item.source}</span><span className="notif-item-time">{item.time}</span></div>
+            </div>
+            <span className="notif-item-arrow">{'\u2192'}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ActivityFeed({ items, filter }) {
+  const filtered = filter === 'all' ? items : items.filter(i => i.project === filter);
+  return (
+    <div className="feed-panel animate-in" style={{ animationDelay: '0.3s' }}>
+      <SectionHdr title="Activity Feed" count={filtered.length + ' events'} />
+      {filtered.length === 0 ? (
+        <div className="empty-state"><div className="empty-state-icon">{'\u2205'}</div><div className="empty-state-text">No recent activity for this project</div></div>
+      ) : (
+        <div className="feed-list">
+          {filtered.map((item, i) => (
+            <div key={i} className="feed-item">
+              <span className="feed-time">{item.time}</span>
+              <div className="feed-dot-wrap"><span className="feed-dot" style={{ background: item.color }} />{i < filtered.length - 1 && <div className="feed-line" />}</div>
+              <div className="feed-body"><div className="feed-source" style={{ color: item.color }}>{item.source}</div><div className="feed-text">{item.text}</div></div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* DEBRIEF COMPONENTS */
+function DebriefTaskList({ items, showNumbers }) {
+  return (
+    <div className="debrief-tasks">
+      {items.map((item, i) => (
+        <div key={i} className="debrief-task">
+          {showNumbers && <span className="debrief-task-num">{i + 1}</span>}
+          <div className="debrief-task-body">
+            <div className="debrief-task-text">{item.text}</div>
+            {item.detail && <div className="debrief-task-detail">{item.detail}</div>}
+            {item.tags && item.tags.length > 0 && (
+              <div className="debrief-task-tags">
+                {item.tags.map((tag, ti) => (<span key={ti} className={`debrief-tag debrief-tag--${tag.type}`}>{tag.label}</span>))}
+              </div>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function DebriefSection({ variant, icon, title, count, children, delay, defaultOpen }) {
+  const [open, setOpen] = useState(defaultOpen !== false);
+  return (
+    <div className={`debrief-section debrief-section--${variant} animate-in`} style={{ animationDelay: delay || '0s' }}>
+      <div className="debrief-section-hdr" onClick={() => setOpen(o => !o)}>
+        <span className="debrief-section-icon">{icon}</span>
+        <span className="debrief-section-title">{title}</span>
+        {count != null && <span className="debrief-section-count">{count}</span>}
+        <span className={`debrief-chevron ${open ? '' : 'debrief-chevron--closed'}`}>{'\u25BE'}</span>
+      </div>
+      {open && <div className="debrief-section-body">{children}</div>}
+    </div>
+  );
+}
+
+function TranscriptBar({ data }) {
+  return (
+    <div className="transcript-bar animate-in" style={{ animationDelay: '0.6s' }}>
+      <div className="transcript-bar-hdr">
+        <span className="transcript-bar-title">Transcripts Processed</span>
+        <span className="transcript-bar-count">{data.transcriptsProcessed}</span>
+      </div>
+      <div className="transcript-grid">
+        {data.transcripts.map((group, gi) => (
+          <React.Fragment key={gi}>
+            <span className="transcript-chip transcript-chip--day">{group.day}</span>
+            {group.items.map((item, ii) => (<span key={ii} className="transcript-chip">{item}</span>))}
+          </React.Fragment>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function WeeklyDebriefView() {
+  return (
+    <div className="main-content">
+      <div className="debrief-header animate-in">
+        <div className="debrief-title">Weekly Debrief</div>
+        <div className="debrief-meta">
+          <span>{'\uD83D\uDCC5'} {DEBRIEF.week}</span>
+          <span>{'\uD83C\uDFA4'} {DEBRIEF.transcriptsProcessed} transcripts</span>
+        </div>
+      </div>
+      <div className="debrief-context animate-in" style={{ animationDelay: '0.05s' }}>
+        <strong>Context:</strong> Bodhi is out Thu-Fri for his dad's living wake. Back Monday.
+      </div>
+
+      <DebriefSection variant="urgent" icon={'\uD83D\uDD34'} title="Do Today (Wed Mar 25)" count={DEBRIEF.doToday.length} delay="0.1s" defaultOpen={true}>
+        <DebriefTaskList items={DEBRIEF.doToday} showNumbers={true} />
+      </DebriefSection>
+
+      <DebriefSection variant="priority" icon={'\uD83C\uDFAF'} title="Priority When Back Monday" count={DEBRIEF.priorityMonday.length} delay="0.15s" defaultOpen={true}>
+        <DebriefTaskList items={DEBRIEF.priorityMonday} showNumbers={true} />
+      </DebriefSection>
+
+      <DebriefSection variant="delegated" icon={'\uD83E\uDDF1'} title="Covered While Out (Thu-Fri)" count={DEBRIEF.coveredWhileOut.length} delay="0.2s" defaultOpen={true}>
+        <DebriefTaskList items={DEBRIEF.coveredWhileOut} showNumbers={false} />
+      </DebriefSection>
+
+      <DebriefSection variant="info" icon={'\u2139\uFE0F'} title="FYI / No Action" count={DEBRIEF.fyi.length} delay="0.25s" defaultOpen={true}>
+        <DebriefTaskList items={DEBRIEF.fyi} showNumbers={false} />
+      </DebriefSection>
+
+      <DebriefSection variant="upcoming" icon={'\uD83D\uDCC6'} title="Upcoming" count={DEBRIEF.upcoming.length} delay="0.3s" defaultOpen={true}>
+        <DebriefTaskList items={DEBRIEF.upcoming} showNumbers={false} />
+      </DebriefSection>
+
+      <TranscriptBar data={DEBRIEF} />
+    </div>
+  );
+}
+
+function DashboardView({ selectedProject }) {
+  return (
+    <main className="main-content">
+      <NotificationBar items={ATTENTION_ITEMS} />
+      <ActivityFeed items={ACTIVITY_FEED} filter={selectedProject} />
+    </main>
+  );
+}
+
+function App() {
+  const [theme, setTheme] = useState('dark');
+  const [view, setView] = useState('debrief');
+  const [selectedProject, setSelectedProject] = useState('all');
+
+  const toggleTheme = useCallback(() => {
+    setTheme(prev => {
+      const next = prev === 'light' ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', next);
+      return next;
+    });
+  }, []);
+
+  const activeAgents = useMemo(() =>
+    AGENT_GROUPS.reduce((s, g) => s + g.agents.filter(a => a.status !== 'idle').length, 0), []);
+
+  const handleProjectClick = useCallback((id) => {
+    setSelectedProject(prev => prev === id ? 'all' : id);
+    setView('dashboard');
+  }, []);
+
+  return (
+    <div className="app-shell">
+      <header className="header animate-in">
+        <div className="header-left">
+          <h1 className="header-title">COMMAND CENTER</h1>
+          <Clock />
+          <div className="header-status"><span className="pulse-dot pulse-dot--green" /><span>{activeAgents} agents active</span></div>
+        </div>
+        <div className="header-right"><ThemeToggle theme={theme} onToggle={toggleTheme} /></div>
+      </header>
+
+      <aside className="sidebar">
+        <div className="nav-section">
+          <div className={`nav-item ${view === 'dashboard' ? 'nav-item--active' : ''}`} onClick={() => setView('dashboard')}>
+            <span className="nav-icon">{'\u2302'}</span><span className="nav-label">Dashboard</span>
+          </div>
+          <div className={`nav-item ${view === 'debrief' ? 'nav-item--active' : ''}`} onClick={() => setView('debrief')}>
+            <span className="nav-icon">{'\uD83D\uDCCB'}</span><span className="nav-label">Weekly Debrief</span>
+            <span className="nav-badge">NEW</span>
+          </div>
+        </div>
+        <div className="nav-divider" />
+
+        <div className="animate-in" style={{ animationDelay: '0.15s' }}>
+          <SectionHdr title="Projects" count={PROJECTS.length} />
+          <div className="project-list">
+            {PROJECTS.map(p => (<ProjectCard key={p.id} project={p} selected={selectedProject === p.id} onClick={handleProjectClick} />))}
+          </div>
+        </div>
+
+        <div className="animate-in" style={{ animationDelay: '0.3s' }}>
+          <SectionHdr title="Agent Fleet" count={activeAgents + ' active'} />
+          <AgentSection groups={AGENT_GROUPS} />
+        </div>
+      </aside>
+
+      {view === 'dashboard' && <DashboardView selectedProject={selectedProject} />}
+      {view === 'debrief' && <WeeklyDebriefView />}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
