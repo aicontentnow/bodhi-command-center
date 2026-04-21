@@ -4,904 +4,666 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bodhi 360° Command Center</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&family=Source+Serif+4:ital,wght@1,400&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-:root {
-  --bg: #0a0a0a;
-  --surface: #1a1a1a;
-  --surface-2: #252525;
-  --surface-3: #2e2e2e;
-  --border: #3d3d3d;
-  --text: #ffffff;
-  --text-2: #d4d4d4;
-  --text-3: #a8a8a8;
-  --accent: #e04b4b;
-  --accent-hover: #f05555;
-  --warn: #f0b960;
-  --ok: #7fb56f;
-  --info: #6fa8dc;
-  --radius: 12px;
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#050810;--surface:rgba(255,255,255,0.04);--surface-strong:rgba(255,255,255,0.08);
+  --border:rgba(255,255,255,0.07);--border-strong:rgba(255,255,255,0.10);
+  --text:#f0f0f0;--text-2:#a8b4c0;--text-3:#5a6a7a;
+  --cyan:hsl(188,90%,62%);--red:#e04b4b;--warn:#f0b960;--ok:#7fb56f;--info:#6fa8dc;
+  --r16:16px;--r8:8px;
 }
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
-  font-size: 18px;
-  line-height: 1.6;
-  min-height: 100vh;
-}
-.layout { display: grid; grid-template-columns: 300px 1fr; min-height: 100vh; }
-@media (max-width: 768px) { .layout { grid-template-columns: 1fr; } .sidebar { border-right: none; border-bottom: 1px solid var(--border); } }
+html,body{height:100%;overflow:hidden}
+body{background:var(--bg);color:var(--text);font-family:'Poppins',sans-serif;font-size:15px;line-height:1.6}
+body::before{content:'';position:fixed;inset:0;
+  background:radial-gradient(ellipse at 20% 30%,rgba(0,200,220,0.04) 0%,transparent 60%),
+             radial-gradient(ellipse at 80% 70%,rgba(120,60,200,0.04) 0%,transparent 60%);
+  animation:breathe 8s ease-in-out infinite;pointer-events:none;z-index:0}
+body.view-orbit::before{display:none}
+@keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.02)}}
+#app{position:relative;width:100vw;height:100vh;overflow:hidden;z-index:1}
+/* COCKPIT */
+#cockpit-shell{display:none;width:100%;height:100%}
+body.view-cockpit #cockpit-shell{display:grid;grid-template-columns:300px 1fr}
+#cockpit-sidebar{
+  height:100vh;overflow-y:auto;overflow-x:hidden;
+  background:rgba(5,8,16,0.95);border-right:1px solid var(--border);
+  padding:24px 18px;display:flex;flex-direction:column;gap:6px;
+  scrollbar-width:thin;scrollbar-color:var(--border) transparent;position:relative;z-index:2}
+#cockpit-main{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+#cockpit-scroll{flex:1;overflow-y:auto;padding:32px 40px;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+/* ALTAR */
+#altar-shell{display:none;width:100%;height:100%;flex-direction:column}
+body.view-altar #altar-shell{display:flex}
+#altar-topbar{
+  display:flex;align-items:center;gap:12px;padding:12px 28px;
+  border-bottom:1px solid var(--border);background:rgba(5,8,16,0.85);
+  backdrop-filter:blur(20px);flex-shrink:0;position:relative;z-index:2;flex-wrap:wrap}
+#altar-scroll{flex:1;overflow-y:auto;padding:28px 24px;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+#altar-inner{max-width:680px;margin:0 auto}
+/* ORBIT */
+#orbit-shell{display:none;width:100%;height:100%;position:relative}
+body.view-orbit #orbit-shell{display:block}
+#pages-container{min-height:0}
+/* SIDEBAR */
+.brand-block{display:flex;align-items:center;gap:10px;padding:4px 0 18px;border-bottom:1px solid var(--border);margin-bottom:14px;flex-shrink:0}
+.brand-lotus{font-size:20px}.brand-text{flex:1}
+.brand-name{font-size:13px;font-weight:600;letter-spacing:0.05em}
+.brand-sub{font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--text-3);letter-spacing:0.12em;text-transform:uppercase}
+.brand-pulse{width:7px;height:7px;border-radius:50%;background:var(--cyan);animation:cpulse 2s ease-in-out infinite;flex-shrink:0}
+@keyframes cpulse{0%,100%{opacity:0.5;box-shadow:0 0 0 0 rgba(64,224,244,0.4)}50%{opacity:1;box-shadow:0 0 0 5px rgba(64,224,244,0)}}
+.state-wrap{position:relative;margin-bottom:12px}
+.state-pill{
+  display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);
+  border-radius:999px;padding:7px 14px;cursor:pointer;width:100%;font-family:'Poppins',sans-serif;
+  font-size:12px;color:var(--text-2);transition:border-color 0.15s}
+.state-pill:hover{border-color:rgba(255,255,255,0.15)}
+.state-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;transition:background 0.2s}
+.state-pill-name{flex:1;text-align:left;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.04em}
+.state-change{font-size:10px;color:var(--text-3);letter-spacing:0.08em;font-family:'JetBrains Mono',monospace}
+.state-dropdown{
+  position:absolute;left:0;right:0;top:calc(100% + 6px);background:#0e1420;
+  border:1px solid var(--border-strong);border-radius:var(--r8);padding:6px;
+  z-index:600;box-shadow:0 8px 32px rgba(0,0,0,0.6)}
+.state-dropdown.hidden{display:none}
+.sopt{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:6px;cursor:pointer;font-size:12px;color:var(--text-2);transition:all 0.1s}
+.sopt:hover{background:var(--surface);color:var(--text)}.sopt.active{color:var(--cyan)}
+.sidebar-label{font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--text-3);letter-spacing:0.12em;text-transform:uppercase;padding:4px 2px;margin-top:6px;flex-shrink:0}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:var(--r8);cursor:pointer;font-size:13px;font-weight:500;color:var(--text-2);transition:all 0.12s;flex-shrink:0}
+.nav-item:hover{background:var(--surface);color:var(--text)}.nav-item.active{background:var(--surface-strong);color:var(--cyan)}
+.nav-key{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-3);background:var(--surface);padding:2px 6px;border-radius:4px;border:1px solid var(--border);flex-shrink:0}
+.nav-badge{margin-left:auto;font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--text-3);background:var(--surface);padding:2px 7px;border-radius:999px;border:1px solid var(--border)}
+.nav-item.active .nav-badge{color:var(--cyan);border-color:rgba(64,224,244,0.3)}
+.live-link{display:flex;align-items:center;gap:8px;padding:7px 12px;border-radius:var(--r8);font-size:12px;color:var(--text-3);text-decoration:none;transition:color 0.12s;flex-shrink:0}
+.live-link:hover{color:var(--text-2)}
+.live-dot{width:5px;height:5px;border-radius:50%;background:var(--ok);flex-shrink:0}
+/* ALTAR TOPBAR */
+.altar-brand{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.altar-brand-name{font-size:13px;font-weight:600}
+.altar-brand-sub{font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--text-3);letter-spacing:0.1em}
+.altar-spacer{flex:1}
+.altar-spill{display:flex;align-items:center;gap:7px;background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:5px 12px;cursor:pointer;font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--text-2);position:relative}
+.altar-tabs{display:flex;gap:4px}
+.altar-tab{padding:6px 12px;border-radius:999px;cursor:pointer;font-size:12px;font-weight:500;color:var(--text-3);border:1px solid transparent;transition:all 0.12s;font-family:'Poppins',sans-serif;background:transparent}
+.altar-tab:hover{color:var(--text-2);border-color:var(--border)}.altar-tab.active{color:var(--cyan);background:var(--surface);border-color:rgba(64,224,244,0.2)}
+.altar-links{position:relative}
+.altar-links-btn{padding:6px 12px;border-radius:999px;cursor:pointer;font-size:12px;color:var(--text-3);border:1px solid var(--border);background:transparent;font-family:'Poppins',sans-serif}
+.altar-links-btn:hover{color:var(--text-2)}
+.altar-links-dd{position:absolute;right:0;top:calc(100% + 6px);background:#0e1420;border:1px solid var(--border-strong);border-radius:var(--r8);padding:6px;min-width:180px;z-index:600;box-shadow:0 8px 24px rgba(0,0,0,0.5)}
+.altar-links-dd.hidden{display:none}
+.altar-links-dd a{display:block;padding:8px 12px;border-radius:6px;font-size:12px;color:var(--text-2);text-decoration:none}
+.altar-links-dd a:hover{background:var(--surface);color:var(--text)}
+/* PAGES */
+.page{display:block;padding:32px 40px;height:100%;overflow-y:auto}
+/* HOME */
+.rp-card{background:var(--surface-strong);backdrop-filter:blur(30px);border:1px solid var(--border-strong);border-radius:var(--r16);padding:28px 32px;margin-bottom:24px}
+.rp-eyebrow{display:flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-3);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:14px}
+.rp-reddot{width:7px;height:7px;border-radius:50%;background:var(--red)}
+.rp-heading{font-size:20px;font-weight:300;color:var(--text);margin-bottom:8px;line-height:1.4}
+.rp-heading em{font-family:'Source Serif 4',serif;font-style:italic;font-weight:400}
+.rp-sub{font-size:13px;color:var(--text-2);margin-bottom:22px}
+.rp-btn{display:inline-flex;align-items:center;gap:8px;background:var(--red);color:#fff;border:none;padding:12px 24px;border-radius:var(--r8);font-size:14px;font-weight:500;font-family:'Poppins',sans-serif;cursor:pointer;transition:opacity 0.15s,transform 0.1s}
+.rp-btn:hover{opacity:0.88}.rp-btn:active{transform:scale(0.98)}
+.tab-row{display:flex;gap:4px;margin-bottom:14px}
+.tab-btn{padding:6px 14px;border-radius:999px;cursor:pointer;font-size:12px;font-weight:500;border:1px solid var(--border);background:transparent;color:var(--text-3);font-family:'Poppins',sans-serif;transition:all 0.12s}
+.tab-btn:hover{color:var(--text-2)}.tab-btn.active{background:var(--surface);color:var(--cyan);border-color:rgba(64,224,244,0.3)}
+.tasks-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r16);overflow:hidden}
+.trow-outer{border-bottom:1px solid var(--border)}.trow-outer:last-of-type{border-bottom:none}
+.trow{display:flex;align-items:flex-start;gap:12px;padding:13px 18px}
+.tcheck{width:20px;height:20px;border-radius:5px;border:1.5px solid var(--text-3);cursor:pointer;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:all 0.12s}
+.tcheck:hover{border-color:var(--cyan)}.tdone .tcheck{background:var(--cyan);border-color:var(--cyan)}
+.tcheck-mark{display:none;color:#050810;font-size:11px;font-weight:700}.tdone .tcheck-mark{display:block}
+.tbody{flex:1;min-width:0}
+.ttitle{font-size:13px;font-weight:500;color:var(--text);line-height:1.4}
+.tdone .ttitle{text-decoration:line-through;color:var(--text-3)}
+.tbucket{display:inline-block;margin-top:3px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-3);letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;border-bottom:1px dotted var(--text-3)}
+.tbucket:hover{color:var(--text-2)}
+.tdrawer{display:none;padding:0 18px 14px 50px;background:rgba(0,0,0,0.2)}.tdrawer.open{display:block}
+.tdrawer-meta{font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--text-3);margin-bottom:8px;letter-spacing:0.04em}
+.tnotes{width:100%;min-height:64px;background:rgba(0,0,0,0.3);color:var(--text);border:1px solid var(--border);border-radius:var(--r8);padding:9px 12px;font-size:12px;font-family:'Poppins',sans-serif;resize:vertical}
+.tnotes:focus{outline:none;border-color:rgba(64,224,244,0.3)}
+.tdrawer-actions{display:flex;gap:8px;margin-top:8px;align-items:center}
+.tsend-btn{display:inline-flex;align-items:center;gap:5px;background:var(--surface-strong);border:1px solid var(--border);color:var(--cyan);padding:5px 12px;border-radius:999px;font-size:10px;font-family:'JetBrains Mono',monospace;cursor:pointer;letter-spacing:0.04em}
+.tsend-btn:hover{border-color:rgba(64,224,244,0.4)}
+.tadd-row{display:flex;gap:8px;padding:11px 18px;border-top:1px solid var(--border)}
+.tadd-input{flex:1;background:transparent;border:none;outline:none;font-size:13px;color:var(--text);font-family:'Poppins',sans-serif}
+.tadd-input::placeholder{color:var(--text-3)}
+.tadd-btn{background:var(--surface);border:1px solid var(--border);color:var(--text-2);padding:4px 12px;border-radius:6px;cursor:pointer;font-size:14px}
+.tadd-btn:hover{color:var(--cyan);border-color:rgba(64,224,244,0.3)}
+.task-hint{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-3);margin-top:8px;letter-spacing:0.04em}
+.empty-tasks{padding:18px;font-size:13px;color:var(--text-3)}
+/* BRAIN DUMP */
+.ph{font-size:19px;font-weight:500;margin-bottom:5px}.ps{font-size:13px;color:var(--text-2);margin-bottom:22px}
+.buckets-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.bcard{background:var(--surface);border:1px solid var(--border);border-radius:var(--r16);padding:18px;cursor:pointer;position:relative;overflow:hidden;transition:border-color 0.12s,transform 0.1s}
+.bcard::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--bc,var(--cyan));opacity:0.7}
+.bcard:hover{border-color:rgba(255,255,255,0.12);transform:translateY(-1px)}.bcard:active{transform:scale(0.99)}
+.bname{font-size:14px;font-weight:600;margin-bottom:4px}.bdesc{font-size:12px;color:var(--text-2);line-height:1.5}
+/* PROMPTS */
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px}
+.pcard{background:var(--surface);border:1px solid var(--border);border-radius:var(--r16);padding:18px;cursor:pointer;transition:border-color 0.12s,transform 0.1s}
+.pcard:hover{border-color:rgba(64,224,244,0.3);transform:translateY(-1px)}.pcard:active{transform:scale(0.99)}
+.pname{font-size:14px;font-weight:600;margin-bottom:4px}.pdesc{font-size:12px;color:var(--text-2);line-height:1.5}
+.ptag{display:inline-block;margin-top:9px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-3);background:var(--surface-strong);padding:2px 8px;border-radius:999px}
+/* ROADMAP */
+.rm-slabel{font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--text-3);letter-spacing:0.12em;text-transform:uppercase;margin:20px 0 10px}
+.rm-slabel:first-child{margin-top:0}
+.rmitem{background:var(--surface);border:1px solid var(--border);border-radius:var(--r8);padding:11px 15px;margin-bottom:7px;border-left:3px solid transparent}
+.rmitem.done{opacity:0.45}.rmitem.done .rmt{text-decoration:line-through;color:var(--text-3)}
+.rmitem.active{border-left-color:var(--cyan)}
+.rmphase{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-3);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:3px}
+.rmitem.active .rmphase{color:var(--cyan)}.rmt{font-size:13px;color:var(--text-2)}
+.rmnote{font-size:11px;color:var(--text-3);margin-top:2px;font-family:'JetBrains Mono',monospace}
+.rm-btn{display:inline-flex;align-items:center;gap:5px;margin-top:9px;background:var(--surface-strong);border:1px solid var(--border);color:var(--cyan);padding:5px 12px;border-radius:999px;font-size:10px;font-family:'JetBrains Mono',monospace;cursor:pointer;letter-spacing:0.05em}
+.rm-btn:hover{border-color:rgba(64,224,244,0.4)}.rm-btn-ok{color:var(--ok);background:rgba(127,181,111,0.08)}
+/* SHARE */
+.share-pre{background:var(--surface);border:1px solid var(--border);border-radius:var(--r16);padding:20px;margin-bottom:20px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-2);line-height:1.8;white-space:pre-wrap;word-break:break-word}
+.share-copy{display:inline-flex;align-items:center;gap:8px;background:var(--surface-strong);border:1px solid var(--border-strong);color:var(--text);padding:11px 22px;border-radius:var(--r8);font-size:13px;font-weight:500;cursor:pointer;font-family:'Poppins',sans-serif;transition:border-color 0.12s}
+.share-copy:hover{border-color:var(--cyan);color:var(--cyan)}.share-copy:active{transform:scale(0.98)}
+/* DIRECT LINE PANEL */
+#dl-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:900;opacity:0;pointer-events:none;transition:opacity 0.2s}
+#dl-overlay.show{opacity:1;pointer-events:all}
+#dlp{position:fixed;top:0;right:-460px;width:440px;height:100vh;background:#0b1018;border-left:1px solid var(--border-strong);z-index:1000;display:flex;flex-direction:column;transition:right 0.28s cubic-bezier(0.16,1,0.3,1);box-shadow:-6px 0 32px rgba(0,0,0,0.5)}
+#dlp.open{right:0}
+@media(max-width:500px){#dlp{width:100vw;right:-100vw}#dlp.open{right:0}}
+.dlh{display:flex;align-items:center;gap:10px;padding:16px 18px 13px;border-bottom:1px solid var(--border);flex-shrink:0}
+.dlh-title{font-size:14px;font-weight:500;flex:1}
+.dlh-status{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ok);letter-spacing:0.06em;background:rgba(127,181,111,0.1);padding:3px 8px;border-radius:999px;border:1px solid rgba(127,181,111,0.2)}
+.dlh-x{width:26px;height:26px;border-radius:50%;background:var(--surface);border:1px solid var(--border);color:var(--text-3);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.dlh-x:hover{color:var(--text)}
+.dl-sub{padding:11px 18px;border-bottom:1px solid var(--border);font-size:13px;font-weight:300;color:var(--text-2);flex-shrink:0}
+.dl-ql{padding:12px 18px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:7px;flex-shrink:0}
+.dl-qlb{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r8);padding:9px 13px;cursor:pointer;text-align:left;font-family:'Poppins',sans-serif;transition:border-color 0.12s}
+.dl-qlb:hover{border-color:rgba(255,255,255,0.12)}
+.dl-qlb-icon{font-size:13px}.dl-qlb-text{font-size:13px;font-weight:500;color:var(--text)}.dl-qlb-desc{font-size:10px;color:var(--text-3);margin-left:auto;font-family:'JetBrains Mono',monospace}
+.dl-thread{flex:1;overflow-y:auto;padding:14px 18px;display:flex;flex-direction:column;gap:9px;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.dl-empty{font-size:11px;color:var(--text-3);font-family:'JetBrains Mono',monospace;text-align:center;padding:16px 0;letter-spacing:0.04em}
+.dlm{max-width:86%;word-break:break-word;padding:9px 13px;border-radius:12px;font-size:13px;line-height:1.5}
+.dlm-me{align-self:flex-end;background:rgba(64,224,244,0.1);border:1px solid rgba(64,224,244,0.2);color:var(--text);border-bottom-right-radius:4px}
+.dlm-cos{align-self:flex-start;background:var(--surface-strong);border:1px solid var(--border);color:var(--text-2);border-bottom-left-radius:4px}
+.dlm-label{font-size:9px;font-family:'JetBrains Mono',monospace;color:var(--text-3);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:3px}
+.dlm-pending{display:inline-flex;align-items:center;gap:4px;font-size:10px;color:var(--text-3);margin-top:5px;font-family:'JetBrains Mono',monospace}
+.dl-compose{flex-shrink:0;padding:12px 18px;border-top:1px solid var(--border)}
+.dl-ctag{display:inline-flex;align-items:center;gap:5px;font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(64,224,244,0.7);letter-spacing:0.06em;background:rgba(64,224,244,0.08);padding:3px 9px;border-radius:999px;border:1px solid rgba(64,224,244,0.2);margin-bottom:7px}
+.dl-ta{width:100%;min-height:84px;max-height:160px;background:rgba(0,0,0,0.3);color:var(--text);border:1px solid var(--border);border-radius:var(--r8);padding:9px 11px;font-size:13px;font-family:'Poppins',sans-serif;line-height:1.5;resize:none;overflow-y:auto}
+.dl-ta:focus{outline:none;border-color:rgba(64,224,244,0.3)}
+.dl-confirm{text-align:center;padding:9px 0 2px;font-size:11px;color:var(--ok);font-family:'JetBrains Mono',monospace;letter-spacing:0.04em;display:none}
+.dl-confirm.show{display:block}
+.dl-crow{display:flex;align-items:center;justify-content:space-between;margin-top:9px}
+.dl-qstatus{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-3);letter-spacing:0.04em}
+.dl-send{background:var(--cyan);color:#050810;border:none;padding:7px 16px;border-radius:999px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Poppins',sans-serif;display:flex;align-items:center;gap:5px;transition:opacity 0.12s}
+.dl-send:hover{opacity:0.85}
 
-.sidebar {
-  background: var(--surface);
-  border-right: 1px solid var(--border);
-  padding: 28px 22px;
-  overflow-y: auto;
-}
-.sidebar h2 {
-  font-size: 14px;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--text-2);
-  margin-bottom: 16px;
-  font-weight: 600;
-}
-.sidebar h2:not(:first-child) { margin-top: 32px; }
-.roadmap-item {
-  padding: 12px 14px;
-  margin-bottom: 8px;
-  border-radius: 8px;
-  font-size: 16px;
-  color: var(--text-2);
-  border-left: 3px solid var(--border);
-  background: var(--surface-2);
-}
-.roadmap-item.active {
-  color: var(--text);
-  border-left-color: var(--accent);
-  font-weight: 500;
-}
-.roadmap-item.done {
-  color: var(--text-3);
-  text-decoration: line-through;
-  text-decoration-color: var(--text-3);
-}
-.roadmap-item .phase {
-  font-size: 12px;
-  color: var(--warn);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  margin-bottom: 4px;
-  font-weight: 600;
-}
-.roadmap-item.done .phase { color: var(--text-3); }
-.roadmap-item a { color: var(--text); text-decoration: none; }
-.roadmap-item a:hover { color: var(--accent-hover); }
-.roadmap-btn {
-  display: block;
-  margin-top: 10px;
-  background: var(--accent);
-  color: white;
-  border: none;
-  padding: 9px 14px;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: inherit;
-  width: 100%;
-  text-align: center;
-  letter-spacing: 0.02em;
-}
-.roadmap-btn:hover { background: var(--accent-hover); }
-.roadmap-btn:active { transform: scale(0.98); }
-.roadmap-btn.ok { background: var(--ok); }
-.roadmap-btn.ok:hover { background: #6da05f; }
-.roadmap-status {
-  display: block;
-  margin-top: 8px;
-  font-size: 12px;
-  color: var(--text-3);
-  font-style: italic;
-}
-
-.main { padding: 40px 56px; max-width: 1100px; }
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: 36px;
-  padding-bottom: 24px;
-  border-bottom: 1px solid var(--border);
-}
-.header .date { font-size: 17px; color: var(--text-2); letter-spacing: 0.02em; font-weight: 500; }
-.header h1 { font-size: 40px; font-weight: 600; margin-top: 8px; letter-spacing: -0.01em; }
-.state-select {
-  background: var(--surface-2);
-  color: var(--warn);
-  font-size: 15px;
-  font-weight: 500;
-  padding: 10px 20px;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  font-family: inherit;
-  cursor: pointer;
-}
-
-.red-phone-section {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 36px;
-  margin-bottom: 32px;
-  text-align: center;
-}
-.red-phone-label {
-  font-size: 14px;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--warn);
-  margin-bottom: 20px;
-  font-weight: 600;
-}
-.red-phone-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  background: var(--accent);
-  color: white;
-  border: none;
-  padding: 22px 44px;
-  border-radius: var(--radius);
-  font-size: 22px;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: inherit;
-}
-.red-phone-button:hover { background: var(--accent-hover); }
-.red-phone-button:active { transform: scale(0.98); }
-.red-phone-hint {
-  margin-top: 20px;
-  font-size: 16px;
-  color: var(--text-2);
-}
-.red-phone-hint code {
-  background: var(--surface-2);
-  padding: 3px 10px;
-  border-radius: 4px;
-  font-size: 15px;
-  color: var(--text);
-  border: 1px solid var(--border);
-}
-
-.section { margin-bottom: 40px; }
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
-.section-header h3 {
-  font-size: 14px;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--warn);
-  font-weight: 600;
-}
-.section-header .count { font-size: 15px; color: var(--text-2); font-weight: 500; }
-
-.buckets-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 12px;
-}
-.bucket {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 18px;
-  cursor: pointer;
-  border-left: 4px solid var(--info);
-  transition: transform 0.1s, border-color 0.15s;
-}
-.bucket:hover { border-color: var(--text-3); }
-.bucket:active { transform: scale(0.99); }
-.bucket-name { font-size: 17px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
-.bucket-desc { font-size: 14px; color: var(--text-2); line-height: 1.5; }
-.bucket[data-color="harmonic"] { border-left-color: #6fa8dc; }
-.bucket[data-color="creative"] { border-left-color: #e04b4b; }
-.bucket[data-color="family"] { border-left-color: #7fb56f; }
-.bucket[data-color="audhd"] { border-left-color: #f0b960; }
-.bucket[data-color="book"] { border-left-color: #b074dc; }
-.bucket[data-color="ldag"] { border-left-color: #f59742; }
-.bucket[data-color="unsorted"] { border-left-color: #a8a8a8; }
-
-.dump-modal-bg {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.85);
-  z-index: 200;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-}
-.dump-modal-bg.show { display: flex; }
-.dump-modal {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 28px;
-  max-width: 700px;
-  width: 100%;
-  max-height: 90vh;
-  overflow-y: auto;
-}
-.dump-modal h3 { font-size: 22px; margin-bottom: 8px; color: var(--text); }
-.dump-modal .bucket-path { font-size: 14px; color: var(--text-3); margin-bottom: 18px; font-family: ui-monospace, monospace; }
-.dump-modal textarea {
-  width: 100%;
-  min-height: 200px;
-  background: var(--bg);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 16px;
-  font-size: 17px;
-  font-family: inherit;
-  line-height: 1.6;
-  resize: vertical;
-}
-.dump-modal textarea:focus { outline: none; border-color: var(--accent); }
-.dump-modal-actions {
-  display: flex;
-  gap: 12px;
-  margin-top: 16px;
-  justify-content: flex-end;
-}
-.dump-modal button {
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-size: 16px;
-  font-weight: 500;
-  cursor: pointer;
-  font-family: inherit;
-  border: 1px solid var(--border);
-}
-.dump-modal .btn-cancel { background: var(--surface-2); color: var(--text-2); }
-.dump-modal .btn-send { background: var(--accent); color: white; border-color: var(--accent); }
-.dump-modal .btn-send:hover { background: var(--accent-hover); }
-.dump-modal .hint { font-size: 14px; color: var(--text-3); margin-top: 10px; }
-
-.task {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  margin-bottom: 12px;
-  overflow: hidden;
-}
-.task-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  padding: 18px 20px;
-}
-.task.done { opacity: 0.55; }
-.task.done .task-title { text-decoration: line-through; }
-.task-checkbox {
-  width: 24px;
-  height: 24px;
-  border: 2px solid var(--text-2);
-  border-radius: 5px;
-  cursor: pointer;
-  flex-shrink: 0;
-  margin-top: 2px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-}
-.task.done .task-checkbox { background: var(--ok); border-color: var(--ok); }
-.task.done .task-checkbox::after {
-  content: "✓";
-  color: white;
-  font-size: 15px;
-  font-weight: 700;
-}
-.task-body { flex: 1; }
-.task-title { font-size: 17px; color: var(--text); font-weight: 500; }
-.task-meta { font-size: 15px; color: var(--text-2); margin-top: 4px; }
-.task-project {
-  display: inline-block;
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  padding: 3px 10px;
-  border-radius: 999px;
-  margin-top: 8px;
-  color: var(--text);
-  background: var(--surface-3);
-}
-.task-context-toggle {
-  background: transparent;
-  border: 1px solid var(--border);
-  color: var(--text-2);
-  padding: 6px 12px;
-  border-radius: 6px;
-  font-size: 13px;
-  cursor: pointer;
-  margin-top: 10px;
-  font-family: inherit;
-}
-.task-context-toggle:hover { color: var(--text); border-color: var(--text-3); }
-.task-context {
-  padding: 0 20px 16px 58px;
-  display: none;
-}
-.task-context.show { display: block; }
-.task-context textarea {
-  width: 100%;
-  min-height: 80px;
-  background: var(--bg);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 12px;
-  font-size: 15px;
-  font-family: inherit;
-  resize: vertical;
-}
-.task-context-saved { font-size: 14px; color: var(--ok); margin-top: 6px; }
-.task-context-existing { background: var(--surface-2); border-left: 3px solid var(--info); padding: 10px 14px; border-radius: 6px; margin-top: 10px; font-size: 15px; color: var(--text-2); }
-.task-context-existing .context-date { font-size: 12px; color: var(--text-3); display: block; margin-bottom: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
-
-.prompts-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 12px;
-}
-.prompt-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 20px;
-  cursor: pointer;
-  transition: border-color 0.15s, transform 0.1s;
-}
-.prompt-card:hover { border-color: var(--accent); }
-.prompt-card:active { transform: scale(0.99); }
-.prompt-card-label { font-size: 17px; font-weight: 600; margin-bottom: 6px; color: var(--text); }
-.prompt-card-desc { font-size: 15px; color: var(--text-2); line-height: 1.5; }
-
-.toast {
-  position: fixed;
-  bottom: 32px;
-  left: 50%;
-  transform: translateX(-50%) translateY(20px);
-  background: var(--surface-2);
-  color: var(--text);
-  padding: 18px 28px;
-  border-radius: var(--radius);
-  border: 2px solid var(--accent);
-  font-size: 16px;
-  font-weight: 500;
-  opacity: 0;
-  pointer-events: none;
-  transition: all 0.3s;
-  z-index: 300;
-  max-width: 90%;
-  text-align: center;
-}
-.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-.toast .next { display: block; font-size: 14px; color: var(--text-2); margin-top: 6px; font-weight: 400; }
-</style>
-</head>
-<body>
-
-<div class="layout">
-  <aside class="sidebar">
-    <h2>Roadmap</h2>
-    <div class="roadmap-item done">
-      <div class="phase">Phase 0 · Done</div>
-      LDAG dashboard v4.6 live
-    </div>
-    <div class="roadmap-item done">
-      <div class="phase">Phase 0 · Done</div>
-      bodhi-chief-of-staff skill
-    </div>
-    <div class="roadmap-item done">
-      <div class="phase">Phase 1 · Done</div>
-      Command Center MVP (red phone)
-    </div>
-    <div class="roadmap-item active">
-      <div class="phase">Phase 2 · Now</div>
-      Brain dump buckets + task feedback
-    </div>
-    <div class="roadmap-item">
-      <div class="phase">Phase 3 · Next</div>
-      Visual design system (Claude designer)
-    </div>
-    <div class="roadmap-item">
-      <div class="phase">Phase 4</div>
-      Supabase-backed state (cross-device)
-    </div>
-    <div class="roadmap-item">
-      <div class="phase">Phase 5</div>
-      Harmonic sub-hub
-    </div>
-    <div class="roadmap-item">
-      <div class="phase">Phase 6</div>
-      LDAG website rebuild
-    </div>
-    <div class="roadmap-item">
-      <div class="phase">Phase 7</div>
-      Wispr Flow direct integration
-    </div>
-    <div class="roadmap-item">
-      <div class="phase">Phase 8</div>
-      Bell and red phone push notifications
-    </div>
-    <div class="roadmap-item">
-      <div class="phase">Phase 9</div>
-      Agent orchestration + PRD routing
-    </div>
-
-    <h2>Skills Reorg Audit</h2>
-    <div class="roadmap-item done">
-      <div class="phase">Phase 1 · Done</div>
-      Full inventory written
-      <span class="roadmap-status">_command-center/reorg/INVENTORY_2026-04-20.md</span>
-    </div>
-    <div class="roadmap-item done">
-      <div class="phase">Phase 2 · Done</div>
-      CoS skill errors corrected
-      <span class="roadmap-status">4 wrong TODO entries fixed in bodhi-chief-of-staff SKILL.md</span>
-    </div>
-    <div class="roadmap-item active">
-      <div class="phase">Phase 3 · Do this next</div>
-      Canonical structure proposal
-      <button class="roadmap-btn" onclick="copyPrompt('skills_reorg_p3', 'Phase 3 starter copied — paste into a new Cowork session')">Copy starter prompt</button>
-    </div>
-    <div class="roadmap-item">
-      <div class="phase">Phase 4 · After Phase 3 approved</div>
-      Migration + archive
-      <span class="roadmap-status">Starter prompt unlocks after Phase 3 proposal is approved</span>
-    </div>
-    <div class="roadmap-item">
-      <div class="phase">Cleanup</div>
-      Rogue Hard Hat Healthcare/ folder
-      <button class="roadmap-btn ok" onclick="copyPrompt('hhh_cleanup', 'HHH cleanup prompt copied')">Copy cleanup prompt</button>
-    </div>
-
-    <h2>Live Surfaces</h2>
-    <div class="roadmap-item">
-      <a href="https://latedxaudhdguy.com/dashboard.html">LDAG dashboard</a>
-    </div>
-    <div class="roadmap-item">
-      <a href="https://ops.thebookofoneness.com">MIRROR ops</a>
-    </div>
-    <div class="roadmap-item">
-      <a href="https://thebookofoneness.com">Book of Oneness</a>
-    </div>
-  </aside>
-
-  <main class="main">
-    <div class="header">
-      <div>
-        <div class="date" id="date-line">Loading</div>
-        <h1>Bodhi 360°</h1>
-      </div>
-      <select class="state-select" id="state-select" onchange="saveState()">
-        <option value="green">Green · ship mode</option>
-        <option value="yellow">Yellow · maintenance</option>
-        <option value="red">Red · rest / process only</option>
-        <option value="potato">Potato day</option>
-        <option value="hyperfocus">Hyperfocus</option>
-        <option value="crashed">Crashed</option>
-        <option value="workday">Work day (Harmonic)</option>
-      </select>
-    </div>
-
-    <div class="red-phone-section">
-      <div class="red-phone-label">Red Phone · Start every session here</div>
-      <button class="red-phone-button" onclick="copyRedPhone()">
-        Copy Red Phone prompt
-      </button>
-      <div class="red-phone-hint">
-        Paste into a new <code>Cowork session</code>. Not a regular chat.
-      </div>
-    </div>
-
-    <div class="section">
-      <div class="section-header">
-        <h3>Brain dump · pick a bucket, talk or type, send</h3>
-      </div>
-      <div class="buckets-grid">
-        <div class="bucket" data-color="harmonic" onclick="openDump('harmonic','Harmonic','_inbox/harmonic')">
-          <div class="bucket-name">Harmonic</div>
-          <div class="bucket-desc">Day job · stakeholders, campaigns, deliverables</div>
-        </div>
-        <div class="bucket" data-color="creative" onclick="openDump('creative','Creative','_inbox/creative')">
-          <div class="bucket-name">Creative</div>
-          <div class="bucket-desc">SEASØNS, FRAMEZERØ, music, ideas</div>
-        </div>
-        <div class="bucket" data-color="ldag" onclick="openDump('ldag','LDAG','_inbox/ldag')">
-          <div class="bucket-name">LDAG</div>
-          <div class="bucket-desc">Episodes, transcripts, production, brand</div>
-        </div>
-        <div class="bucket" data-color="book" onclick="openDump('book','Book / MIRROR','_inbox/book')">
-          <div class="bucket-name">Book / MIRROR</div>
-          <div class="bucket-desc">Outreach, cover, Signal, Charles, publishing</div>
-        </div>
-        <div class="bucket" data-color="family" onclick="openDump('family','Family','_inbox/family')">
-          <div class="bucket-name">Family</div>
-          <div class="bucket-desc">Dad, kids, Amy, logistics, grief</div>
-        </div>
-        <div class="bucket" data-color="audhd" onclick="openDump('audhd','Personal / AuDHD','_inbox/audhd')">
-          <div class="bucket-name">Personal · AuDHD</div>
-          <div class="bucket-desc">Unmasking, regulation, health, self</div>
-        </div>
-        <div class="bucket" data-color="unsorted" onclick="openDump('unsorted','Unsorted','_inbox/unsorted')">
-          <div class="bucket-name">Unsorted</div>
-          <div class="bucket-desc">Not sure yet. Route on open.</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="section">
-      <div class="section-header">
-        <h3>Today · click to check off, expand to add context</h3>
-        <span class="count" id="task-count">0 of 0</span>
-      </div>
-      <div id="task-list"></div>
-    </div>
-
-    <div class="section">
-      <div class="section-header">
-        <h3>Key prompts · click to copy</h3>
-      </div>
-      <div class="prompts-grid">
-        <div class="prompt-card" onclick="copyPrompt('red_phone', 'Red phone copied')">
-          <div class="prompt-card-label">Morning · where am I</div>
-          <div class="prompt-card-desc">Chief of staff reads state, gives one next action</div>
-        </div>
-        <div class="prompt-card" onclick="copyPrompt('ldag', 'LDAG chief of staff prompt copied')">
-          <div class="prompt-card-label">LDAG · pick up production</div>
-          <div class="prompt-card-desc">Transcripts, episodes, dashboard</div>
-        </div>
-        <div class="prompt-card" onclick="copyPrompt('ldag_episode', 'LDAG episode script prompt copied')">
-          <div class="prompt-card-label">LDAG · draft an episode</div>
-          <div class="prompt-card-desc">Concept + moments to Opus Agent brief</div>
-        </div>
-        <div class="prompt-card" onclick="copyPrompt('status_update', 'Status update prompt copied')">
-          <div class="prompt-card-label">Status update · something changed</div>
-          <div class="prompt-card-desc">Captures what shifted so the brains update</div>
-        </div>
-        <div class="prompt-card" onclick="copyPrompt('design_prd', 'Design PRD prompt copied')">
-          <div class="prompt-card-label">Design PRD · into Claude Designer</div>
-          <div class="prompt-card-desc">Product requirements doc for UI design handoff</div>
-        </div>
-        <div class="prompt-card" onclick="copyPrompt('skills_reorg_p3', 'Skills reorg Phase 3 prompt copied')">
-          <div class="prompt-card-label">Skills reorg · Phase 3</div>
-          <div class="prompt-card-desc">Canonical structure proposal. Also on the sidebar.</div>
-        </div>
-      </div>
-    </div>
-  </main>
-</div>
-
-<div class="dump-modal-bg" id="dump-modal-bg" onclick="if(event.target===this)closeDump()">
-  <div class="dump-modal">
-    <h3 id="dump-title">Brain dump</h3>
-    <div class="bucket-path" id="dump-path"></div>
-    <textarea id="dump-text" placeholder="Talk or type. Wispr Flow works here. Send when done."></textarea>
-    <div class="hint">On Send: copies a prompt to clipboard. Paste into a Cowork session. The chief of staff writes it to the right inbox folder.</div>
-    <div class="dump-modal-actions">
-      <button class="btn-cancel" onclick="closeDump()">Cancel</button>
-      <button class="btn-send" onclick="sendDump()">Send</button>
-    </div>
+/* ORBIT */
+#orbit-shell{position:fixed;inset:0;display:none;background:var(--bg);overflow:hidden}
+body.view-orbit #orbit-shell{display:block}
+#orbit-stars{position:absolute;inset:0;pointer-events:none}
+#orbit-canvas{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.osun{width:64px;height:64px;border-radius:50%;background:radial-gradient(circle,var(--cyan),rgba(64,224,244,0.3));box-shadow:0 0 40px rgba(64,224,244,0.6),0 0 80px rgba(64,224,244,0.3);cursor:pointer;animation:sunpulse 3s ease-in-out infinite;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:9px;color:#050810;letter-spacing:0.04em;z-index:2;position:relative;flex-shrink:0;text-align:center;line-height:1.2}
+@keyframes sunpulse{0%,100%{box-shadow:0 0 40px rgba(64,224,244,0.6),0 0 80px rgba(64,224,244,0.3)}50%{box-shadow:0 0 60px rgba(64,224,244,0.9),0 0 120px rgba(64,224,244,0.5)}}
+.orbit-ring{position:absolute;top:50%;left:50%;border-radius:50%;border:1px solid rgba(255,255,255,0.04);transform:translate(-50%,-50%);pointer-events:none}
+.onode{position:absolute;top:50%;left:50%;width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.12);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:2px;animation:ospin var(--dur,30s) linear infinite;transition:background 0.2s,border-color 0.2s}
+.onode:hover{background:rgba(64,224,244,0.1);border-color:rgba(64,224,244,0.4)}
+.onode-red{border-color:rgba(224,75,75,0.5);background:rgba(224,75,75,0.06)}
+.onode-red:hover{background:rgba(224,75,75,0.15);border-color:var(--red)}
+.onode-icon{font-size:16px;line-height:1}.onode-label{font-size:7px;color:var(--text-3);letter-spacing:0.05em;text-align:center;line-height:1.2}
+.orbit-instr{position:absolute;bottom:28px;left:50%;transform:translateX(-50%);font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-3);letter-spacing:0.08em;pointer-events:none;white-space:nowrap}
+@keyframes ospin{from{transform:translate(-50%,-50%) rotate(var(--os,0deg)) translateX(var(--r,200px)) rotate(calc(-1 * var(--os,0deg)))}to{transform:translate(-50%,-50%) rotate(calc(var(--os,0deg) + 360deg)) translateX(var(--r,200px)) rotate(calc(-1 * (var(--os,0deg) + 360deg)))}}
+/* VIEW FAB */
+#vfab{position:fixed;bottom:24px;right:24px;width:44px;height:44px;border-radius:50%;background:rgba(20,24,40,0.9);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:900;font-size:18px;transition:border-color 0.2s;backdrop-filter:blur(8px)}
+#vfab:hover{border-color:rgba(64,224,244,0.4)}
+#vpanel{position:fixed;bottom:76px;right:24px;background:rgba(14,18,30,0.97);border:1px solid var(--border);border-radius:var(--r12);padding:8px;z-index:901;display:none;flex-direction:column;gap:4px;backdrop-filter:blur(12px);min-width:140px}
+#vpanel.show{display:flex}
+.vopt{display:flex;align-items:center;gap:9px;padding:8px 12px;border-radius:var(--r8);cursor:pointer;font-size:12px;color:var(--text-2);transition:background 0.15s,color 0.15s;letter-spacing:0.02em}
+.vopt:hover,.vopt.active{background:rgba(64,224,244,0.08);color:var(--cyan)}.vopt-icon{font-size:14px;width:16px;text-align:center}
+/* TOAST */
+#toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:rgba(14,18,30,0.95);border:1px solid var(--border);border-radius:999px;padding:8px 18px;font-size:12px;color:var(--text);z-index:9999;opacity:0;transition:opacity 0.2s,transform 0.2s;pointer-events:none;backdrop-filter:blur(8px);white-space:nowrap}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+/* ERROR */
+#error-screen{position:fixed;inset:0;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:9998}
+#error-screen.show{display:flex}
+#error-screen h2{color:var(--red);font-size:18px;margin:0}#error-screen p{color:var(--text-3);font-size:13px;margin:0;text-align:center;max-width:360px}
+#error-screen button{margin-top:8px;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:9px 22px;border-radius:var(--r8);cursor:pointer;font-size:13px}
+/* SCROLLBAR */::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:2px}::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,0.2)}
+</style><body class="view-cockpit">
+<div id="error-screen"><h2>Connection Error</h2><p id="error-msg">Unable to connect to Supabase.</p><button onclick="init()">Retry</button></div>
+<div id="app">
+<!-- COCKPIT -->
+<div id="cockpit-shell">
+<aside id="sidebar">
+<div class="sb-brand">
+  <span class="sb-logo">B360°</span>
+  <div class="sb-state">
+    <div class="state-pill" id="state-pill" onclick="toggleStatePicker()">Flow State</div>
+    <div class="state-dropdown" id="state-dropdown"></div>
   </div>
 </div>
-
-<div class="toast" id="toast"></div>
-
-<script>
-const PROMPTS = {
-  red_phone: `Load this skill and follow its instructions:
-skills/bodhi-chief-of-staff/SKILL.md
-
-(Resolve the full path if needed: ~/Library/Mobile Documents/com~apple~CloudDocs/Claude-Workspace/skills/bodhi-chief-of-staff/SKILL.md)
-
-State: [green / yellow / red / potato day / workday / describe]
-What's on my mind: [one line, or "I don't know, tell me"]`,
-
-  ldag: `Load this skill and follow its instructions:
-skills/ldag-cos/SKILL.md
-
-(Resolve the full path if needed: ~/Library/Mobile Documents/com~apple~CloudDocs/Claude-Workspace/skills/ldag-cos/SKILL.md)`,
-
-  ldag_episode: `Load this skill and follow its instructions:
-skills/ldag-episode-script/SKILL.md
-
-Episode concept: [describe]
-Moment IDs (if any): [paste]`,
-
-  status_update: `I have a status update. Something shipped or shifted and I want the system to know.
-
-Write a status file at:
-_inbox/_processed/STATUS_UPDATE_[today].md
-
-Update _brain/bodhi-state.md with anything that changes portfolio state.
-
-Here's what happened:
-[talk]`,
-
-  skills_reorg_p3: `Skills reorganization audit -- Phase 3: canonical structure proposal.
-
-Read this first:
-_command-center/reorg/INVENTORY_2026-04-20.md
-
-Phase 1 (inventory) and Phase 2 (CoS skill error corrections) are complete.
-
-Phase 3 task: write a canonical structure proposal to:
-_command-center/reorg/PROPOSAL_2026-04-20.md
-
-The proposal must cover:
-1. Recommended canonical location for all 26 skill files
-2. YAML frontmatter standard for SKILL.md files
-3. Which skills move where (migration map)
-4. Which legacy session skills (.skills/skills/) can be archived
-5. What to do with the hidden .claude/skills/ folder
-
-Do NOT move any files. Do NOT edit any CLAUDE.md. Proposal only.
-Stop and wait for Bodhi approval before Phase 4.`,
-
-  hhh_cleanup: `Archive the rogue Hard Hat Healthcare/ folder at the workspace root.
-
-Canonical location for HHH is: framezero/clients/hhh/
-
-Steps:
-1. Snapshot any CLAUDE.md files inside Hard Hat Healthcare/ before moving (brain file protection protocol)
-2. Compare Hard Hat Healthcare/framezero/clients/hhh/CLAUDE.md against the canonical framezero/clients/hhh/CLAUDE.md -- flag any content in the rogue copy that is NOT in the canonical copy
-3. If the canonical copy has everything, move the entire Hard Hat Healthcare/ folder to:
-   _archive/rogue-duplicates/Hard-Hat-Healthcare-root-2026-04-20/
-4. Do NOT delete anything
-5. Report what was archived and confirm the canonical copy is intact`,
-
-  skills_reorg: `Skills reorganization audit -- Phase 3: canonical structure proposal.
-
-Read this first:
-_command-center/reorg/INVENTORY_2026-04-20.md
-
-Phase 1 (inventory) and Phase 2 (CoS skill error corrections) are complete.
-
-Phase 3 task: write a canonical structure proposal to:
-_command-center/reorg/PROPOSAL_2026-04-20.md
-
-The proposal must cover:
-1. Recommended canonical location for all 26 skill files
-2. YAML frontmatter standard for SKILL.md files
-3. Which skills move where (migration map)
-4. Which legacy session skills (.skills/skills/) can be archived
-5. What to do with the hidden .claude/skills/ folder
-
-Do NOT move any files. Do NOT edit any CLAUDE.md. Proposal only.
-Stop and wait for Bodhi approval before Phase 4.`,
-
-  design_prd: `I need a Product Requirements Doc for a visual design handoff to Claude Designer.
-
-Read:
-- _brain/BODHI_360_BRAIN.md (who I am, how my brain works)
-- Any relevant project brain (ask me which)
-- Any existing brand assets in the project folder
-
-Then write a PRD at:
-_command-center/design-prds/PRD_[project]_[date].md
-
-The PRD must include:
-1. Who this is for (me, my AuDHD, my vision needs)
-2. What the surface is and what it must do
-3. Existing assets and inspiration references I'll provide
-4. Accessibility non-negotiables (large text, AAA contrast, dark mode, no dark gray on black)
-5. Tech stack constraints (GitHub Pages, Supabase planned, no Netlify)
-6. Success criteria
-
-Ask me clarifying questions before writing. Do not invent visual direction.`
-};
-
-const TASKS_KEY = "bodhi_mvp_tasks_v3";
-const STATE_KEY = "bodhi_mvp_state_v1";
-
-const DEFAULT_TASKS = [
-  // 360 / Ops
-  { id: "t1", title: "Build brain dump buckets into the dashboard", meta: "So dumping into a bucket routes automatically", project: "360", done: true, context: [] },
-  { id: "t2", title: "Test the red phone in a Cowork session", meta: "Confirm the CoS skill loads properly", project: "360", done: false, context: [] },
-  { id: "t13", title: "Harmonic PIPELINE.md standup (Apr 9-16 transcripts)", meta: "9 transcripts processed. PIPELINE.md updated 2026-04-20. All 13 priorities current.", project: "360", done: true, context: [] },
-  { id: "t6", title: "Skills reorg Phase 1: inventory", meta: "Full scan of all SKILL.md files across Mac. Inventory at _command-center/reorg/INVENTORY_2026-04-20.md", project: "360", done: true, context: [] },
-  { id: "t7", title: "Skills reorg Phase 2: fix CoS skill errors", meta: "4 skills incorrectly marked TODO. All corrected in bodhi-chief-of-staff SKILL.md", project: "360", done: true, context: [] },
-  { id: "t8", title: "Skills reorg Phase 3: canonical structure proposal", meta: "26 skill files across 9 location patterns. Proposal doc needed before migration.", project: "360", done: false, context: [] },
-  { id: "t9", title: "Skills reorg Phase 4: migration + archive", meta: "Dedicated session. Archive-before-move. Requires Bodhi present.", project: "360", done: false, context: [] },
-  { id: "t10", title: "Archive rogue Hard Hat Healthcare/ folder at workspace root", meta: "Duplicate of framezero/clients/hhh/. 3 rogue CLAUDE.md files inside.", project: "360", done: false, context: [] },
-  // Harmonic
-  { id: "t11", title: "SensAI video 1 script · 30-second rewrite", meta: "Write with Sarah. Target week of May 4 launch. Gabe animates in Weavy after.", project: "Harmonic", done: false, context: [] },
-  { id: "t12", title: "Draft ANGA + Fiber Connect event emails", meta: "Fiber Connect first (earlier event). Messaging locked: O&T, distributed PON, C-star.", project: "Harmonic", done: false, context: [] },
-  { id: "t5", title: "Chase Sarah: loop Gabe in on the 5 completed video scripts", meta: "Scripts done. Sarah needs to notify Gabe they are ready for animation.", project: "Harmonic", done: false, context: [] },
-  // Book
-  { id: "t3", title: "Hardcover proof review · glitch-effect version", meta: "Proof rejected 2026-04-19. What is wrong, what is next round.", project: "Book", done: false, context: [] },
-  // Family
-  { id: "t4", title: "Rocky Mountaineer logistics with Lee", meta: "Early May trip with Dad", project: "Family", done: false, context: [] }
+<nav>
+  <div class="sb-label">PAGES</div>
+  <a class="nav-item active" data-page="home" onclick="goPage('home')">🏠 Home</a>
+  <a class="nav-item" data-page="braindump" onclick="goPage('braindump')">🧠 Brain Dump</a>
+  <a class="nav-item" data-page="prompts" onclick="goPage('prompts')">⚡ Key Prompts</a>
+  <a class="nav-item" data-page="roadmap" onclick="goPage('roadmap')">🗺 Roadmap</a>
+  <a class="nav-item" data-page="share" onclick="goPage('share')">📋 Share with Cowork</a>
+  <div class="sb-label" style="margin-top:16px">LIVE LINKS</div>
+  <a class="live-link" href="https://aicontentnow.github.io/bodhi-command-center" target="_blank">Dashboard ↗</a>
+  <a class="live-link" href="https://thebookofoneness.com" target="_blank">MIRROR Site ↗</a>
+  <a class="live-link" href="https://latedxaudhdguy.com/dashboard.html" target="_blank">LDAG Dashboard ↗</a>
+</nav>
+<div style="margin-top:auto;padding-top:24px">
+  <button class="rp-card" onclick="openLine()">
+    <span class="rp-eyebrow">DIRECT LINE</span>
+    <span class="rp-heading">Red Phone</span>
+    <span style="font-size:11px;color:rgba(224,75,75,0.7);margin-top:2px">Open the line →</span>
+  </button>
+</div>
+</aside>
+<main id="cockpit-main"></main>
+</div><!-- ALTAR -->
+<div id="altar-shell">
+<header id="altar-topbar">
+  <span class="at-brand">B360°</span>
+  <nav class="at-tabs" id="at-tabs">
+    <button class="tab-btn active" data-page="home" onclick="goPage('home')">Home</button>
+    <button class="tab-btn" data-page="braindump" onclick="goPage('braindump')">Brain Dump</button>
+    <button class="tab-btn" data-page="prompts" onclick="goPage('prompts')">Prompts</button>
+    <button class="tab-btn" data-page="roadmap" onclick="goPage('roadmap')">Roadmap</button>
+    <button class="tab-btn" data-page="share" onclick="goPage('share')">Share</button>
+  </nav>
+  <div class="at-links">
+    <a href="https://aicontentnow.github.io/bodhi-command-center" target="_blank" class="live-link">Live ↗</a>
+  </div>
+</header>
+<div id="altar-main"></div>
+</div>
+<!-- ORBIT -->
+<div id="orbit-shell">
+<canvas id="orbit-stars"></canvas>
+<div id="orbit-canvas">
+  <div class="orbit-ring" style="width:320px;height:320px"></div>
+  <div class="orbit-ring" style="width:520px;height:520px"></div>
+  <div class="orbit-ring" style="width:720px;height:720px"></div>
+  <div class="osun" onclick="switchView('cockpit')">B360°</div>
+</div>
+<div class="orbit-instr">CLICK NODE TO NAVIGATE · CLICK SUN TO RETURN</div>
+</div><!-- DIRECT LINE PANEL -->
+<div id="dl-overlay" onclick="closeLine()"></div>
+<div id="dlp">
+<div class="dlh">
+  <span class="dlh-title">Direct Line</span>
+  <span class="dlh-status">COWORK</span>
+  <button class="dlh-x" onclick="closeLine()">✕</button>
+</div>
+<div class="dl-sub">Messages write to Supabase — picked up by your next Cowork session.</div>
+<div class="dl-ql" id="dl-ql"></div>
+<div class="dl-thread" id="dl-thread"><div class="dl-empty">No messages yet.</div></div>
+<div class="dl-compose">
+  <div class="dl-ctag">→ COWORK THREAD</div>
+  <textarea class="dl-ta" id="dl-ta" placeholder="Message to Cowork session…" rows="3"></textarea>
+  <div class="dl-confirm" id="dl-confirm">Sent to Cowork thread</div>
+  <div class="dl-crow">
+    <span class="dl-qstatus" id="dl-qstatus">Ready</span>
+    <button class="dl-send" onclick="sendLine()">▶ Send</button>
+  </div>
+</div>
+</div>
+<!-- VIEW FAB -->
+<div id="vfab" onclick="toggleVPanel()" title="Switch view (V)">⊹</div>
+<div id="vpanel">
+  <div class="vopt active" id="vopt-cockpit" onclick="switchView('cockpit')"><span class="vopt-icon">◫</span>Cockpit</div>
+  <div class="vopt" id="vopt-altar" onclick="switchView('altar')"><span class="vopt-icon">◻</span>Altar</div>
+  <div class="vopt" id="vopt-orbit" onclick="switchView('orbit')"><span class="vopt-icon">◎</span>Orbit</div>
+</div>
+<div id="toast"></div>
+<div id="pages-container"></div>
+</div><script>
+const SUPA_URL='https://gcbvvausrmbbkfazojpl.supabase.co';
+const SUPA_KEY='sb_publishable_dx9sYWtLtpXacM9ZIXoYRg_VPiKG69P';
+const STATE_LABELS={flow:'Flow State',grind:'Deep Grind',surface:'Surface Mode',rest:'Rest Mode',crisis:'Crisis Mode'};
+const STATE_COLORS={flow:'#40e0f4',grind:'#a78bfa',surface:'#60a5fa',rest:'#34d399',crisis:'#e04b4b'};
+const BUCKETS=[
+  {id:'mirror',label:'MIRROR',icon:'📖',color:'#e0b44b',desc:'Publishing, Book of Oneness, outreach'},
+  {id:'harmonic',label:'HARMONIC',icon:'📡',color:'#40e0f4',desc:'Day job, SensAI launch, website redesign'},
+  {id:'seasons',label:'SEASØNS',icon:'🎵',color:'#a78bfa',desc:'Albums, visual production, website'},
+  {id:'framezero',label:'FRAMEZERØ',icon:'🎬',color:'#60a5fa',desc:'Agency, client work, consulting'},
+  {id:'ldag',label:'LDAG',icon:'🧠',color:'#34d399',desc:'AuDHD docuseries, episodes, dashboard'},
+  {id:'career',label:'CAREER',icon:'💼',color:'#f59e0b',desc:'Job search, resume, positioning'},
+  {id:'command',label:'COMMAND',icon:'⚙️',color:'#e04b4b',desc:'Systems, skills, infrastructure'},
 ];
-
-function loadTasks() {
-  try {
-    const saved = localStorage.getItem(TASKS_KEY);
-    if (saved) return JSON.parse(saved);
-  } catch(e) {}
-  return JSON.parse(JSON.stringify(DEFAULT_TASKS));
+const PCARDS=[
+  {id:'cowork-boot',label:'Boot Cowork',icon:'🚀',desc:'Chief of Staff',text:'Load this skill and follow its instructions:\nskills/bodhi-chief-of-staff/SKILL.md\n\nThat is your complete working context. Start immediately.'},
+  {id:'ldag-script',label:'LDAG Script',icon:'🎬',desc:'Episode script',text:'Load this skill and follow its instructions:\nskills/ldag-episode-script/SKILL.md\n\nThat is your complete working context. Start immediately.'},
+  {id:'ldag-cos',label:'LDAG CoS',icon:'🧠',desc:'Chief of Staff',text:'Load this skill and follow its instructions:\nskills/ldag-cos/SKILL.md\n\nThat is your complete working context. Start immediately.'},
+  {id:'skills-reorg',label:'Skills Reorg',icon:'📂',desc:'Phase 3',text:'Read: _command-center/reorg/INVENTORY_2026-04-20.md\n\nContinue Phase 3: audit and move remaining skills to canonical iCloud location at skills/<name>/SKILL.md.'},
+  {id:'mirror-cos',label:'MIRROR CoS',icon:'📖',desc:'Publishing ops',text:'Read the MIRROR Chief of Staff section of mirror/CLAUDE.md. You are the MIRROR Chief of Staff. Review the current state and surface what needs Bodhi\'s attention today.'},
+];
+const APP={sb:null,view:'cockpit',page:'home',tasks:[],portfolioState:'flow',dlOpen:false,dlThread:[]};
+</script><script>
+async function init(){
+  try{
+    APP.sb=supabase.createClient(SUPA_URL,SUPA_KEY);
+    await loadState();
+    await loadTasks();
+    renderView();
+    subscribeRT();
+    document.getElementById('error-screen').classList.remove('show');
+  }catch(e){
+    document.getElementById('error-msg').textContent=e.message||'Connection failed';
+    document.getElementById('error-screen').classList.add('show');
+  }
 }
-function saveTasks(tasks) {
-  try { localStorage.setItem(TASKS_KEY, JSON.stringify(tasks)); } catch(e) {}
+async function loadState(){
+  try{
+    const {data}=await APP.sb.from('portfolio_state').select('*').eq('id',1).single();
+    if(data){APP.portfolioState=data.state||'flow';}
+  }catch(e){}
+  updateStateUI();
 }
-function loadState() {
-  try { return localStorage.getItem(STATE_KEY) || "workday"; } catch(e) { return "workday"; }
+async function savePS(patch){
+  try{await APP.sb.from('portfolio_state').upsert({id:1,...patch,updated_at:new Date().toISOString()});}catch(e){}
 }
-function saveState() {
-  const v = document.getElementById("state-select").value;
-  try { localStorage.setItem(STATE_KEY, v); } catch(e) {}
+async function loadTasks(){
+  try{
+    const {data}=await APP.sb.from('tasks').select('*').order('created_at',{ascending:true});
+    APP.tasks=data||[];
+  }catch(e){APP.tasks=[];}
 }
-
-function escapeHtml(s) {
-  return (s || "").replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]));
+async function addTask(bucket,text){
+  if(!text.trim())return;
+  try{
+    const {data}=await APP.sb.from('tasks').insert({bucket,text:text.trim(),done:false}).select().single();
+    if(data){APP.tasks.push(data);renderPage();}
+  }catch(e){toast('Error saving task');}
 }
-
-function renderTasks() {
-  const tasks = loadTasks();
-  const list = document.getElementById("task-list");
-  list.innerHTML = "";
-  tasks.forEach(t => {
-    const el = document.createElement("div");
-    el.className = "task" + (t.done ? " done" : "");
-    const existing = (t.context || []).map(c =>
-      '<div class="task-context-existing"><span class="context-date">' + escapeHtml(c.date) + '</span>' + escapeHtml(c.text) + '</div>'
-    ).join("");
-    el.innerHTML =
-      '<div class="task-row">' +
-        '<div class="task-checkbox" onclick="toggleTask(\'' + t.id + '\')"></div>' +
-        '<div class="task-body">' +
-          '<div class="task-title">' + escapeHtml(t.title) + '</div>' +
-          '<div class="task-meta">' + escapeHtml(t.meta || "") + '</div>' +
-          (t.project ? '<div class="task-project">' + escapeHtml(t.project) + '</div>' : '') +
-          ' <button class="task-context-toggle" onclick="toggleContext(\'' + t.id + '\')">Add context / note</button>' +
-        '</div>' +
-      '</div>' +
-      '<div class="task-context" id="ctx-' + t.id + '">' +
-        existing +
-        '<textarea id="ctx-text-' + t.id + '" placeholder="Follow-up context. What happened, what\'s next, what the CoS needs to know."></textarea>' +
-        '<div class="dump-modal-actions">' +
-          '<button class="btn-send" onclick="saveContext(\'' + t.id + '\')">Save context</button>' +
-        '</div>' +
-      '</div>';
-    list.appendChild(el);
+async function toggleTask(id){
+  const t=APP.tasks.find(x=>x.id===id);if(!t)return;
+  t.done=!t.done;
+  try{await APP.sb.from('tasks').update({done:t.done}).eq('id',id);}catch(e){}
+  renderPage();
+}
+function logEv(type,payload={}){
+  try{APP.sb.from('interaction_log').insert({type,payload,ts:new Date().toISOString()}).then(()=>{});}catch(e){}
+}
+</script><script>
+async function loadDLThread(){
+  try{
+    const {data}=await APP.sb.from('direct_line_messages').select('*').order('created_at',{ascending:true}).limit(50);
+    APP.dlThread=data||[];
+  }catch(e){APP.dlThread=[];}
+  renderThread();
+}
+async function writeDL(text,role='user'){
+  if(!text.trim())return;
+  try{
+    const {data}=await APP.sb.from('direct_line_messages').insert({role,text:text.trim()}).select().single();
+    if(data){APP.dlThread.push(data);renderThread();logEv('dl_send',{role,len:text.length});}
+  }catch(e){toast('Error sending message');}
+}
+function subscribeRT(){
+  try{
+    APP.sb.channel('tasks-rt').on('postgres_changes',{event:'*',schema:'public',table:'tasks'},()=>loadTasks().then(renderPage)).subscribe();
+    APP.sb.channel('state-rt').on('postgres_changes',{event:'*',schema:'public',table:'portfolio_state'},()=>loadState()).subscribe();
+    APP.sb.channel('dl-rt').on('postgres_changes',{event:'INSERT',schema:'public',table:'direct_line_messages'},payload=>{
+      if(!APP.dlThread.find(m=>m.id===payload.new.id)){APP.dlThread.push(payload.new);if(APP.dlOpen)renderThread();}
+    }).subscribe();
+  }catch(e){}
+}
+function switchView(v){
+  APP.view=v;
+  document.body.className='view-'+v;
+  const pc=document.getElementById('pages-container');
+  if(v==='cockpit')document.getElementById('cockpit-main').appendChild(pc);
+  else if(v==='altar')document.getElementById('altar-main').appendChild(pc);
+  ['cockpit','altar','orbit'].forEach(x=>{
+    const el=document.getElementById('vopt-'+x);if(el)el.classList.toggle('active',x===v);
   });
-  const doneCount = tasks.filter(t => t.done).length;
-  document.getElementById("task-count").textContent = doneCount + " of " + tasks.length;
+  document.getElementById('vpanel').classList.remove('show');
+  if(v==='orbit')setTimeout(drawStars,50);
+  logEv('switch_view',{view:v});
 }
-
-function toggleTask(id) {
-  const tasks = loadTasks();
-  const task = tasks.find(t => t.id === id);
-  if (task) { task.done = !task.done; saveTasks(tasks); renderTasks(); }
+function renderView(){switchView(APP.view);updateStateUI();renderPage();}
+function goPage(p){
+  APP.page=p;
+  document.querySelectorAll('.nav-item').forEach(el=>el.classList.toggle('active',el.dataset.page===p));
+  document.querySelectorAll('.tab-btn').forEach(el=>el.classList.toggle('active',el.dataset.page===p));
+  renderPage();logEv('nav',{page:p});
 }
-
-function toggleContext(id) {
-  const el = document.getElementById("ctx-" + id);
-  if (el) el.classList.toggle("show");
+function renderPage(){
+  const pc=document.getElementById('pages-container');if(!pc)return;
+  const pages={home:renderHome,braindump:renderBrainDump,prompts:renderPrompts,roadmap:renderRoadmap,share:renderShare};
+  (pages[APP.page]||renderHome)(pc);
 }
+</script><script>
+function renderHome(pc){
+  const done=APP.tasks.filter(t=>t.done).length;
+  const total=APP.tasks.length;
+  pc.innerHTML=`<div class="page" id="page-home">
+<div class="tasks-card">
+<div class="tc-head"><span class="tc-title">Active Tasks</span><span class="tc-count">${done}/${total}</span></div>
+<div id="task-list">${renderTaskRows()}</div>
+<div class="add-row">
+  <select id="add-bucket" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:var(--r8);padding:6px 8px;font-size:12px;font-family:'Poppins',sans-serif">${BUCKETS.map(b=>`<option value="${b.id}">${b.label}</option>`).join('')}</select>
+  <input class="add-input" id="add-text" placeholder="New task…" onkeydown="if(event.key==='Enter')doAddTask()">
+  <button class="add-btn" onclick="doAddTask()">+</button>
+</div>
+</div></div>`;
+}
+function renderTaskRows(){
+  if(!APP.tasks.length)return`<div style="padding:16px;color:var(--text-3);font-size:13px;text-align:center">No tasks yet</div>`;
+  return APP.tasks.map(t=>{
+    const b=BUCKETS.find(x=>x.id===t.bucket);
+    return`<div class="task-row${t.done?' done':''}" onclick="toggleTask('${t.id}')">
+<span class="task-check">${t.done?'✓':''}</span>
+<span class="task-bucket" style="color:${b?.color||'var(--text-3)'}">${(t.bucket||'?').toUpperCase()}</span>
+<span class="task-text">${esc(t.text)}</span></div>`;
+  }).join('');
+}
+function doAddTask(){
+  const b=document.getElementById('add-bucket')?.value;
+  const el=document.getElementById('add-text');
+  if(!el||!el.value.trim())return;
+  addTask(b||'command',el.value.trim());
+  el.value='';
+}
+</script><script>
+function renderBrainDump(pc){
+  pc.innerHTML=`<div class="page" id="page-braindump">
+<div class="ph">Brain Dump</div>
+<div class="ps">Each bucket opens the Direct Line. Drop thoughts, context, or a prompt straight to your next Cowork session.</div>
+<div class="buckets-grid">${BUCKETS.map(b=>`
+<div class="bcard" style="--bc:${b.color}" onclick="openLine('${esc(b.label)}')">
+<div class="bname">${b.icon} ${esc(b.label)}</div>
+<div class="bdesc">${esc(b.desc)}</div>
+</div>`).join('')}</div></div>`;
+}
+function renderPrompts(pc){
+  pc.innerHTML=`<div class="page" id="page-prompts">
+<div class="ph">Key Prompts</div>
+<div class="ps">Tap a card to load the prompt into the Direct Line. Copy from there to paste into Cowork.</div>
+<div class="pgrid">${PCARDS.map(p=>`
+<div class="pcard" onclick="qlLaunch('${p.id}')">
+<div class="pname">${p.icon} ${esc(p.label)}</div>
+<div class="pdesc">${esc(p.desc)}</div>
+<span class="ptag">→ Direct Line</span>
+</div>`).join('')}</div></div>`;
+}
+function renderRoadmap(pc){
+  const items=[
+    {phase:'SHIPPED',label:'v1 Command Center — localStorage + basic UI'},
+    {phase:'SHIPPED',label:'Skills relocated to iCloud canonical path'},
+    {phase:'SHIPPED',label:'Bodhi 360° Chief of Staff skill'},
+    {phase:'SHIPPED',label:'GitHub Pages deployment (all sites)'},
+    {phase:'ACTIVE',label:'v2 Command Center — Supabase, three views, Direct Line',active:true},
+    {phase:'NEXT',label:'Skills Reorg Phase 3 — move all remaining skills'},
+    {phase:'NEXT',label:'Book cover glitch-effect proof v2'},
+    {phase:'NEXT',label:'Blotato MCP auth completion'},
+    {phase:'QUEUED',label:'Orbit view — real-time task nodes per bucket'},
+    {phase:'QUEUED',label:'IngramSpark metadata check (MIRROR author field)'},
+  ];
+  pc.innerHTML=`<div class="page" id="page-roadmap">
+<div class="ph">Roadmap</div>
+${items.map(i=>`<div class="rmitem${i.phase==='SHIPPED'?' done':''}${i.active?' active':''}">
+<div class="rmphase">${esc(i.phase)}</div>
+<div class="rmt">${esc(i.label)}</div>
+</div>`).join('')}</div>`;
+}
+</script><script>
+function renderShare(pc){
+  pc.innerHTML=`<div class="page" id="page-share">
+<div class="ph">Share with Cowork</div>
+<div class="ps">Copy this block and paste at the start of a new Cowork session to transfer current portfolio state.</div>
+<div class="share-pre" id="share-text">${esc(buildShareText())}</div>
+<button class="share-copy" onclick="copyShare()">Copy to Clipboard</button>
+</div>`;
+}
+function buildShareText(){
+  const done=APP.tasks.filter(t=>t.done).length;
+  const active=APP.tasks.filter(t=>!t.done).map(t=>`- [${(t.bucket||'?').toUpperCase()}] ${t.text}`).join('\n');
+  return`BODHI 360° COMMAND CENTER STATE — ${new Date().toLocaleDateString('en-CA')}
+Portfolio state: ${STATE_LABELS[APP.portfolioState]||APP.portfolioState}
+Tasks: ${done} done, ${APP.tasks.filter(t=>!t.done).length} active
 
-function saveContext(id) {
-  const tasks = loadTasks();
-  const task = tasks.find(t => t.id === id);
-  const ta = document.getElementById("ctx-text-" + id);
-  if (!task || !ta || !ta.value.trim()) return;
-  task.context = task.context || [];
-  task.context.push({
-    date: new Date().toISOString().slice(0,16).replace("T"," "),
-    text: ta.value.trim()
+ACTIVE TASKS:
+${active||'(none)'}
+
+READ FIRST: ~/Library/Mobile Documents/com~apple~CloudDocs/Claude-Workspace/CLAUDE.md`;
+}
+function copyShare(){
+  const text=buildShareText();
+  navigator.clipboard.writeText(text).then(()=>toast('Copied to clipboard')).catch(()=>{
+    const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();toast('Copied');
   });
-  saveTasks(tasks);
-  ta.value = "";
-  renderTasks();
-  showToast("Context saved on task", "Next Cowork session will see this");
 }
-
-let currentDump = null;
-function openDump(bucket, name, path) {
-  currentDump = { bucket, name, path };
-  document.getElementById("dump-title").textContent = "Dump · " + name;
-  document.getElementById("dump-path").textContent = "Writes to: " + path + "/<timestamp>.md";
-  document.getElementById("dump-text").value = "";
-  document.getElementById("dump-modal-bg").classList.add("show");
-  setTimeout(() => document.getElementById("dump-text").focus(), 50);
+function updateStateUI(){
+  const pill=document.getElementById('state-pill');if(!pill)return;
+  pill.textContent=STATE_LABELS[APP.portfolioState]||APP.portfolioState;
+  const c=STATE_COLORS[APP.portfolioState]||'#40e0f4';
+  pill.style.cssText=`background:${c}22;color:${c};border-color:${c}44`;
 }
-
-function closeDump() {
-  document.getElementById("dump-modal-bg").classList.remove("show");
-  currentDump = null;
+function setState(s){
+  APP.portfolioState=s;updateStateUI();savePS({state:s});toggleStatePicker(false);logEv('state_change',{state:s});
 }
-
-function sendDump() {
-  if (!currentDump) return;
-  const text = document.getElementById("dump-text").value.trim();
-  if (!text) { showToast("Nothing to send", "Type or dictate something first"); return; }
-  const today = new Date().toISOString().slice(0, 10);
-  const time = new Date().toTimeString().slice(0, 5).replace(":", "");
-  const filename = "dump_" + today + "_" + time + ".md";
-  const fullPath = currentDump.path + "/" + filename;
-  const prompt =
-    "I'm dumping into my " + currentDump.name + " bucket from the command center.\n\n" +
-    "Write this content to:\n" +
-    fullPath + "\n\n" +
-    "Use the full iCloud path:\n" +
-    "~/Library/Mobile Documents/com~apple~CloudDocs/Claude-Workspace/" + fullPath + "\n\n" +
-    "Then process it: extract action items, flag anything urgent, update _brain/bodhi-state.md if portfolio state changed, and tell me what you did.\n\n" +
-    "Content:\n---\n" + text + "\n---";
-  navigator.clipboard.writeText(prompt).then(() => {
-    showToast("Dump prompt copied", "Paste into a Cowork session to save and process");
-    closeDump();
-  }).catch(() => {
-    const ta = document.createElement("textarea");
-    ta.value = prompt;
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand("copy");
-    document.body.removeChild(ta);
-    showToast("Dump prompt copied", "Paste into a Cowork session to save and process");
-    closeDump();
+function toggleStatePicker(force){
+  const dd=document.getElementById('state-dropdown');if(!dd)return;
+  const show=force!==undefined?force:!dd.classList.contains('show');
+  if(show){
+    dd.innerHTML=Object.entries(STATE_LABELS).map(([k,v])=>`<div class="sopt${k===APP.portfolioState?' active':''}" onclick="setState('${k}')" style="--sc:${STATE_COLORS[k]}">${v}</div>`).join('');
+    dd.classList.add('show');
+  }else{dd.classList.remove('show');}
+}
+</script><script>
+function openLine(context){
+  APP.dlOpen=true;
+  document.getElementById('dl-overlay').classList.add('show');
+  document.getElementById('dlp').classList.add('open');
+  loadDLThread();
+  renderDLQL();
+  if(context){const ta=document.getElementById('dl-ta');if(ta)ta.value=`[${context}] `;}
+  logEv('dl_open',{context:context||null});
+}
+function closeLine(){
+  APP.dlOpen=false;
+  document.getElementById('dl-overlay').classList.remove('show');
+  document.getElementById('dlp').classList.remove('open');
+}
+function renderThread(){
+  const el=document.getElementById('dl-thread');if(!el)return;
+  if(!APP.dlThread.length){el.innerHTML='<div class="dl-empty">No messages yet.</div>';return;}
+  el.innerHTML=APP.dlThread.map(m=>`<div class="dlm${m.role==='user'?' dlm-me':' dlm-cos'}">
+<div class="dlm-label">${m.role==='user'?'YOU':'COWORK'}</div>
+<div>${esc(m.text||'')}</div></div>`).join('');
+  el.scrollTop=el.scrollHeight;
+}
+function renderDLQL(){
+  const el=document.getElementById('dl-ql');if(!el)return;
+  el.innerHTML=`<div style="font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--text-3);letter-spacing:0.08em;margin-bottom:6px">QUICK LAUNCH</div>`+
+  PCARDS.map(p=>`<button class="dl-qlb" onclick="qlLaunch('${p.id}')">
+<span class="dl-qlb-icon">${p.icon}</span>
+<span class="dl-qlb-text">${esc(p.label)}</span>
+<span class="dl-qlb-desc">${esc(p.desc)}</span></button>`).join('');
+}
+function sendLine(){
+  const ta=document.getElementById('dl-ta');if(!ta||!ta.value.trim())return;
+  writeDL(ta.value.trim());ta.value='';
+  const confirm=document.getElementById('dl-confirm');
+  if(confirm){confirm.classList.add('show');setTimeout(()=>confirm.classList.remove('show'),2500);}
+}
+function qlLaunch(id){
+  const p=PCARDS.find(x=>x.id===id);if(!p)return;
+  if(!APP.dlOpen)openLine();
+  const ta=document.getElementById('dl-ta');if(ta)ta.value=p.text;
+  logEv('ql_launch',{id});
+}
+</script><script>
+function drawStars(){
+  const canvas=document.getElementById('orbit-stars');if(!canvas)return;
+  canvas.width=window.innerWidth;canvas.height=window.innerHeight;
+  const ctx=canvas.getContext('2d');ctx.clearRect(0,0,canvas.width,canvas.height);
+  for(let i=0;i<220;i++){
+    const a=Math.random()*0.55+0.04;
+    ctx.fillStyle=`rgba(255,255,255,${a})`;
+    ctx.beginPath();ctx.arc(Math.random()*canvas.width,Math.random()*canvas.height,Math.random()*1.4+0.2,0,Math.PI*2);ctx.fill();
+  }
+  renderOrbitNodes();
+}
+function renderOrbitNodes(){
+  const cv=document.getElementById('orbit-canvas');if(!cv)return;
+  cv.querySelectorAll('.onode').forEach(n=>n.remove());
+  const rings=[
+    {nodes:[{id:'mirror',icon:'📖',label:'MIRROR'},{id:'harmonic',icon:'📡',label:'HARMONIC'},{id:'seasons',icon:'🎵',label:'SEASØNS'}],r:160,dur:45},
+    {nodes:[{id:'framezero',icon:'🎬',label:'FRAMEZERØ'},{id:'ldag',icon:'🧠',label:'LDAG'},{id:'career',icon:'💼',label:'CAREER'},{id:'command',icon:'⚙️',label:'COMMAND'}],r:260,dur:70},
+    {nodes:[{id:'dl',icon:'📞',label:'DIRECT LINE',red:true}],r:360,dur:90},
+  ];
+  rings.forEach(ring=>{
+    const step=360/ring.nodes.length;
+    ring.nodes.forEach((n,i)=>{
+      const os=i*step;
+      const el=document.createElement('div');
+      el.className='onode'+(n.red?' onode-red':'');
+      el.style.cssText=`--os:${os}deg;--r:${ring.r}px;--dur:${ring.dur}s`;
+      el.innerHTML=`<span class="onode-icon">${n.icon}</span><span class="onode-label">${n.label}</span>`;
+      el.onclick=()=>{
+        if(n.id==='dl'){openLine();}
+        else{switchView('cockpit');goPage('braindump');}
+        logEv('orbit_click',{node:n.id});
+      };
+      cv.appendChild(el);
+    });
   });
 }
-
-function copyPrompt(key, message) {
-  const text = PROMPTS[key];
-  if (!text) return;
-  navigator.clipboard.writeText(text).then(() => {
-    showToast(message || "Copied", "Paste into a new Cowork session");
-  }).catch(() => {
-    const ta = document.createElement("textarea");
-    ta.value = text;
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand("copy");
-    document.body.removeChild(ta);
-    showToast(message || "Copied", "Paste into a new Cowork session");
-  });
+</script><script>
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');}
+function toast(msg,dur=2500){
+  const t=document.getElementById('toast');if(!t)return;
+  t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),dur);
 }
-
-function copyRedPhone() { copyPrompt("red_phone", "Red phone copied"); }
-
-function showToast(message, next) {
-  const toast = document.getElementById("toast");
-  toast.innerHTML = escapeHtml(message) + (next ? '<span class="next">' + escapeHtml(next) + '</span>' : '');
-  toast.classList.add("show");
-  setTimeout(() => toast.classList.remove("show"), 3500);
-}
-
-function updateDate() {
-  const now = new Date();
-  const opts = { weekday: "long", month: "long", day: "numeric", year: "numeric" };
-  document.getElementById("date-line").textContent = now.toLocaleDateString("en-US", opts);
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-  updateDate();
-  const sel = document.getElementById("state-select");
-  if (sel) sel.value = loadState();
-  renderTasks();
+function toggleVPanel(){document.getElementById('vpanel').classList.toggle('show');}
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){closeLine();document.getElementById('vpanel').classList.remove('show');toggleStatePicker(false);}
+  if(e.target.matches('input,textarea,select'))return;
+  if(e.key==='1')goPage('home');
+  if(e.key==='2')goPage('braindump');
+  if(e.key==='3')goPage('prompts');
+  if(e.key==='4')goPage('roadmap');
+  if(e.key==='5')goPage('share');
+  if(e.key==='r'||e.key==='R')openLine();
+  if(e.key==='v'||e.key==='V')toggleVPanel();
 });
-
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") closeDump();
+window.addEventListener('resize',()=>{if(APP.view==='orbit')drawStars();});
+document.addEventListener('click',e=>{
+  if(!e.target.closest('#state-dropdown')&&!e.target.closest('.state-pill'))toggleStatePicker(false);
+  if(!e.target.closest('#vpanel')&&!e.target.closest('#vfab'))document.getElementById('vpanel').classList.remove('show');
+});
+document.addEventListener('DOMContentLoaded',()=>{
+  const pc=document.getElementById('pages-container');
+  const cm=document.getElementById('cockpit-main');
+  if(pc&&cm)cm.appendChild(pc);
+  init();
 });
 </script>
 </body>

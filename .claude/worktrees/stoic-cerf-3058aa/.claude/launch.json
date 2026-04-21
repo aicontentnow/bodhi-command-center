@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "command-center",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", "-l", "7788", "/Users/bodhivalentine/Library/Mobile Documents/com~apple~CloudDocs/Claude-Workspace/_command-center"],
+      "port": 7788
+    }
+  ]
+}
