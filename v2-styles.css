@@ -30,6 +30,11 @@
   --t-3: rgba(255,255,255,0.56);
   --t-4: rgba(255,255,255,0.40);
   --t-5: rgba(255,255,255,0.25);
+
+  /* Semantic status colors */
+  --ok:   #7fb56f;
+  --warn: #f0b960;
+  --red:  #e04b4b;
 }
 
 * { box-sizing: border-box; }
@@ -1479,7 +1484,31 @@ body.variant-orbit #tweaks { z-index: 90; } /* keep tweaks usable */
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--t-3);
-  margin-bottom: 0.3rem;
+  margin-bottom: 0.2rem;
+}
+
+/* Connection status pill — live/offline states use semantic colors, not cyan */
+#lineStatus {
+  display: inline-block;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  margin-bottom: 0.25rem;
+  transition: background 0.35s ease, color 0.35s ease, box-shadow 0.35s ease;
+  background: rgba(255,255,255,0.05);
+  color: var(--t-4);
+}
+#lineStatus.is-live {
+  background: rgba(127, 181, 111, 0.14);
+  color: var(--ok);
+  box-shadow: inset 0 0 0 1px rgba(127, 181, 111, 0.32);
+}
+#lineStatus.is-offline {
+  background: rgba(224, 75, 75, 0.12);
+  color: var(--red);
+  box-shadow: inset 0 0 0 1px rgba(224, 75, 75, 0.28);
 }
 .line-head h3 {
   margin: 0;
@@ -1527,6 +1556,7 @@ body.variant-orbit #tweaks { z-index: 90; } /* keep tweaks usable */
   background: rgba(255,255,255,0.03);
   box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
   border: none;
+  border-left: 2px solid hsla(var(--cyan-h), 90%, 62%, 0.40);
   border-radius: 0.7rem;
   color: var(--t-2);
   font-family: inherit;
@@ -1535,7 +1565,7 @@ body.variant-orbit #tweaks { z-index: 90; } /* keep tweaks usable */
   transition: background 0.15s, box-shadow 0.15s, color 0.15s;
 }
 .launch:hover {
-  background: rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.10);
   box-shadow: inset 0 0 0 1px hsla(var(--cyan-h), 90%, 65%, 0.35);
   color: var(--t-1);
 }
@@ -1657,15 +1687,15 @@ body.variant-orbit #tweaks { z-index: 90; } /* keep tweaks usable */
   box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
 }
 .msg-badge.pending {
-  background: hsla(45, 95%, 55%, 0.08);
-  color: hsl(45 95% 68%);
-  box-shadow: inset 0 0 0 1px hsla(45, 95%, 62%, 0.22);
+  background: rgba(240, 185, 96, 0.10);
+  color: var(--warn);
+  box-shadow: inset 0 0 0 1px rgba(240, 185, 96, 0.25);
 }
 .msg-badge.pending::before {
   content: "";
   width: 5px; height: 5px; border-radius: 50%;
-  background: hsl(45 95% 62%);
-  box-shadow: 0 0 6px hsla(45, 95%, 62%, 0.6);
+  background: var(--warn);
+  box-shadow: 0 0 6px rgba(240, 185, 96, 0.65);
   animation: pendingPulse 1.4s ease-in-out infinite;
 }
 @keyframes pendingPulse {
@@ -1728,9 +1758,10 @@ body.variant-orbit #tweaks { z-index: 90; } /* keep tweaks usable */
   box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
   border-radius: 0.75rem;
   padding: 0.7rem 0.85rem;
-  resize: none;
-  min-height: 2.5em;
-  max-height: 40vh;
+  resize: vertical;
+  min-height: 7rem;
+  max-height: 16rem;
+  overflow-y: auto;
   transition: box-shadow 0.15s;
 }
 .line-input:focus {
@@ -1744,10 +1775,10 @@ body.variant-orbit #tweaks { z-index: 90; } /* keep tweaks usable */
 .line-hint {
   display: flex; align-items: center; gap: 0.45rem;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 0.58rem;
+  font-size: 0.55rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--t-4);
+  color: var(--t-3);
   flex: 1; min-width: 0;
 }
 .pulse-dot {

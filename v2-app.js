@@ -12,8 +12,8 @@ function setLineStatus(live) {
   const el = document.getElementById('lineStatus');
   if (!el) return;
   el.textContent = live ? 'live' : 'offline';
-  el.style.color = live ? 'hsl(188 90% 62%)' : 'var(--t-4)';
-  el.style.background = live ? 'hsla(188 90% 62% / 0.12)' : 'rgba(255,255,255,0.05)';
+  el.classList.toggle('is-live', live);
+  el.classList.toggle('is-offline', !live);
 }
 
 let state = {
@@ -198,6 +198,8 @@ let state = {
     // hide/show structured launch based on whether thread has content
     lineLaunch.hidden = state.line.messages.length > 0;
     renderThread();
+    // collapse empty state when seed is present so it doesn't compete with seeded text
+    if (opts.seed && opts.seed.trim().length > 0) lineEmpty.hidden = true;
     setTimeout(() => lineInput.focus(), 180);
   }
   function closeLine() {
