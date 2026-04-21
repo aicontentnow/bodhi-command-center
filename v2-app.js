@@ -505,7 +505,7 @@ let state = {
         e.stopPropagation();
         it.done = !it.done;
         renderList(which); renderCounts();
-        const { error } = await sb.from('tasks').update({ status: it.done ? 'done' : 'pending' }).eq('id', it.id);
+        const { error } = await sb.from('tasks').update({ done: it.done }).eq('id', it.id);
         if (error) {
           toastErr('Save failed');
           it.done = !it.done; // revert
@@ -546,7 +546,7 @@ let state = {
       if (!v) return;
       input.value = '';
       const { data, error } = await sb.from('tasks').insert({
-        subject: v,
+        title: v,
         bucket: which === 'today' ? 'bodhi360' : 'bodhi360',
         horizon: which,
         status: 'pending',
@@ -556,7 +556,7 @@ let state = {
         toastErr('Add failed');
         return;
       }
-      state[which].push({ id: data.id, label: data.subject, done: false, meta: data.bucket || '', notes: '' });
+      state[which].push({ id: data.id, label: data.title, done: false, meta: data.bucket || '', notes: '' });
       renderList(which); renderCounts();
     });
   }
@@ -947,8 +947,8 @@ VIEWS (Views button, bottom-right : hidden while the Direct Line panel is open)
   function rowToTask(row) {
     return {
       id:    row.id,
-      label: row.subject,
-      done:  row.status === 'done',
+      label: row.title,
+      done:  row.done === true,
       focus: false,
       meta:  row.bucket || 'SELF',
       notes: '',  // loaded separately in Stage 3
@@ -1015,10 +1015,10 @@ VIEWS (Views button, bottom-right : hidden while the Direct Line panel is open)
       // Load all tasks for today and this week
       const { data: tasks, error } = await sb
         .from('tasks')
-        .select('id, subject, bucket, horizon, status, created_at')
+        .select('id, title, bucket, horizon, done, sort_order, created_at')
         .eq('user_id', 'bodhi')
         .in('horizon', ['today', 'week'])
-        .order('created_at', { ascending: true });
+        .order('sort_order', { ascending: true });
 
       if (error) throw error;
 
