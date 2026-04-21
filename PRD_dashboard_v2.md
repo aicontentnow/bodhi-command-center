@@ -342,6 +342,31 @@ Feedback:
 
 If you need to see the file first, read it before writing a single line of output.
 
+### Prompt families
+
+Prompts are grouped into labeled families. Each family has a section header (JetBrains Mono, muted, uppercase, subtle top border). Groups render as visual separators inside the same grid -- no tabs, no modals, just headers that break up the grid visually.
+
+Current families and their prompts (in order):
+
+**Daily** (always at top -- these are the two Bodhi uses every single day)
+- Morning · where am I
+- Session wrap · flush and close
+
+**LDAG** (Late Dx AuDHD Guy project prompts)
+- LDAG · pick up production
+- LDAG · draft an episode
+
+**Build pipeline** (used after Claude Code or Claude Design sessions)
+- Design PRD · into Claude Designer
+- Build QA · did it follow the PRD?
+- UI feedback · restyle in Claude Code
+
+**System** (admin, maintenance, portfolio ops)
+- Status update · something changed
+- Skills reorg · Phase 3
+
+When adding new projects (MIRROR, Harmonic, SEASØNS, etc.), add a new family group for that project. Keep Daily pinned at top always. New project families sit between LDAG and Build pipeline.
+
 ### Roadmap
 
 Two sections:

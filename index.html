@@ -184,14 +184,18 @@
         <div class="card-inner">
           <div class="card-head"><span class="eyebrow">Key prompts · click to send on the line</span></div>
           <div class="prompts-grid">
+            <div class="prompt-group-label">Daily</div>
             <div class="prompt liquid-glass" data-prompt="morning"><div class="n">Morning · where am I</div><div class="d">Chief of staff reads state, gives one next action.</div><div class="copy">send</div></div>
             <div class="prompt liquid-glass" data-prompt="session_wrap"><div class="n">Session wrap · flush and close</div><div class="d">Writes tasks to Supabase and status file before closing.</div><div class="copy">send</div></div>
+            <div class="prompt-group-label">LDAG</div>
             <div class="prompt liquid-glass" data-prompt="ldag_prod"><div class="n">LDAG · pick up production</div><div class="d">Transcripts, episodes, dashboard.</div><div class="copy">send</div></div>
             <div class="prompt liquid-glass" data-prompt="ldag_draft"><div class="n">LDAG · draft an episode</div><div class="d">Concept + moments → Opus Agent brief.</div><div class="copy">send</div></div>
-            <div class="prompt liquid-glass" data-prompt="status"><div class="n">Status update · something changed</div><div class="d">Captures what shifted so the brains update.</div><div class="copy">send</div></div>
+            <div class="prompt-group-label">Build pipeline</div>
             <div class="prompt liquid-glass" data-prompt="design_prd"><div class="n">Design PRD · into Claude Designer</div><div class="d">Product requirements doc for UI design handoff.</div><div class="copy">send</div></div>
             <div class="prompt liquid-glass" data-prompt="build_qa"><div class="n">Build QA · did it follow the PRD?</div><div class="d">After any Claude Code build. Reads PRD + built files, reports CORRECT / MISSING / WRONG.</div><div class="copy">send</div></div>
             <div class="prompt liquid-glass" data-prompt="ui_feedback"><div class="n">UI feedback · restyle in Claude Code</div><div class="d">Restyle any project file. Fill in project, path, and feedback. Claude Code reads first, CSS only, no logic touched.</div><div class="copy">send</div></div>
+            <div class="prompt-group-label">System</div>
+            <div class="prompt liquid-glass" data-prompt="status"><div class="n">Status update · something changed</div><div class="d">Captures what shifted so the brains update.</div><div class="copy">send</div></div>
             <div class="prompt liquid-glass" data-prompt="skills_reorg_p3"><div class="n">Skills reorg · Phase 3</div><div class="d">Inventory reviewed, canonical structure proposed, migration plan in one pass.</div><div class="copy">send</div></div>
           </div>
         </div>
