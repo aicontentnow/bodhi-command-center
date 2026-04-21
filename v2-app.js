@@ -16,6 +16,18 @@ function setLineStatus(live) {
   el.classList.toggle('is-offline', !live);
 }
 
+function persistState(field, value, eventType) {
+  sb.from('portfolio_state')
+    .update({ [field]: value, updated_at: new Date().toISOString() })
+    .eq('user_id', 'bodhi')
+    .then(({ error: e }) => { if (e) console.warn('portfolio_state write failed:', e); });
+  sb.from('interaction_log').insert({
+    user_id: 'bodhi',
+    event_type: eventType,
+    event_data: { field, value },
+  }).then(({ error: e }) => { if (e) console.warn('interaction_log write failed:', e); });
+}
+
 let state = {
   mode: 'harmonic',
   variant: 'cockpit',
@@ -130,6 +142,7 @@ let state = {
       save(state); renderStates();
       setStateOpen(false);
       toast(`Mode · ${el.dataset.stateLabel || el.dataset.state}`);
+      persistState('energy_state', state.mode, 'state_changed');
     });
   });
 
@@ -140,6 +153,7 @@ let state = {
     document.querySelectorAll('.page').forEach(p => p.classList.toggle('is-on', p.dataset.page === name));
     document.querySelectorAll('.navitem').forEach(n => n.classList.toggle('is-on', n.dataset.page === name));
     window.scrollTo({ top: 0, behavior: 'instant' });
+    if (sbLive) persistState('active_page', name, 'page_changed');
   }
   document.querySelectorAll('.navitem').forEach(n => {
     n.addEventListener('click', () => setPage(n.dataset.page));
@@ -698,9 +712,11 @@ ${it.notes || '(no additional context yet)'}`;
         const t = n.dataset.go;
         if (t === 'redphone') {
           state.variant = 'cockpit'; save(state); applyVariant();
+          persistState('active_view', 'cockpit', 'view_changed');
           openLine({ tag: { kind: 'redphone', label: 'Red Phone' }, seed: RED_PHONE });
         } else {
           state.variant = 'cockpit'; save(state); applyVariant();
+          persistState('active_view', 'cockpit', 'view_changed');
           setPage(t);
         }
       });
@@ -709,6 +725,7 @@ ${it.notes || '(no additional context yet)'}`;
       n.addEventListener('click', () => {
         const key = n.dataset.bucket;
         state.variant = 'cockpit'; save(state); applyVariant();
+        persistState('active_view', 'cockpit', 'view_changed');
         openLine({
           tag: { kind: 'brain_dump', label: `Brain dump · ${BUCKET_LABELS[key] || key}`, bucket: key },
           seed: '',
@@ -722,6 +739,7 @@ ${it.notes || '(no additional context yet)'}`;
       state.variant = el.dataset.variant;
       save(state); applyVariant();
       toast(`Tweak · ${el.textContent.trim()}`);
+      persistState('active_view', state.variant, 'view_changed');
     });
   });
 
@@ -819,6 +837,38 @@ VIEWS (Views button, bottom-right : hidden while the Direct Line panel is open)
 
   async function initFromSupabase() {
     try {
+      // Load portfolio state (energy, view, page, tab) before tasks so shell is correct
+      const { data: ps, error: psErr } = await sb
+        .from('portfolio_state')
+        .select('energy_state, active_view, active_page, active_tab')
+        .eq('user_id', 'bodhi')
+        .single();
+
+      if (!psErr && ps) {
+        if (ps.energy_state) state.mode    = ps.energy_state;
+        if (ps.active_view)  state.variant = ps.active_view;
+        if (ps.active_page)  state.page    = ps.active_page;
+        if (ps.active_tab)   state.tab     = ps.active_tab;
+        renderStates();
+        setPage(state.page);
+        setTab(state.tab);
+        applyVariant();
+      }
+
+      // Realtime: reflect CoS-written energy_state changes immediately
+      sb.channel('portfolio-state-live')
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'portfolio_state', filter: "user_id=eq.bodhi" },
+          (payload) => {
+            const ps = payload.new;
+            if (!ps) return;
+            if (ps.energy_state && ps.energy_state !== state.mode) {
+              state.mode = ps.energy_state;
+              renderStates();
+              toast(`State updated · ${ps.energy_state}`);
+            }
+          })
+        .subscribe();
+
       // Load all tasks for today and this week
       const { data: tasks, error } = await sb
         .from('tasks')
