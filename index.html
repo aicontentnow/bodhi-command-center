@@ -1,847 +1,351 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bodhi 360° Command Center</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&family=Source+Serif+4:ital,opsz,wght@1,8..60,400&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --cyan-h:188;
-  --cyan:hsl(188 90% 62%);
-  --cyan-glow:hsla(188,90%,62%,0.45);
-  --cyan-soft:hsla(188,90%,62%,0.08);
-  --t-1:rgba(255,255,255,0.95);
-  --t-2:rgba(255,255,255,0.62);
-  --t-3:rgba(255,255,255,0.38);
-  --t-4:rgba(255,255,255,0.22);
-  --t-5:rgba(255,255,255,0.10);
-  --st-green:hsl(142 70% 55%);
-  --st-yellow:hsl(45 95% 62%);
-  --st-red:hsl(0 80% 62%);
-  --st-potato:hsl(30 55% 60%);
-  --st-focus:hsl(265 80% 70%);
-  --st-crash:hsl(220 15% 55%);
-  --radius:1rem;--radius-lg:1.5rem;--radius-xl:2rem;
-}
-html,body{height:100%;overflow:hidden}
-body{background:#06080a;color:var(--t-1);font-family:'Poppins',system-ui,sans-serif;font-size:1rem;line-height:1.6;-webkit-font-smoothing:antialiased}
-</style>
-<style>
-/* BG FIELD */
-#bg-field{position:fixed;inset:0;z-index:0;pointer-events:none;
-  background:radial-gradient(60% 60% at 22% 32%,hsla(188,80%,45%,0.09) 0%,transparent 70%),
-             radial-gradient(50% 50% at 78% 72%,hsla(265,70%,50%,0.07) 0%,transparent 70%),
-             #06080a;
-  animation:bg-breathe 40s ease-in-out infinite;}
-#bg-field::before{content:"";position:absolute;inset:0;
-  background-image:radial-gradient(1px 1px at 12% 24%,rgba(255,255,255,.7),transparent),
-    radial-gradient(1px 1px at 73% 18%,rgba(255,255,255,.5),transparent),
-    radial-gradient(1px 1px at 45% 62%,rgba(255,255,255,.45),transparent),
-    radial-gradient(1px 1px at 88% 72%,rgba(255,255,255,.6),transparent),
-    radial-gradient(1px 1px at 22% 85%,rgba(255,255,255,.35),transparent),
-    radial-gradient(1.5px 1.5px at 65% 40%,rgba(255,255,255,.8),transparent),
-    radial-gradient(1px 1px at 33% 10%,rgba(255,255,255,.4),transparent),
-    radial-gradient(1px 1px at 55% 90%,rgba(255,255,255,.3),transparent);
-  background-size:280px 280px,340px 340px,220px 220px,300px 300px,260px 260px,400px 400px,180px 180px,320px 320px;
-  opacity:.55;}
-@keyframes bg-breathe{0%,100%{opacity:1}50%{opacity:.85}}
-</style>
-<style>
-/* LIQUID GLASS */
-#sidebar,.tasks-card,.bcard,.pcard,.rmitem,.rp-card,.share-pre-wrap,#dlp{position:relative;overflow:hidden}
-#sidebar,.rp-card,#dlp{background:rgba(255,255,255,.01);backdrop-filter:blur(28px) saturate(140%);box-shadow:inset 0 1px 1px rgba(255,255,255,.12)}
-.tasks-card,.bcard,.pcard,.rmitem{background:rgba(255,255,255,.01);backdrop-filter:blur(4px);box-shadow:inset 0 1px 1px rgba(255,255,255,.10)}
-#sidebar::before,.rp-card::before,#dlp::before,.tasks-card::before,.bcard::before,.pcard::before,.rmitem::before{
-  content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;pointer-events:none;
-  background:linear-gradient(180deg,rgba(255,255,255,.45) 0%,rgba(255,255,255,.15) 20%,transparent 40%,transparent 60%,rgba(255,255,255,.06) 100%);
-  -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
-  -webkit-mask-composite:xor;mask-composite:exclude;}
-#sidebar::before,.rp-card::before,#dlp::before{
-  background:linear-gradient(180deg,rgba(255,255,255,.55) 0%,rgba(255,255,255,.18) 18%,transparent 38%,transparent 62%,rgba(255,255,255,.08) 100%);}
-</style>
-<style>
-/* APP SHELL + COCKPIT */
-#app{position:relative;width:100vw;height:100vh;overflow:hidden;z-index:1}
-#cockpit-shell{display:none;width:100%;height:100%}
-body.view-cockpit #cockpit-shell{display:grid;grid-template-columns:340px 1fr;gap:1rem;padding:1rem}
-
-/* SIDEBAR */
-#sidebar{display:flex;flex-direction:column;gap:.35rem;height:100%;overflow-y:auto;overflow-x:hidden;
-  border-radius:var(--radius-xl);padding:1.2rem 1rem;
-  scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.06) transparent}
-
-/* BRAND */
-.sb-brand{display:flex;align-items:center;justify-content:space-between;padding:.3rem .2rem .65rem;
-  border-bottom:1px solid rgba(255,255,255,.06);margin-bottom:.3rem;flex-shrink:0;cursor:pointer}
-.sb-logo{font-size:1rem;font-weight:600;letter-spacing:.04em;color:var(--t-1)}
-.brand-pulse{width:7px;height:7px;border-radius:50%;background:var(--cyan);flex-shrink:0;
-  box-shadow:0 0 0 2px hsla(188,90%,62%,.2),0 0 10px var(--cyan-glow);
-  animation:cpulse 2.8s ease-in-out infinite}
-@keyframes cpulse{0%,100%{box-shadow:0 0 0 2px hsla(188,90%,62%,.2),0 0 10px var(--cyan-glow)}50%{box-shadow:0 0 0 4px hsla(188,90%,62%,.35),0 0 18px var(--cyan-glow)}}
-
-/* STATE PILL */
-.state-wrap{position:relative;margin-bottom:.3rem;flex-shrink:0}
-#state-pill{display:flex;align-items:center;background:var(--cyan-soft);color:var(--cyan);
-  border:1px solid hsla(188,90%,65%,.25);border-radius:999px;padding:.45rem .9rem;cursor:pointer;
-  width:100%;font-family:'JetBrains Mono',monospace;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;
-  transition:background .15s,border-color .15s}
-#state-pill:hover{background:hsla(188,90%,62%,.14);border-color:hsla(188,90%,65%,.4)}
-#state-dropdown{display:none;position:absolute;left:0;right:0;top:calc(100% + 6px);flex-direction:column;gap:.15rem;
-  background:rgba(10,14,20,.95);border:1px solid rgba(255,255,255,.10);border-radius:.85rem;padding:.4rem;
-  z-index:600;backdrop-filter:blur(16px);box-shadow:0 12px 36px rgba(0,0,0,.55)}
-#state-dropdown.show{display:flex}
-.sopt{display:flex;align-items:center;gap:.55rem;padding:.5rem .7rem;border-radius:.6rem;cursor:pointer;
-  font-size:.8rem;color:var(--t-2);transition:background .12s,color .12s}
-.sopt:hover{background:rgba(255,255,255,.06);color:var(--t-1)}.sopt.active{color:var(--cyan)}
-.sopt::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--sc,var(--cyan));flex-shrink:0}
-</style>
-<style>
-/* SIDEBAR LABELS + NAV */
-.sb-label{font-family:'JetBrains Mono',monospace;font-size:.58rem;letter-spacing:.22em;text-transform:uppercase;
-  color:var(--t-4);padding:.2rem .15rem;margin-top:.2rem;flex-shrink:0}
-.nav-item{display:grid;grid-template-columns:1.2rem 1fr auto;align-items:center;gap:.55rem;
-  padding:.55rem .65rem;border-radius:.75rem;cursor:pointer;font-size:.85rem;font-weight:500;
-  color:var(--t-2);text-decoration:none;transition:background .12s,color .12s;flex-shrink:0;min-height:44px}
-.nav-item:hover{background:rgba(255,255,255,.05);color:var(--t-1)}
-.nav-item.active{background:var(--cyan-soft);color:var(--t-1);box-shadow:inset 0 0 0 1px hsla(188,90%,65%,.30)}
-.ni-icon{font-size:.9rem;text-align:center;opacity:.75}.ni-label{flex:1}
-.ni-badge{font-family:'JetBrains Mono',monospace;font-size:.58rem;letter-spacing:.1em;color:var(--t-4);
-  background:rgba(255,255,255,.04);padding:.15rem .45rem;border-radius:999px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
-.nav-item.active .ni-badge{color:var(--cyan)}
-
-/* LIVE LINKS */
-.live-link{display:flex;align-items:center;gap:.5rem;padding:.4rem .65rem;border-radius:.65rem;
-  font-size:.78rem;color:var(--t-3);text-decoration:none;transition:color .12s,background .12s;flex-shrink:0}
-.live-link:hover{color:var(--t-2);background:rgba(255,255,255,.04)}
-.live-dot{width:5px;height:5px;border-radius:50%;background:var(--st-green);flex-shrink:0}
-
-/* RED PHONE CARD */
-.rp-card{border-radius:var(--radius-lg);padding:1.1rem 1.15rem;margin-top:auto;border:none;
-  text-align:left;width:100%;flex-shrink:0;cursor:default}
-.rp-card>*{position:relative;z-index:2}
-.rp-eyebrow{display:flex;align-items:center;gap:.5rem;font-family:'JetBrains Mono',monospace;
-  font-size:.58rem;letter-spacing:.22em;text-transform:uppercase;color:var(--t-3);margin-bottom:.5rem}
-.rp-reddot{width:7px;height:7px;border-radius:50%;background:hsl(0 85% 55%);flex-shrink:0;
-  box-shadow:0 0 8px hsla(0,85%,55%,.6);animation:cpulse 2.2s ease-in-out infinite}
-.rp-heading{font-size:1.2rem;font-weight:300;color:var(--t-1);line-height:1.3;margin-bottom:.25rem}
-.rp-heading em{font-family:'Source Serif 4',serif;font-style:italic;font-weight:400}
-.rp-sub{font-size:.78rem;color:var(--t-3);margin-bottom:.8rem;line-height:1.4}
-.rp-btn{display:inline-flex;align-items:center;gap:.45rem;
-  background:linear-gradient(160deg,hsl(0 85% 55%) 0%,hsl(0 80% 42%) 100%);
-  color:#fff;border:none;padding:.62rem 1.2rem;border-radius:.75rem;font-size:.88rem;font-weight:500;
-  font-family:'Poppins',system-ui,sans-serif;cursor:pointer;
-  box-shadow:0 4px 18px hsla(0,85%,50%,.35);transition:opacity .15s,transform .1s}
-.rp-btn:hover{opacity:.9;transform:translateY(-1px)}.rp-btn:active{transform:scale(.98)}
-</style>
-<style>
-/* COCKPIT MAIN + PAGES */
-#cockpit-main{display:flex;flex-direction:column;height:100%;overflow:hidden;border-radius:var(--radius-xl)}
-.page{display:block;padding:2rem 2.5rem;height:100%;overflow-y:auto}
-.ph{font-size:1.25rem;font-weight:500;letter-spacing:-.02em;color:var(--t-1);margin-bottom:.3rem}
-.ps{font-size:.85rem;color:var(--t-3);line-height:1.55;margin-bottom:1.4rem}
-
-/* TASKS CARD */
-.tasks-card{border-radius:var(--radius-lg)}
-.tasks-card>*{position:relative;z-index:2}
-.tc-head{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.2rem .75rem;
-  border-bottom:1px solid rgba(255,255,255,.06)}
-.tc-title{font-size:.92rem;font-weight:500;color:var(--t-1);letter-spacing:-.01em}
-.tc-count{font-family:'JetBrains Mono',monospace;font-size:.65rem;letter-spacing:.15em;color:var(--t-3)}
-.task-row{display:grid;grid-template-columns:1.4rem auto 1fr;align-items:center;gap:.65rem;
-  padding:.75rem 1.2rem;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;
-  transition:background .12s;min-height:44px}
-.task-row:last-child{border-bottom:none}
-.task-row:hover{background:rgba(255,255,255,.03)}
-.task-check{width:18px;height:18px;border-radius:5px;border:1.5px solid rgba(255,255,255,.2);
-  display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;
-  color:#06080a;flex-shrink:0;transition:all .12s}
-.task-row.done .task-check{background:var(--cyan);border-color:var(--cyan);box-shadow:0 0 8px var(--cyan-glow)}
-.task-bucket{font-family:'JetBrains Mono',monospace;font-size:.58rem;letter-spacing:.18em;white-space:nowrap;flex-shrink:0}
-.task-text{font-size:.88rem;color:var(--t-1);line-height:1.4}
-.task-row.done .task-text{text-decoration:line-through;text-decoration-color:rgba(255,255,255,.2);color:var(--t-4)}
-.add-row{display:flex;gap:.5rem;padding:.75rem 1.2rem;border-top:1px solid rgba(255,255,255,.06);position:relative;z-index:2}
-#add-bucket{background:rgba(0,0,0,.3);color:var(--t-2);border:1px solid rgba(255,255,255,.08);
-  border-radius:.65rem;padding:.45rem .65rem;font-size:.75rem;font-family:'JetBrains Mono',monospace;
-  letter-spacing:.06em;outline:none}
-.add-input,#add-text{flex:1;background:transparent;border:none;outline:none;color:var(--t-1);
-  font:500 .85rem/1.4 'Poppins',system-ui,sans-serif;padding:.45rem .65rem;border-radius:.65rem;
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.07);transition:box-shadow .2s}
-.add-input::placeholder,#add-text::placeholder{color:var(--t-4)}
-.add-input:focus,#add-text:focus{box-shadow:inset 0 0 0 1px hsla(188,90%,65%,.4)}
-.add-btn{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.07);color:var(--t-1);
-  border:none;display:grid;place-items:center;cursor:pointer;font-size:1.1rem;transition:background .2s,transform .15s}
-.add-btn:hover{background:hsla(188,90%,62%,.18);transform:scale(1.06)}
-</style>
-<style>
-/* BRAIN DUMP */
-.buckets-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:.75rem}
-.bcard{border-radius:var(--radius-lg);padding:1.1rem 1.15rem;cursor:pointer;transition:transform .15s}
-.bcard::after{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--bc,var(--cyan));opacity:.7}
-.bcard>*{position:relative;z-index:2}
-.bcard:hover{transform:translateY(-2px)}.bcard:active{transform:scale(.99)}
-.bname{font-size:.92rem;font-weight:600;margin-bottom:.3rem;color:var(--t-1)}
-.bdesc{font-size:.78rem;color:var(--t-3);line-height:1.5}
-
-/* PROMPTS */
-.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:.75rem}
-.pcard{border-radius:var(--radius-lg);padding:1.1rem 1.15rem;cursor:pointer;transition:transform .15s}
-.pcard>*{position:relative;z-index:2}
-.pcard:hover{transform:translateY(-2px)}.pcard:active{transform:scale(.99)}
-.pname{font-size:.92rem;font-weight:500;margin-bottom:.3rem;color:var(--t-1)}
-.pdesc{font-size:.78rem;color:var(--t-3);line-height:1.5}
-.ptag{display:inline-block;margin-top:.6rem;font-family:'JetBrains Mono',monospace;font-size:.58rem;
-  letter-spacing:.16em;color:var(--cyan);background:var(--cyan-soft);padding:.15rem .55rem;border-radius:999px;
-  box-shadow:inset 0 0 0 1px hsla(188,90%,65%,.25)}
-
-/* ROADMAP */
-.rmitem{border-radius:.75rem;padding:.75rem 1rem;margin-bottom:.5rem;border-left:2px solid transparent}
-.rmitem>*{position:relative;z-index:2}
-.rmitem.done{opacity:.4}.rmitem.done .rmt{text-decoration:line-through;color:var(--t-4)}
-.rmitem.active{border-left-color:var(--cyan)}
-.rmphase{font-family:'JetBrains Mono',monospace;font-size:.58rem;letter-spacing:.2em;text-transform:uppercase;
-  color:var(--t-4);margin-bottom:.2rem}
-.rmitem.active .rmphase{color:var(--cyan)}
-.rmt{font-size:.88rem;color:var(--t-2);line-height:1.4}
-.rm-slabel{font-family:'JetBrains Mono',monospace;font-size:.58rem;letter-spacing:.2em;text-transform:uppercase;
-  color:var(--t-4);margin:1.2rem 0 .6rem}.rm-slabel:first-child{margin-top:0}
-
-/* SHARE */
-.share-pre{background:rgba(0,0,0,.2);border-radius:var(--radius-lg);padding:1.2rem 1.35rem;margin-bottom:1.25rem;
-  font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--t-2);line-height:1.75;
-  white-space:pre-wrap;word-break:break-word;box-shadow:inset 0 0 0 1px rgba(255,255,255,.07)}
-.share-copy{display:inline-flex;align-items:center;gap:.55rem;background:rgba(255,255,255,.05);
-  border:1px solid rgba(255,255,255,.10);color:var(--t-1);padding:.75rem 1.5rem;border-radius:.75rem;
-  font-size:.88rem;font-weight:500;cursor:pointer;font-family:'Poppins',system-ui,sans-serif;transition:border-color .12s,background .12s}
-.share-copy:hover{border-color:var(--cyan);color:var(--cyan);background:var(--cyan-soft)}
-.share-copy:active{transform:scale(.98)}
-</style>
-<style>
-/* ALTAR VIEW */
-#altar-shell{display:none;width:100%;height:100%;flex-direction:column}
-body.view-altar #altar-shell{display:flex}
-#altar-topbar{display:flex;align-items:center;gap:.75rem;padding:.65rem 1.5rem;
-  background:rgba(10,14,20,.6);backdrop-filter:blur(16px);
-  border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0;position:relative;z-index:2;flex-wrap:wrap}
-.at-brand{font-size:.92rem;font-weight:600;letter-spacing:.04em;color:var(--t-1);flex-shrink:0}
-.at-tabs{display:flex;gap:.3rem;flex:1}
-.tab-btn{padding:.45rem .85rem;border-radius:999px;cursor:pointer;font-size:.8rem;font-weight:500;
-  border:1px solid transparent;background:transparent;color:var(--t-3);font-family:'Poppins',system-ui,sans-serif;
-  transition:all .12s;min-height:36px}
-.tab-btn:hover{color:var(--t-2);border-color:rgba(255,255,255,.08)}
-.tab-btn.active{color:var(--cyan);background:var(--cyan-soft);border-color:hsla(188,90%,65%,.28)}
-.at-links .live-link{padding:.4rem .65rem}
-#altar-main{flex:1;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.06) transparent}
-
-/* ORBIT VIEW */
-#orbit-shell{position:fixed;inset:0;display:none;background:#06080a;overflow:hidden}
-body.view-orbit #orbit-shell{display:block}
-#orbit-stars{position:absolute;inset:0;pointer-events:none}
-#orbit-canvas{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
-.orbit-ring{position:absolute;top:50%;left:50%;border-radius:50%;
-  border:1px solid rgba(255,255,255,.05);outline:none;
-  transform:translate(-50%,-50%);pointer-events:none}
-.osun{width:150px;height:150px;border-radius:50%;
-  background:radial-gradient(circle at 35% 35%,hsl(188 90% 80%) 0%,hsl(188 85% 52%) 60%,hsl(200 60% 25%) 100%);
-  box-shadow:0 0 80px hsla(188,90%,60%,.55),inset 0 0 40px hsla(188,100%,85%,.35);
-  cursor:pointer;display:grid;place-items:center;font-weight:600;font-size:.75rem;
-  color:#041418;letter-spacing:.04em;z-index:2;position:relative;text-align:center;line-height:1.2;
-  text-shadow:0 1px 2px rgba(255,255,255,.4);animation:sunpulse 3s ease-in-out infinite;
-  transition:transform .25s,box-shadow .25s}
-.osun:hover{transform:scale(1.06);box-shadow:0 0 120px hsla(188,90%,65%,.70),inset 0 0 50px hsla(188,100%,90%,.45)}
-@keyframes sunpulse{
-  0%,100%{box-shadow:0 0 80px hsla(188,90%,60%,.55),inset 0 0 40px hsla(188,100%,85%,.35)}
-  50%{box-shadow:0 0 120px hsla(188,90%,65%,.75),inset 0 0 60px hsla(188,100%,90%,.45)}}
-.onode{position:absolute;top:50%;left:50%;padding:.5rem .9rem;border-radius:999px;
-  background:rgba(18,26,34,.82);backdrop-filter:blur(10px);
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.14),0 6px 24px rgba(0,0,0,.45);
-  color:var(--t-1);cursor:pointer;pointer-events:auto;white-space:nowrap;z-index:2;
-  display:flex;align-items:center;gap:.45rem;font-size:.78rem;
-  transition:background .2s,box-shadow .2s;
-  animation:ospin var(--dur,40s) linear infinite}
-.onode:hover{background:rgba(28,40,52,.96);box-shadow:inset 0 0 0 1px hsla(188,90%,65%,.45),0 8px 32px hsla(188,90%,50%,.3)}
-.onode-red{background:linear-gradient(160deg,hsl(0 85% 55%),hsl(0 80% 42%));
-  box-shadow:0 0 40px hsla(0,85%,55%,.55),inset 0 1px 1px rgba(255,255,255,.30);color:#fff;font-weight:600}
-.onode-red:hover{box-shadow:0 0 60px hsla(0,85%,55%,.7),inset 0 1px 1px rgba(255,255,255,.40)}
-.onode-icon{font-size:.9rem;line-height:1}.onode-label{font-size:.7rem;letter-spacing:.04em}
-@keyframes ospin{
-  from{transform:translate(-50%,-50%) rotate(var(--os,0deg)) translateX(var(--r,200px)) rotate(calc(-1 * var(--os,0deg)))}
-  to{transform:translate(-50%,-50%) rotate(calc(var(--os,0deg) + 360deg)) translateX(var(--r,200px)) rotate(calc(-1 * (var(--os,0deg) + 360deg)))}}
-.orbit-instr{position:absolute;bottom:1.5rem;left:50%;transform:translateX(-50%);
-  font-family:'JetBrains Mono',monospace;font-size:.6rem;letter-spacing:.22em;text-transform:uppercase;
-  color:var(--t-4);pointer-events:none;white-space:nowrap}
-</style>
-<style>
-/* DIRECT LINE PANEL */
-#dlp{position:fixed;top:0;right:0;width:440px;max-width:100vw;height:100vh;z-index:85;
-  display:flex;flex-direction:column;border-radius:1.5rem 0 0 1.5rem;
-  transform:translateX(calc(100% + 24px));transition:transform .32s cubic-bezier(.2,.8,.2,1);overflow:hidden}
-#dlp::before{border-radius:1.5rem 0 0 1.5rem !important}
-#dlp>*{position:relative;z-index:2}
-#dlp.open{transform:translateX(0)}
-@media(max-width:500px){#dlp{width:100vw;border-radius:0}#dlp::before{border-radius:0 !important}}
-#dl-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:84;opacity:0;
-  pointer-events:none;transition:opacity .25s;backdrop-filter:blur(2px)}
-#dl-overlay.show{opacity:1;pointer-events:all}
-.dlh{display:flex;align-items:center;gap:.65rem;padding:1.1rem 1.25rem .85rem;
-  border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0}
-.dlh-title{font-size:.95rem;font-weight:500;flex:1;color:var(--t-1)}
-.dlh-status{font-family:'JetBrains Mono',monospace;font-size:.58rem;letter-spacing:.18em;text-transform:uppercase;
-  color:var(--st-green);background:hsla(142,70%,50%,.1);padding:.2rem .55rem;border-radius:999px;
-  border:1px solid hsla(142,70%,55%,.2)}
-.dlh-x{width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.06);
-  border:1px solid rgba(255,255,255,.08);color:var(--t-3);cursor:pointer;font-size:.9rem;
-  display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:color .12s,background .12s}
-.dlh-x:hover{color:var(--t-1);background:rgba(255,255,255,.1)}
-.dl-sub{padding:.75rem 1.25rem;border-bottom:1px solid rgba(255,255,255,.06);
-  font-size:.82rem;font-weight:300;color:var(--t-3);flex-shrink:0}
-</style>
-<style>
-/* DL QUICK LAUNCH + THREAD */
-.dl-ql{padding:.85rem 1.25rem;border-bottom:1px solid rgba(255,255,255,.06);
-  display:flex;flex-direction:column;gap:.4rem;flex-shrink:0}
-.dl-qlb{display:flex;align-items:center;gap:.65rem;background:rgba(255,255,255,.025);
-  border:1px solid rgba(255,255,255,.07);border-radius:.7rem;padding:.6rem .85rem;
-  cursor:pointer;text-align:left;font-family:'Poppins',system-ui,sans-serif;transition:border-color .12s,background .12s}
-.dl-qlb:hover{border-color:rgba(255,255,255,.14);background:rgba(255,255,255,.045)}
-.dl-qlb-icon{font-size:.88rem}.dl-qlb-text{font-size:.85rem;font-weight:500;color:var(--t-1)}
-.dl-qlb-desc{font-size:.68rem;color:var(--t-4);margin-left:auto;font-family:'JetBrains Mono',monospace;letter-spacing:.06em}
-.dl-thread{flex:1;overflow-y:auto;padding:.85rem 1.25rem;display:flex;flex-direction:column;gap:.6rem;
-  scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.06) transparent}
-.dl-empty{font-size:.75rem;font-family:'JetBrains Mono',monospace;color:var(--t-4);
-  text-align:center;padding:1.5rem 0;letter-spacing:.06em}
-.dlm{max-width:86%;word-break:break-word;padding:.65rem .9rem;border-radius:.85rem;font-size:.85rem;line-height:1.5}
-.dlm-me{align-self:flex-end;background:hsla(188,80%,50%,.14);
-  box-shadow:inset 0 0 0 1px hsla(188,90%,65%,.3);color:var(--t-1);
-  border-radius:.85rem .85rem .25rem .85rem}
-.dlm-cos{align-self:flex-start;background:rgba(255,255,255,.04);
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);color:var(--t-1);
-  border-radius:.85rem .85rem .85rem .25rem}
-.dlm-label{font-size:.6rem;font-family:'JetBrains Mono',monospace;letter-spacing:.16em;
-  text-transform:uppercase;color:var(--t-4);margin-bottom:.2rem}
-
-/* DL COMPOSE */
-.dl-compose{flex-shrink:0;padding:.85rem 1.25rem 1rem;border-top:1px solid rgba(255,255,255,.06)}
-.dl-ctag{display:inline-flex;align-items:center;gap:.35rem;font-family:'JetBrains Mono',monospace;
-  font-size:.58rem;letter-spacing:.18em;text-transform:uppercase;color:var(--cyan);
-  background:var(--cyan-soft);padding:.2rem .6rem;border-radius:999px;
-  border:1px solid hsla(188,90%,65%,.2);margin-bottom:.55rem}
-.dl-ta{width:100%;min-height:80px;max-height:160px;background:rgba(0,0,0,.25);color:var(--t-1);
-  border:1px solid rgba(255,255,255,.07);border-radius:.75rem;padding:.65rem .85rem;
-  font-size:.88rem;font-family:'Poppins',system-ui,sans-serif;line-height:1.5;resize:none;
-  overflow-y:auto;transition:border-color .15s}
-.dl-ta:focus{outline:none;border-color:hsla(188,90%,65%,.4)}
-.dl-ta::placeholder{color:var(--t-4)}
-.dl-confirm{text-align:center;padding:.55rem 0;font-size:.72rem;color:var(--st-green);
-  font-family:'JetBrains Mono',monospace;letter-spacing:.06em;display:none}
-.dl-confirm.show{display:block}
-.dl-crow{display:flex;align-items:center;justify-content:space-between;margin-top:.65rem}
-.dl-qstatus{font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--t-4);letter-spacing:.06em}
-.dl-send{display:flex;align-items:center;gap:.4rem;background:var(--cyan);color:#06080a;
-  border:none;padding:.6rem 1.2rem;border-radius:999px;font-size:.82rem;font-weight:600;
-  cursor:pointer;font-family:'Poppins',system-ui,sans-serif;
-  box-shadow:0 4px 14px hsla(188,90%,50%,.3);transition:opacity .12s,transform .1s}
-.dl-send:hover{opacity:.88;transform:translateY(-1px)}
-</style>
-<style>
-/* VIEW FAB + PANEL */
-#vfab{position:fixed;bottom:1.5rem;right:1.5rem;width:44px;height:44px;border-radius:50%;
-  background:rgba(14,18,30,.9);border:1px solid rgba(255,255,255,.08);display:flex;
-  align-items:center;justify-content:center;cursor:pointer;z-index:80;font-size:1.15rem;
-  color:var(--t-2);backdrop-filter:blur(8px);box-shadow:0 4px 20px rgba(0,0,0,.4);
-  transition:border-color .2s,color .2s}
-#vfab:hover{border-color:hsla(188,90%,65%,.4);color:var(--t-1)}
-#vpanel{position:fixed;bottom:5rem;right:1.5rem;background:rgba(10,14,20,.95);
-  border:1px solid rgba(255,255,255,.10);border-radius:1rem;padding:.5rem;z-index:81;
-  display:none;flex-direction:column;gap:.25rem;backdrop-filter:blur(14px);min-width:140px;
-  box-shadow:0 12px 36px rgba(0,0,0,.5)}
-#vpanel.show{display:flex}
-.vopt{display:flex;align-items:center;gap:.6rem;padding:.55rem .85rem;border-radius:.65rem;
-  cursor:pointer;font-size:.82rem;color:var(--t-2);transition:background .12s,color .12s;letter-spacing:.02em}
-.vopt:hover,.vopt.active{background:rgba(255,255,255,.06);color:var(--cyan)}
-.vopt-icon{font-size:.9rem;width:1rem;text-align:center}
-
-/* TOAST */
-#toast{position:fixed;bottom:5rem;left:50%;transform:translateX(-50%) translateY(20px);
-  background:rgba(10,14,20,.95);border:1px solid rgba(255,255,255,.10);border-radius:999px;
-  padding:.55rem 1.1rem;font-size:.8rem;color:var(--t-1);z-index:9999;opacity:0;
-  transition:opacity .2s,transform .2s;pointer-events:none;backdrop-filter:blur(10px);
-  white-space:nowrap;box-shadow:0 8px 28px rgba(0,0,0,.4)}
-#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-
-/* ERROR */
-#error-screen{position:fixed;inset:0;background:#06080a;display:none;flex-direction:column;
-  align-items:center;justify-content:center;gap:1rem;z-index:9998}
-#error-screen.show{display:flex}
-#error-screen h2{color:hsl(0 80% 62%);font-size:1.1rem;margin:0}
-#error-screen p{color:var(--t-3);font-size:.85rem;margin:0;text-align:center;max-width:360px}
-#error-screen button{margin-top:.5rem;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.10);
-  color:var(--t-1);padding:.6rem 1.4rem;border-radius:.65rem;cursor:pointer;font-size:.85rem;
-  font-family:'Poppins',system-ui,sans-serif}
-
-/* SCROLLBARS */
-::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:2px}
-::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.14)}
-
-/* REDUCED MOTION */
-@media(prefers-reduced-motion:reduce){
-  #bg-field,.osun,.brand-pulse,.rp-reddot,.onode,.osun{animation:none;transition:none}}
-</style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Bodhi 360 · Command Center · v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,500&family=Source+Serif+4:ital,opsz,wght@1,8..60,400;1,8..60,500;1,8..60,600&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="v2-styles.css" />
 </head>
-<body class="view-cockpit">
-<div id="bg-field"></div>
-<div id="error-screen"><h2>Connection Error</h2><p id="error-msg">Unable to connect to Supabase.</p><button onclick="init()">Retry</button></div>
-<div id="app">
+<body class="variant-cockpit">
 
-<!-- COCKPIT -->
-<div id="cockpit-shell">
-<aside id="sidebar">
-  <div class="sb-brand" onclick="goPage('home')">
-    <span class="sb-logo">B360°</span>
-    <span class="brand-pulse"></span>
+<div id="bg-field" aria-hidden="true"></div>
+<div id="vignette" aria-hidden="true"></div>
+
+<main class="app" data-screen-label="01 Bodhi Command Center v2">
+
+  <!-- ============================= SIDEBAR ============================= -->
+  <aside class="sidebar">
+
+    <!-- Brand -->
+    <button class="brand liquid-glass-strong" id="brandHome" style="border:none; text-align:left; cursor:pointer; font-family:inherit; width:100%;">
+      <div class="brand-inner">
+        <div class="brand-mark">
+          <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M16 23 C 6 20, 3 12, 7 7 C 10 10, 13 15, 16 23 Z"/>
+            <path d="M16 23 C 26 20, 29 12, 25 7 C 22 10, 19 15, 16 23 Z"/>
+            <path d="M16 24 C 9 22, 7 14, 11 9 C 13 13, 15 18, 16 24 Z"/>
+            <path d="M16 24 C 23 22, 25 14, 21 9 C 19 13, 17 18, 16 24 Z"/>
+            <path d="M16 24 C 14 18, 14 12, 16 7 C 18 12, 18 18, 16 24 Z"/>
+            <path d="M5 24 C 9 25.2, 23 25.2, 27 24" opacity="0.55"/>
+          </svg>
+        </div>
+        <div class="brand-title">
+          <div class="n">bodhi <em>360°</em></div>
+          <div class="s">Command · Center · v2</div>
+        </div>
+        <div class="pulse" title="live"></div>
+      </div>
+    </button>
+
+    <!-- State picker — collapsed -->
+    <div class="card liquid-glass state-card" id="stateCard" style="overflow: visible;">
+      <div class="card-inner">
+        <div class="card-head">
+          <span class="eyebrow">State · now</span>
+          <span class="eyebrow" id="stateToggle" style="cursor:pointer;">change ↓</span>
+        </div>
+        <div class="state-current" id="stateCurrent">
+          <span class="pip"></span>
+          <span class="label"></span>
+          <span class="meta"></span>
+        </div>
+        <div class="states" id="statesList">
+          <div class="state" data-state="green"    data-state-label="Go"><span class="pip"></span><span class="label">Go</span><span class="meta">GO</span></div>
+          <div class="state" data-state="yellow"   data-state-label="Hold"><span class="pip"></span><span class="label">Hold</span><span class="meta">HOLD</span></div>
+          <div class="state" data-state="red"      data-state-label="Rest"><span class="pip"></span><span class="label">Rest</span><span class="meta">REST</span></div>
+          <div class="state" data-state="potato"   data-state-label="Potato"><span class="pip"></span><span class="label">Potato</span><span class="meta">SOFT</span></div>
+          <div class="state" data-state="focus"    data-state-label="Deep"><span class="pip"></span><span class="label">Deep</span><span class="meta">DEEP</span></div>
+          <div class="state" data-state="crash"    data-state-label="Crashed"><span class="pip"></span><span class="label">Crashed</span><span class="meta">DOWN</span></div>
+          <div class="state" data-state="harmonic" data-state-label="Work day"><span class="pip"></span><span class="label">Work day</span><span class="meta">DAY</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="card liquid-glass">
+      <div class="card-inner">
+        <div class="card-head"><span class="eyebrow">Navigate</span></div>
+        <nav class="navlist">
+          <button class="navitem is-on" data-page="today"><span class="ni-key">H</span><span>Home · Today</span><span class="ni-badge" id="ni-today">0 / 0</span></button>
+          <button class="navitem" data-page="buckets"><span class="ni-key">B</span><span>Brain dump</span><span class="ni-badge">6</span></button>
+          <button class="navitem" data-page="prompts"><span class="ni-key">P</span><span>Key prompts</span><span class="ni-badge">6</span></button>
+          <button class="navitem" data-page="roadmap"><span class="ni-key">M</span><span>Roadmap</span><span class="ni-badge">12</span></button>
+          <button class="navitem" data-page="share"><span class="ni-key">S</span><span>Share with Cowork</span><span class="ni-badge">kit</span></button>
+        </nav>
+      </div>
+    </div>
+
+    <!-- Live surfaces -->
+    <div class="card liquid-glass">
+      <div class="card-inner">
+        <div class="card-head"><span class="eyebrow">Live · surfaces</span></div>
+        <div class="surfaces">
+          <a class="surface" href="https://latedxaudhdguy.com/dashboard.html" target="_blank" rel="noopener">
+            <span class="dot"></span><span style="flex:1">LDAG dashboard</span><span class="arr">↗</span>
+          </a>
+          <a class="surface" href="https://ops.thebookofoneness.com" target="_blank" rel="noopener">
+            <span class="dot"></span><span style="flex:1">MIRROR ops</span><span class="arr">↗</span>
+          </a>
+          <a class="surface" href="https://thebookofoneness.com" target="_blank" rel="noopener">
+            <span class="dot"></span><span style="flex:1">Book of Oneness</span><span class="arr">↗</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- ============================= MAIN ============================= -->
+  <section class="main" style="display:flex; flex-direction:column;">
+
+    <!-- PAGE: HOME -->
+    <div class="page is-on" data-page="today" id="section-home">
+
+      <!-- Red Phone -->
+      <div class="redphone liquid-glass-strong" id="section-redphone">
+        <div class="inner">
+          <div class="top">
+            <div>
+              <div class="eyebrow-red"><span class="red-dot"></span>Red Phone · direct line to chief of staff</div>
+              <h2>One <em>next action</em> — nothing more.</h2>
+              <p class="sub">Opens the line. Your message goes into the queue; the chief of staff replies in the panel.</p>
+            </div>
+            <div class="actions" style="display:flex; flex-direction:column; align-items:flex-end; gap:0;">
+              <button class="btn red-phone-btn" id="openRedPhone">
+                <span class="ico">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.86 19.86 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.86 19.86 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92Z"/></svg>
+                </span>
+                <span>Open the line</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tabs" role="tablist">
+        <button class="tab is-on" data-tab="today">Today <span id="countToday" style="opacity:0.6;font-size:0.72rem;margin-left:0.4rem;">0/0</span></button>
+        <button class="tab" data-tab="week">This week <span id="countWeek" style="opacity:0.6;font-size:0.72rem;margin-left:0.4rem;">0/0</span></button>
+      </div>
+
+      <div class="list-card liquid-glass" data-tabpane="today">
+        <div class="card-inner">
+          <div class="list-items" id="todayList"></div>
+          <form class="add-row" id="todayAdd" autocomplete="off">
+            <input class="add-input" type="text" placeholder="Add to today…" />
+            <button class="add-btn" type="submit" aria-label="Add">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <div class="list-card liquid-glass" data-tabpane="week" hidden>
+        <div class="card-inner">
+          <div class="list-items" id="weekList"></div>
+          <form class="add-row" id="weekAdd" autocomplete="off">
+            <input class="add-input" type="text" placeholder="Add to this week…" />
+            <button class="add-btn" type="submit" aria-label="Add">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <div style="font-size:0.7rem; color:var(--t-4); font-family:'JetBrains Mono',monospace; letter-spacing:0.15em;">
+        Click an item to check · click its label area to open context
+      </div>
+    </div>
+
+    <!-- PAGE: Brain dump -->
+    <div class="page" data-page="buckets">
+      <div class="buckets liquid-glass" id="section-buckets">
+        <div class="card-inner">
+          <div class="card-head">
+            <span class="eyebrow">Brain dump · opens the line</span>
+          </div>
+          <div class="buckets-grid">
+            <div class="bucket liquid-glass" data-bucket="bodhi360"><div class="n">bodhi360</div><div class="tag">01</div></div>
+            <div class="bucket liquid-glass" data-bucket="harmonic"><div class="n">Harmonic</div><div class="tag">02</div></div>
+            <div class="bucket liquid-glass" data-bucket="ldag"><div class="n">LDAG</div><div class="tag">03</div></div>
+            <div class="bucket liquid-glass" data-bucket="book"><div class="n">The Book of Oneness</div><div class="tag">04</div></div>
+            <div class="bucket liquid-glass" data-bucket="family"><div class="n">Family</div><div class="tag">05</div></div>
+            <div class="bucket liquid-glass" data-bucket="creative"><div class="n">Creative</div><div class="tag">06</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE: Key prompts -->
+    <div class="page" data-page="prompts">
+      <div class="prompts liquid-glass" id="section-prompts">
+        <div class="card-inner">
+          <div class="card-head"><span class="eyebrow">Key prompts · click to send on the line</span></div>
+          <div class="prompts-grid">
+            <div class="prompt liquid-glass" data-prompt="morning"><div class="n">Morning · where am I</div><div class="d">Chief of staff reads state, gives one next action.</div><div class="copy">send</div></div>
+            <div class="prompt liquid-glass" data-prompt="ldag_prod"><div class="n">LDAG · pick up production</div><div class="d">Transcripts, episodes, dashboard.</div><div class="copy">send</div></div>
+            <div class="prompt liquid-glass" data-prompt="ldag_draft"><div class="n">LDAG · draft an episode</div><div class="d">Concept + moments → Opus Agent brief.</div><div class="copy">send</div></div>
+            <div class="prompt liquid-glass" data-prompt="status"><div class="n">Status update · something changed</div><div class="d">Captures what shifted so the brains update.</div><div class="copy">send</div></div>
+            <div class="prompt liquid-glass" data-prompt="design_prd"><div class="n">Design PRD · into Claude Designer</div><div class="d">Product requirements doc for UI design handoff.</div><div class="copy">send</div></div>
+            <div class="prompt liquid-glass" data-prompt="skills_reorg_p3" style="grid-column: 1 / -1;"><div class="n">Skills reorg · Phase 3</div><div class="d">Inventory reviewed, canonical structure proposed, migration plan in one pass.</div><div class="copy">send</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE: Share with Cowork -->
+    <div class="page" data-page="share">
+      <div class="card liquid-glass">
+        <div class="card-inner">
+          <div class="card-head"><span class="eyebrow">Share with Cowork · clipboard (Cowork is a separate surface)</span></div>
+          <p style="color:var(--t-2); font-size:0.9rem; line-height:1.6; max-width:62ch; margin:0 0 1rem;">A packaged summary of this Command Center — structure, pages, interactions, and the new Direct Line paradigm — so Cowork can see what we've built. This is the one legitimate clipboard pattern: everything else flows through the Direct Line.</p>
+          <button class="btn" id="shareCopy">
+            <span>Copy share kit</span>
+            <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE: Roadmap -->
+    <div class="page" data-page="roadmap">
+      <div class="card liquid-glass" id="section-roadmap">
+        <div class="card-inner">
+          <div class="card-head"><span class="eyebrow">Roadmap · 0 → 9</span></div>
+          <div class="roadmap">
+            <div class="phase" data-status="done"><span class="num">00</span><span class="name">LDAG dashboard v4.6 live</span><span class="stat">done</span></div>
+            <div class="phase" data-status="done"><span class="num">00</span><span class="name">bodhi-chief-of-staff skill</span><span class="stat">done</span></div>
+            <div class="phase" data-status="done"><span class="num">01</span><span class="name">Command Center MVP · red phone</span><span class="stat">done</span></div>
+            <div class="phase" data-status="now"> <span class="num">02</span><span class="name">Direct Line panel · queue-backed CoS</span><span class="stat">now</span></div>
+            <div class="phase" data-status="next"><span class="num">03</span><span class="name">Scheduled CoS poller (reads queue, replies)</span><span class="stat">next</span></div>
+            <div class="phase"><span class="num">04</span><span class="name">Supabase-backed state (cross-device)</span><span class="stat">TBD</span></div>
+            <div class="phase"><span class="num">05</span><span class="name">Harmonic sub-hub</span><span class="stat">TBD</span></div>
+            <div class="phase"><span class="num">06</span><span class="name">LDAG website rebuild</span><span class="stat">TBD</span></div>
+            <div class="phase"><span class="num">07</span><span class="name">Wispr Flow direct integration</span><span class="stat">TBD</span></div>
+            <div class="phase"><span class="num">08</span><span class="name">Bell + red phone push</span><span class="stat">TBD</span></div>
+            <div class="phase"><span class="num">09</span><span class="name">Agent orchestration · PRD routing</span><span class="stat">TBD</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card liquid-glass" style="margin-top:1rem;">
+        <div class="card-inner">
+          <div class="card-head"><span class="eyebrow">Skills reorg audit · 2026-04-20</span></div>
+          <div class="roadmap">
+            <div class="phase" data-status="done"><span class="num">P1</span><span class="name">Inventory · 26 skill files, 9 location patterns, 6 canonical</span><span class="stat">done</span></div>
+            <div class="phase" data-status="done"><span class="num">P2</span><span class="name">Fix bodhi-chief-of-staff CoS skill: corrected 4 wrong TODO entries</span><span class="stat">done</span></div>
+            <div class="phase" data-status="now"> <span class="num">P3</span><span class="name">Canonical structure proposal · migration plan</span><span class="stat">now</span></div>
+            <div class="phase" data-status="next"><span class="num">P4</span><span class="name">Migration + archive execution</span><span class="stat">next</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </section>
+</main>
+
+<!-- Context drawer (task detail) -->
+<div class="drawer-scrim" id="drawerScrim"></div>
+<aside class="drawer liquid-glass-strong" id="drawer" aria-hidden="true">
+  <div class="d-head">
+    <div style="flex:1; min-width:0;">
+      <div class="eyebrow" id="drawerEyebrow">Task context</div>
+      <h3 class="d-title" id="drawerTitle">Task</h3>
+      <div class="d-meta" id="drawerMeta"></div>
+    </div>
+    <button class="x" id="drawerClose" aria-label="Close">×</button>
   </div>
-  <div class="state-wrap">
-    <div class="state-pill" id="state-pill" onclick="toggleStatePicker()">Flow State</div>
-    <div class="state-dropdown" id="state-dropdown"></div>
+  <div style="position:relative; z-index:2; display:flex; flex-direction:column; gap:0.5rem; flex:1; min-height:0;">
+    <div class="section-label">Context · for the agent</div>
+    <textarea class="d-notes" id="drawerNotes" placeholder="Add anything the chief of staff should know about this task — background, why it matters, blockers, links, previous attempts. Saved automatically."></textarea>
   </div>
-  <div class="sb-label">PAGES</div>
-  <a class="nav-item active" data-page="home" onclick="goPage('home')"><span class="ni-icon">⌂</span><span class="ni-label">Home</span><span class="ni-badge"></span></a>
-  <a class="nav-item" data-page="braindump" onclick="goPage('braindump')"><span class="ni-icon">◈</span><span class="ni-label">Brain Dump</span><span class="ni-badge"></span></a>
-  <a class="nav-item" data-page="prompts" onclick="goPage('prompts')"><span class="ni-icon">⚡</span><span class="ni-label">Key Prompts</span><span class="ni-badge"></span></a>
-  <a class="nav-item" data-page="roadmap" onclick="goPage('roadmap')"><span class="ni-icon">◎</span><span class="ni-label">Roadmap</span><span class="ni-badge"></span></a>
-  <a class="nav-item" data-page="share" onclick="goPage('share')"><span class="ni-icon">↗</span><span class="ni-label">Share</span><span class="ni-badge"></span></a>
-  <div class="sb-label" style="margin-top:8px">LIVE</div>
-  <a class="live-link" href="https://aicontentnow.github.io/bodhi-command-center" target="_blank"><span class="live-dot"></span>Dashboard ↗</a>
-  <a class="live-link" href="https://thebookofoneness.com" target="_blank"><span class="live-dot"></span>MIRROR Site ↗</a>
-  <a class="live-link" href="https://latedxaudhdguy.com/dashboard.html" target="_blank"><span class="live-dot"></span>LDAG ↗</a>
-  <div class="rp-card">
-    <div class="rp-eyebrow"><span class="rp-reddot"></span>DIRECT LINE</div>
-    <div class="rp-heading">The <em>Red Phone</em></div>
-    <div class="rp-sub">Message your next Cowork session</div>
-    <button class="rp-btn" onclick="openLine()">Open the Line</button>
+  <div class="d-actions">
+    <button class="d-del" id="drawerDelete">Delete task</button>
+    <button class="btn" id="drawerCopy">
+      <span>Send to the line</span>
+      <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4Z"/></svg></span>
+    </button>
   </div>
 </aside>
-<main id="cockpit-main"></main>
-</div>
 
-<!-- ALTAR -->
-<div id="altar-shell">
-<header id="altar-topbar">
-  <span class="at-brand">B360°</span>
-  <nav class="at-tabs" id="at-tabs">
-    <button class="tab-btn active" data-page="home" onclick="goPage('home')">Home</button>
-    <button class="tab-btn" data-page="braindump" onclick="goPage('braindump')">Brain Dump</button>
-    <button class="tab-btn" data-page="prompts" onclick="goPage('prompts')">Prompts</button>
-    <button class="tab-btn" data-page="roadmap" onclick="goPage('roadmap')">Roadmap</button>
-    <button class="tab-btn" data-page="share" onclick="goPage('share')">Share</button>
-  </nav>
-  <div class="at-links"><a href="https://aicontentnow.github.io/bodhi-command-center" target="_blank" class="live-link">Live ↗</a></div>
-</header>
-<div id="altar-main"></div>
-</div>
+<!-- ============================= DIRECT LINE PANEL ============================= -->
+<aside class="line-panel liquid-glass-strong" id="linePanel" aria-hidden="true">
+  <div class="line-head">
+    <div class="line-title">
+      <div class="line-dot"></div>
+      <div>
+        <div class="line-eyebrow">Direct line · bodhi chief of staff</div>
+        <h3>The line <em>is open.</em></h3>
+      </div>
+    </div>
+    <button class="x" id="lineClose" aria-label="Close">×</button>
+  </div>
 
-<!-- ORBIT -->
-<div id="orbit-shell">
-<canvas id="orbit-stars"></canvas>
-<div id="orbit-canvas">
-  <div class="orbit-ring" style="width:320px;height:320px"></div>
-  <div class="orbit-ring" style="width:520px;height:520px"></div>
-  <div class="orbit-ring" style="width:720px;height:720px"></div>
-  <div class="osun" onclick="switchView('cockpit')">B360°</div>
-</div>
-<div class="orbit-instr">CLICK NODE TO NAVIGATE · CLICK SUN TO RETURN</div>
-</div>
+  <!-- Structured launch -->
+  <div class="line-launch" id="lineLaunch">
+    <div class="launch-label">Structured launch · one tap</div>
+    <button class="launch" data-launch="next_step">
+      <span class="launch-n">Next step on roadmap</span>
+      <span class="launch-d">Frames where we are and what's next.</span>
+    </button>
+    <button class="launch" data-launch="issue">
+      <span class="launch-n">I have an issue</span>
+      <span class="launch-d">Opens a conversational thread here.</span>
+    </button>
+    <button class="launch" data-launch="strategy">
+      <span class="launch-n">High-level strategy</span>
+      <span class="launch-d">Flags for an Opus Chat session.</span>
+    </button>
+  </div>
 
-<!-- DIRECT LINE -->
-<div id="dl-overlay" onclick="closeLine()"></div>
-<div id="dlp">
-<div class="dlh">
-  <span class="dlh-title">Direct Line</span>
-  <span class="dlh-status">COWORK</span>
-  <button class="dlh-x" onclick="closeLine()">✕</button>
-</div>
-<div class="dl-sub">Messages write to Supabase, picked up by your next Cowork session.</div>
-<div class="dl-ql" id="dl-ql"></div>
-<div class="dl-thread" id="dl-thread"><div class="dl-empty">No messages yet.</div></div>
-<div class="dl-compose">
-  <div class="dl-ctag">COWORK THREAD</div>
-  <textarea class="dl-ta" id="dl-ta" placeholder="Message to Cowork session..." rows="3"></textarea>
-  <div class="dl-confirm" id="dl-confirm">Sent to Cowork thread</div>
-  <div class="dl-crow">
-    <span class="dl-qstatus" id="dl-qstatus">Ready</span>
-    <button class="dl-send" onclick="sendLine()">Send</button>
+  <!-- Thread -->
+  <div class="line-thread" id="lineThread">
+    <div class="line-empty" id="lineEmpty">
+      <div class="le-mark">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.86 19.86 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.86 19.86 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92Z"/></svg>
+      </div>
+      <div class="le-copy">
+        <div class="le-n">Say what needs to change.</div>
+        <div class="le-d">Messages queue to <code>agent_triggers</code>. Chief of staff reads on its next run and replies here. No copying, no new sessions.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Composer -->
+  <form class="line-composer" id="lineComposer" autocomplete="off">
+    <div class="tag-bar" id="lineTagBar" hidden>
+      <span class="tag-label">Context</span>
+      <span class="tag" id="lineTag"></span>
+      <button type="button" class="tag-x" id="lineTagClear" aria-label="Clear context">×</button>
+    </div>
+    <textarea class="line-input" id="lineInput" placeholder="Talk to the chief of staff. Enter to send · Shift+Enter for a new line." rows="2"></textarea>
+    <div class="line-foot">
+      <div class="line-hint"><span class="pulse-dot"></span>Queue · in-memory per session · Supabase integration planned.</div>
+      <button class="btn" type="submit" id="lineSend">
+        <span>Send</span>
+        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4Z"/></svg></span>
+      </button>
+    </div>
+  </form>
+</aside>
+
+<!-- Tweaks -->
+<button class="btn ghost liquid-glass" id="tweaksBtn" style="position:fixed; bottom:1rem; right:1rem; z-index:81;">
+  <span>Views</span>
+  <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg></span>
+</button>
+<div id="tweaks" class="liquid-glass-strong">
+  <div class="inner">
+    <h4>View</h4>
+    <div class="tweak-opt" data-variant="cockpit">Cockpit · dashboard</div>
+    <div class="tweak-opt" data-variant="altar">Altar · horizontal pill strip</div>
+    <div class="tweak-opt" data-variant="orbit">Orbit · planetary canvas</div>
   </div>
 </div>
-</div>
 
-<!-- VIEW FAB -->
-<div id="vfab" onclick="toggleVPanel()" title="Switch view (V)">⊹</div>
-<div id="vpanel">
-  <div class="vopt active" id="vopt-cockpit" onclick="switchView('cockpit')"><span class="vopt-icon">◫</span>Cockpit</div>
-  <div class="vopt" id="vopt-altar" onclick="switchView('altar')"><span class="vopt-icon">◻</span>Altar</div>
-  <div class="vopt" id="vopt-orbit" onclick="switchView('orbit')"><span class="vopt-icon">◎</span>Orbit</div>
-</div>
-<div id="toast"></div>
-<div id="pages-container"></div>
-</div>
-<script>
-const SUPA_URL='https://gcbvvausrmbbkfazojpl.supabase.co';
-const SUPA_KEY='sb_publishable_dx9sYWtLtpXacM9ZIXoYRg_VPiKG69P';
-const STATE_LABELS={flow:'Flow State',grind:'Deep Grind',surface:'Surface Mode',rest:'Rest Mode',crisis:'Crisis Mode'};
-const STATE_COLORS={flow:'#40e0f4',grind:'#a78bfa',surface:'#60a5fa',rest:'#34d399',crisis:'#e04b4b'};
-const BUCKETS=[
-  {id:'mirror',label:'MIRROR',icon:'📖',color:'#e0b44b',desc:'Publishing, Book of Oneness, outreach'},
-  {id:'harmonic',label:'HARMONIC',icon:'📡',color:'#40e0f4',desc:'Day job, SensAI launch, website redesign'},
-  {id:'seasons',label:'SEASØNS',icon:'🎵',color:'#a78bfa',desc:'Albums, visual production, website'},
-  {id:'framezero',label:'FRAMEZERØ',icon:'🎬',color:'#60a5fa',desc:'Agency, client work, consulting'},
-  {id:'ldag',label:'LDAG',icon:'🧠',color:'#34d399',desc:'AuDHD docuseries, episodes, dashboard'},
-  {id:'career',label:'CAREER',icon:'💼',color:'#f59e0b',desc:'Job search, resume, positioning'},
-  {id:'command',label:'COMMAND',icon:'⚙️',color:'#e04b4b',desc:'Systems, skills, infrastructure'},
-];
-const PCARDS=[
-  {id:'cowork-boot',label:'Boot Cowork',icon:'🚀',desc:'Chief of Staff',text:'Load this skill and follow its instructions:\nskills/bodhi-chief-of-staff/SKILL.md\n\nThat is your complete working context. Start immediately.'},
-  {id:'ldag-script',label:'LDAG Script',icon:'🎬',desc:'Episode script',text:'Load this skill and follow its instructions:\nskills/ldag-episode-script/SKILL.md\n\nThat is your complete working context. Start immediately.'},
-  {id:'ldag-cos',label:'LDAG CoS',icon:'🧠',desc:'Chief of Staff',text:'Load this skill and follow its instructions:\nskills/ldag-cos/SKILL.md\n\nThat is your complete working context. Start immediately.'},
-  {id:'skills-reorg',label:'Skills Reorg',icon:'📂',desc:'Phase 3',text:'Read: _command-center/reorg/INVENTORY_2026-04-20.md\n\nContinue Phase 3: audit and move remaining skills to canonical iCloud location at skills/<name>/SKILL.md.'},
-  {id:'mirror-cos',label:'MIRROR CoS',icon:'📖',desc:'Publishing ops',text:'Read the MIRROR Chief of Staff section of mirror/CLAUDE.md. You are the MIRROR Chief of Staff. Review the current state and surface what needs Bodhi\'s attention today.'},
-  {id:'harmonic-cos',label:'Harmonic CoS',icon:'⚡',desc:'Day job ops',text:'Read harmonic/CLAUDE.md. You are the Harmonic Chief of Staff. Review active campaigns, deadlines, and what needs Bodhi\'s attention today at Harmonic. Surface the one highest-leverage action.'},
-  {id:'session-flush',label:'Session Wrap',icon:'💾',desc:'Flush to Supabase',text:(`Before we close: write everything we covered today -- all tasks, decisions, status updates, and action items -- to two places:\n1. _inbox/_processed/STATUS_UPDATE_${new Date().toISOString().slice(0,10)}.md (full summary of what was discussed and decided)\n2. Supabase tasks table: insert every concrete action item as a task row with user_id='bodhi', horizon='today' or 'week' as appropriate, and the correct bucket (MIRROR, LDAG, Harmonic, FRAMEZERØ, Career, bodhi360, Family, Command).\nAfter writing, confirm what was inserted so I can see it in the command center.`)},
-];
-const APP={sb:null,view:'cockpit',page:'home',tasks:[],portfolioState:'flow',dlOpen:false,dlThread:[]};
-</script>
-<script>
-async function init(){
-  try{
-    APP.sb=supabase.createClient(SUPA_URL,SUPA_KEY);
-    await loadState();
-    await loadTasks();
-    renderView();
-    subscribeRT();
-    document.getElementById('error-screen').classList.remove('show');
-  }catch(e){
-    document.getElementById('error-msg').textContent=e.message||'Connection failed';
-    document.getElementById('error-screen').classList.add('show');
-  }
-}
-async function loadState(){
-  try{
-    const {data}=await APP.sb.from('portfolio_state').select('*').eq('id',1).single();
-    if(data){APP.portfolioState=data.state||'flow';}
-  }catch(e){}
-  updateStateUI();
-}
-async function savePS(patch){
-  try{await APP.sb.from('portfolio_state').upsert({id:1,...patch,updated_at:new Date().toISOString()});}catch(e){}
-}
-async function loadTasks(){
-  try{
-    const {data}=await APP.sb.from('tasks').select('*').order('created_at',{ascending:true});
-    APP.tasks=data||[];
-  }catch(e){APP.tasks=[];}
-}
-async function addTask(bucket,text){
-  if(!text.trim())return;
-  try{
-    const {data}=await APP.sb.from('tasks').insert({bucket,text:text.trim(),done:false}).select().single();
-    if(data){APP.tasks.push(data);renderPage();}
-  }catch(e){toast('Error saving task');}
-}
-async function toggleTask(id){
-  const t=APP.tasks.find(x=>x.id===id);if(!t)return;
-  t.done=!t.done;
-  try{await APP.sb.from('tasks').update({done:t.done}).eq('id',id);}catch(e){}
-  renderPage();
-}
-function logEv(type,payload={}){
-  try{APP.sb.from('interaction_log').insert({type,payload,ts:new Date().toISOString()}).then(()=>{});}catch(e){}
-}
-</script>
-<script>
-async function loadDLThread(){
-  try{
-    const {data}=await APP.sb.from('direct_line_messages').select('*').order('created_at',{ascending:true}).limit(50);
-    APP.dlThread=data||[];
-  }catch(e){APP.dlThread=[];}
-  renderThread();
-}
-async function writeDL(text,role='user'){
-  if(!text.trim())return;
-  try{
-    const {data}=await APP.sb.from('direct_line_messages').insert({role,text:text.trim()}).select().single();
-    if(data){APP.dlThread.push(data);renderThread();logEv('dl_send',{role,len:text.length});}
-  }catch(e){toast('Error sending message');}
-}
-function subscribeRT(){
-  try{
-    APP.sb.channel('tasks-rt').on('postgres_changes',{event:'*',schema:'public',table:'tasks'},()=>loadTasks().then(renderPage)).subscribe();
-    APP.sb.channel('state-rt').on('postgres_changes',{event:'*',schema:'public',table:'portfolio_state'},()=>loadState()).subscribe();
-    APP.sb.channel('dl-rt').on('postgres_changes',{event:'INSERT',schema:'public',table:'direct_line_messages'},payload=>{
-      if(!APP.dlThread.find(m=>m.id===payload.new.id)){APP.dlThread.push(payload.new);if(APP.dlOpen)renderThread();}
-    }).subscribe();
-  }catch(e){}
-}
-function switchView(v){
-  APP.view=v;
-  document.body.className='view-'+v;
-  const pc=document.getElementById('pages-container');
-  if(v==='cockpit')document.getElementById('cockpit-main').appendChild(pc);
-  else if(v==='altar')document.getElementById('altar-main').appendChild(pc);
-  ['cockpit','altar','orbit'].forEach(x=>{
-    const el=document.getElementById('vopt-'+x);if(el)el.classList.toggle('active',x===v);
-  });
-  document.getElementById('vpanel').classList.remove('show');
-  if(v==='orbit')setTimeout(drawStars,50);
-  logEv('switch_view',{view:v});
-}
-function renderView(){switchView(APP.view);updateStateUI();renderPage();}
-function goPage(p){
-  APP.page=p;
-  document.querySelectorAll('.nav-item').forEach(el=>el.classList.toggle('active',el.dataset.page===p));
-  document.querySelectorAll('.tab-btn').forEach(el=>el.classList.toggle('active',el.dataset.page===p));
-  renderPage();logEv('nav',{page:p});
-}
-function renderPage(){
-  const pc=document.getElementById('pages-container');if(!pc)return;
-  const pages={home:renderHome,braindump:renderBrainDump,prompts:renderPrompts,roadmap:renderRoadmap,share:renderShare};
-  (pages[APP.page]||renderHome)(pc);
-}
-</script>
-<script>
-function renderHome(pc){
-  const done=APP.tasks.filter(t=>t.done).length;
-  const total=APP.tasks.length;
-  pc.innerHTML=`<div class="page" id="page-home">
-<div class="tasks-card">
-<div class="tc-head"><span class="tc-title">Active Tasks</span><span class="tc-count">${done}/${total}</span></div>
-<div id="task-list">${renderTaskRows()}</div>
-<div class="add-row">
-  <select id="add-bucket">${BUCKETS.map(b=>`<option value="${b.id}">${b.label}</option>`).join('')}</select>
-  <input class="add-input" id="add-text" placeholder="New task..." onkeydown="if(event.key==='Enter')doAddTask()">
-  <button class="add-btn" onclick="doAddTask()">+</button>
-</div>
-</div></div>`;
-}
-function renderTaskRows(){
-  if(!APP.tasks.length)return`<div style="padding:16px;color:var(--t-3);font-size:.85rem;text-align:center">No tasks yet</div>`;
-  return APP.tasks.map(t=>{
-    const b=BUCKETS.find(x=>x.id===t.bucket);
-    return`<div class="task-row${t.done?' done':''}" onclick="toggleTask('${t.id}')">
-<span class="task-check">${t.done?'✓':''}</span>
-<span class="task-bucket" style="color:${b?.color||'var(--t-3)'}">${(t.bucket||'?').toUpperCase()}</span>
-<span class="task-text">${esc(t.text)}</span></div>`;
-  }).join('');
-}
-function doAddTask(){
-  const b=document.getElementById('add-bucket')?.value;
-  const el=document.getElementById('add-text');
-  if(!el||!el.value.trim())return;
-  addTask(b||'command',el.value.trim());
-  el.value='';
-}
-</script>
-<script>
-function renderBrainDump(pc){
-  pc.innerHTML=`<div class="page" id="page-braindump">
-<div class="ph">Brain Dump</div>
-<div class="ps">Each bucket opens the Direct Line. Drop thoughts, context, or a prompt straight to your next Cowork session.</div>
-<div class="buckets-grid">${BUCKETS.map(b=>`
-<div class="bcard" style="--bc:${b.color}" onclick="openLine('${esc(b.label)}')">
-<div class="bname">${b.icon} ${esc(b.label)}</div>
-<div class="bdesc">${esc(b.desc)}</div>
-</div>`).join('')}</div></div>`;
-}
-function renderPrompts(pc){
-  pc.innerHTML=`<div class="page" id="page-prompts">
-<div class="ph">Key Prompts</div>
-<div class="ps">Tap a card to load the prompt into the Direct Line. Copy from there to paste into Cowork.</div>
-<div class="pgrid">${PCARDS.map(p=>`
-<div class="pcard" onclick="qlLaunch('${p.id}')">
-<div class="pname">${p.icon} ${esc(p.label)}</div>
-<div class="pdesc">${esc(p.desc)}</div>
-<span class="ptag">Direct Line</span>
-</div>`).join('')}</div></div>`;
-}
-function renderRoadmap(pc){
-  const items=[
-    {phase:'SHIPPED',label:'v1 Command Center, localStorage + basic UI'},
-    {phase:'SHIPPED',label:'Skills relocated to iCloud canonical path'},
-    {phase:'SHIPPED',label:'Bodhi 360 Chief of Staff skill'},
-    {phase:'SHIPPED',label:'GitHub Pages deployment (all sites)'},
-    {phase:'ACTIVE',label:'v2 Command Center, Supabase + three views + Direct Line',active:true},
-    {phase:'NEXT',label:'Skills Reorg Phase 3, move all remaining skills'},
-    {phase:'NEXT',label:'Book cover glitch-effect proof v2'},
-    {phase:'NEXT',label:'Blotato MCP auth completion'},
-    {phase:'QUEUED',label:'Orbit view, real-time task nodes per bucket'},
-    {phase:'QUEUED',label:'IngramSpark metadata check (MIRROR author field)'},
-  ];
-  pc.innerHTML=`<div class="page" id="page-roadmap">
-<div class="ph">Roadmap</div>
-${items.map(i=>`<div class="rmitem${i.phase==='SHIPPED'?' done':''}${i.active?' active':''}">
-<div class="rmphase">${esc(i.phase)}</div>
-<div class="rmt">${esc(i.label)}</div>
-</div>`).join('')}</div>`;
-}
-</script>
-<script>
-function renderShare(pc){
-  pc.innerHTML=`<div class="page" id="page-share">
-<div class="ph">Share with Cowork</div>
-<div class="ps">Copy this block and paste at the start of a new Cowork session to transfer current portfolio state.</div>
-<div class="share-pre" id="share-text">${esc(buildShareText())}</div>
-<button class="share-copy" onclick="copyShare()">Copy to Clipboard</button>
-</div>`;
-}
-function buildShareText(){
-  const done=APP.tasks.filter(t=>t.done).length;
-  const active=APP.tasks.filter(t=>!t.done).map(t=>`- [${(t.bucket||'?').toUpperCase()}] ${t.text}`).join('\n');
-  return`BODHI 360 COMMAND CENTER STATE -- ${new Date().toLocaleDateString('en-CA')}
-Portfolio state: ${STATE_LABELS[APP.portfolioState]||APP.portfolioState}
-Tasks: ${done} done, ${APP.tasks.filter(t=>!t.done).length} active
-
-ACTIVE TASKS:
-${active||'(none)'}
-
-READ FIRST: ~/Library/Mobile Documents/com~apple~CloudDocs/Claude-Workspace/CLAUDE.md`;
-}
-function copyShare(){
-  const text=buildShareText();
-  navigator.clipboard.writeText(text).then(()=>toast('Copied to clipboard')).catch(()=>{
-    const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();toast('Copied');
-  });
-}
-function updateStateUI(){
-  const pill=document.getElementById('state-pill');if(!pill)return;
-  pill.textContent=STATE_LABELS[APP.portfolioState]||APP.portfolioState;
-  const c=STATE_COLORS[APP.portfolioState]||'#40e0f4';
-  pill.style.cssText=`background:${c}22;color:${c};border-color:${c}44`;
-}
-function setState(s){
-  APP.portfolioState=s;updateStateUI();savePS({state:s});toggleStatePicker(false);logEv('state_change',{state:s});
-}
-function toggleStatePicker(force){
-  const dd=document.getElementById('state-dropdown');if(!dd)return;
-  const show=force!==undefined?force:!dd.classList.contains('show');
-  if(show){
-    dd.innerHTML=Object.entries(STATE_LABELS).map(([k,v])=>`<div class="sopt${k===APP.portfolioState?' active':''}" onclick="setState('${k}')" style="--sc:${STATE_COLORS[k]}">${v}</div>`).join('');
-    dd.classList.add('show');
-  }else{dd.classList.remove('show');}
-}
-</script>
-<script>
-function openLine(context){
-  APP.dlOpen=true;
-  document.getElementById('dl-overlay').classList.add('show');
-  document.getElementById('dlp').classList.add('open');
-  loadDLThread();
-  renderDLQL();
-  if(context){const ta=document.getElementById('dl-ta');if(ta)ta.value=`[${context}] `;}
-  logEv('dl_open',{context:context||null});
-}
-function closeLine(){
-  APP.dlOpen=false;
-  document.getElementById('dl-overlay').classList.remove('show');
-  document.getElementById('dlp').classList.remove('open');
-}
-function renderThread(){
-  const el=document.getElementById('dl-thread');if(!el)return;
-  if(!APP.dlThread.length){el.innerHTML='<div class="dl-empty">No messages yet.</div>';return;}
-  el.innerHTML=APP.dlThread.map(m=>`<div class="dlm${m.role==='user'?' dlm-me':' dlm-cos'}">
-<div class="dlm-label">${m.role==='user'?'YOU':'COWORK'}</div>
-<div>${esc(m.text||'')}</div></div>`).join('');
-  el.scrollTop=el.scrollHeight;
-}
-function renderDLQL(){
-  const el=document.getElementById('dl-ql');if(!el)return;
-  el.innerHTML=`<div style="font-size:.6rem;font-family:'JetBrains Mono',monospace;color:var(--t-4);letter-spacing:.18em;text-transform:uppercase;margin-bottom:4px">QUICK LAUNCH</div>`+
-  PCARDS.map(p=>`<button class="dl-qlb" onclick="qlLaunch('${p.id}')">
-<span class="dl-qlb-icon">${p.icon}</span>
-<span class="dl-qlb-text">${esc(p.label)}</span>
-<span class="dl-qlb-desc">${esc(p.desc)}</span></button>`).join('');
-}
-function sendLine(){
-  const ta=document.getElementById('dl-ta');if(!ta||!ta.value.trim())return;
-  writeDL(ta.value.trim());ta.value='';
-  const confirm=document.getElementById('dl-confirm');
-  if(confirm){confirm.classList.add('show');setTimeout(()=>confirm.classList.remove('show'),2500);}
-}
-function qlLaunch(id){
-  const p=PCARDS.find(x=>x.id===id);if(!p)return;
-  if(!APP.dlOpen)openLine();
-  const ta=document.getElementById('dl-ta');if(ta)ta.value=p.text;
-  logEv('ql_launch',{id});
-}
-</script>
-
-<script>
-function drawStars(){
-  const canvas=document.getElementById('orbit-stars');if(!canvas)return;
-  canvas.width=window.innerWidth;canvas.height=window.innerHeight;
-  const ctx=canvas.getContext('2d');ctx.clearRect(0,0,canvas.width,canvas.height);
-  for(let i=0;i<220;i++){
-    const a=Math.random()*0.55+0.04;
-    ctx.fillStyle=`rgba(255,255,255,${a})`;
-    ctx.beginPath();ctx.arc(Math.random()*canvas.width,Math.random()*canvas.height,Math.random()*1.4+0.2,0,Math.PI*2);ctx.fill();
-  }
-  renderOrbitNodes();
-}
-function renderOrbitNodes(){
-  const cv=document.getElementById('orbit-canvas');if(!cv)return;
-  cv.querySelectorAll('.onode').forEach(n=>n.remove());
-  const rings=[
-    {nodes:[{id:'mirror',icon:'📖',label:'MIRROR'},{id:'harmonic',icon:'📡',label:'HARMONIC'},{id:'seasons',icon:'🎵',label:'SEASØNS'}],r:160,dur:45},
-    {nodes:[{id:'framezero',icon:'🎬',label:'FRAMEZERØ'},{id:'ldag',icon:'🧠',label:'LDAG'},{id:'career',icon:'💼',label:'CAREER'},{id:'command',icon:'⚙️',label:'COMMAND'}],r:260,dur:70},
-    {nodes:[{id:'dl',icon:'📞',label:'DIRECT LINE',red:true}],r:360,dur:90},
-  ];
-  rings.forEach(ring=>{
-    const step=360/ring.nodes.length;
-    ring.nodes.forEach((n,i)=>{
-      const os=i*step;
-      const el=document.createElement('div');
-      el.className='onode'+(n.red?' onode-red':'');
-      el.style.cssText=`--os:${os}deg;--r:${ring.r}px;--dur:${ring.dur}s`;
-      el.innerHTML=`<span class="onode-icon">${n.icon}</span><span class="onode-label">${n.label}</span>`;
-      el.onclick=()=>{
-        if(n.id==='dl'){openLine();}
-        else{switchView('cockpit');goPage('braindump');}
-        logEv('orbit_click',{node:n.id});
-      };
-      cv.appendChild(el);
-    });
-  });
-}
-function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');}
-function toast(msg,dur=2500){
-  const t=document.getElementById('toast');if(!t)return;
-  t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),dur);
-}
-function toggleVPanel(){document.getElementById('vpanel').classList.toggle('show');}
-document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'){closeLine();document.getElementById('vpanel').classList.remove('show');toggleStatePicker(false);}
-  if(e.target.matches('input,textarea,select'))return;
-  if(e.key==='1')goPage('home');
-  if(e.key==='2')goPage('braindump');
-  if(e.key==='3')goPage('prompts');
-  if(e.key==='4')goPage('roadmap');
-  if(e.key==='5')goPage('share');
-  if(e.key==='r'||e.key==='R')openLine();
-  if(e.key==='v'||e.key==='V')toggleVPanel();
-});
-window.addEventListener('resize',()=>{if(APP.view==='orbit')drawStars();});
-document.addEventListener('click',e=>{
-  if(!e.target.closest('#state-dropdown')&&!e.target.closest('.state-pill'))toggleStatePicker(false);
-  if(!e.target.closest('#vpanel')&&!e.target.closest('#vfab'))document.getElementById('vpanel').classList.remove('show');
-});
-document.addEventListener('DOMContentLoaded',()=>{
-  const pc=document.getElementById('pages-container');
-  const cm=document.getElementById('cockpit-main');
-  if(pc&&cm)cm.appendChild(pc);
-  init();
-});
-</script>
+<div class="toast liquid-glass-strong" id="toast"></div>
+<script src="v2-app.js"></script>
 </body>
 </html>
