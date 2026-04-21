@@ -497,7 +497,7 @@ ${it.notes || '(no additional context yet)'}`;
     if (state.variant === 'altar') setupAltar(); else teardownAltar();
   }
 
-  // --- Altar view — single horizontal pill strip with dropdowns
+  // --- Altar view : single horizontal pill strip with dropdowns
   let altarPills = null;
   function setupAltar() {
     if (altarPills) return;
@@ -548,7 +548,7 @@ ${it.notes || '(no additional context yet)'}`;
       }))
     });
 
-    // Links pill — live surfaces, collapsed behind one icon
+    // Links pill : live surfaces, collapsed behind one icon
     const surfaces = Array.from(document.querySelectorAll('.surfaces .surface'));
     const linksPill = makePill({
       id: 'altar-links',
@@ -582,7 +582,7 @@ ${it.notes || '(no additional context yet)'}`;
       });
       menu.appendChild(btn);
     });
-    // Click head to toggle (but not when clicking menu items — they stopPropagation)
+    // Click head to toggle (but not when clicking menu items : they stopPropagation)
     el.addEventListener('click', (e) => {
       if (e.target.closest('.altar-menu')) return;
       const wasOpen = el.classList.contains('is-open');
@@ -666,35 +666,35 @@ ${it.notes || '(no additional context yet)'}`;
   if (brandHome) brandHome.addEventListener('click', () => setPage('today'));
 
   // --- Share with Cowork kit
-  const SHARE_KIT = `Bodhi 360° · Command Center v2 — share kit
+  const SHARE_KIT = `Bodhi 360° · Command Center v2 : share kit
 (Paste this into a new Cowork session so Cowork can see what's been built without screens.)
 
 PURPOSE
 A personal command center for a neurodivergent (AuDHD), non-dual operator running Harmonic (day job), LDAG, The Book of Oneness, Family, and Creative work in parallel. The center reduces cognitive load: every session starts with the Red Phone (one next action), brain dumps get routed, and tasks carry persistent context for the agent.
 
 CORE PARADIGM · DIRECT LINE (v2)
-v1 relied on copying prompts and pasting them into a new Cowork session every time. v2 replaces that with a Direct Line panel — a 440px conversational surface that slides in from the right. Every action (Red Phone, brain-dump bucket, key prompt, "Send to the line" from a task) opens this panel and queues a message into the chief-of-staff inbox. The chief of staff reads on its next run and replies in the same thread. No copying, no new sessions, one continuous conversation.
+v1 relied on copying prompts and pasting them into a new Cowork session every time. v2 replaces that with a Direct Line panel : a 440px conversational surface that slides in from the right. Every action (Red Phone, brain-dump bucket, key prompt, "Send to the line" from a task) opens this panel and queues a message into the chief-of-staff inbox. The chief of staff reads on its next run and replies in the same thread. No copying, no new sessions, one continuous conversation.
 
   • Message shape (in memory per session; Supabase \`agent_triggers\` when the backend is live):
       { id, role: 'me'|'cos', kind, tag, text, ts, status: 'pending'|'routed'|'replied' }
   • kind values: redphone · brain_dump · prompt · task · launch · freeform
   • Panel persists across page changes. Close only via the explicit X or Escape.
 
-  • Structured launch (when thread is empty) — three taps:
+  • Structured launch (when thread is empty) : three taps:
       · Next step on roadmap
       · I have an issue
       · High-level strategy (flagged for an Opus Chat session)
 
 STRUCTURE
 Sidebar (always visible in Cockpit view):
-  • Brand (bodhi 360°) — clicking the logo returns to Home.
-  • State picker — collapsed by default, shows the current mode (Go / Hold / Rest / Potato / Deep / Crashed / Work day). Click the pill to change state.
+  • Brand (bodhi 360°) : clicking the logo returns to Home.
+  • State picker : collapsed by default, shows the current mode (Go / Hold / Rest / Potato / Deep / Crashed / Work day). Click the pill to change state.
   • Navigate: Home · Today, Brain dump, Key prompts, Roadmap, Share with Cowork.
   • Live surfaces: LDAG dashboard, MIRROR ops, Book of Oneness.
 
 Home (default page):
-  • Red Phone — pinned at the top. "Open the line" opens the Direct Line panel seeded with the session-start message, tagged RED PHONE.
-  • Today / This week tabs — inside one card. Check off (the small square) or click the row label to open the task drawer.
+  • Red Phone : pinned at the top. "Open the line" opens the Direct Line panel seeded with the session-start message, tagged RED PHONE.
+  • Today / This week tabs : inside one card. Check off (the small square) or click the row label to open the task drawer.
 
 Task drawer (per task):
   • Task + horizon + bucket + notes textarea (saved live).
@@ -709,7 +709,7 @@ Key prompts page:
   • Clicking opens the Direct Line panel with the prompt text pre-seeded and tagged.
 
 Share with Cowork page:
-  • The one legitimate clipboard pattern — this kit. Cowork is a separate surface; this is how the Command Center describes itself to it.
+  • The one legitimate clipboard pattern : this kit. Cowork is a separate surface; this is how the Command Center describes itself to it.
 
 Roadmap page:
   • Phases 00–09. Currently at 02 (Direct Line panel · queue-backed CoS). Next: 03 scheduled CoS poller.
@@ -725,10 +725,10 @@ DESIGN LANGUAGE
 STATE / PERSISTENCE
   • In-memory per session. Refreshing the page resets all state. Supabase integration planned for cross-device persistence.
 
-VIEWS (Views button, bottom-right — hidden while the Direct Line panel is open)
-  • Cockpit — the full two-column dashboard (default).
-  • Altar — strips the sidebar down to a single horizontal pill strip (brand + State pill + Page pill + Links pill, each with a dropdown).
-  • Orbit — planetary canvas. A cyan sun ("bodhi 360°", click = Home) sits at center with orbiting planets: Red Phone (opens the line with session opener), Harmonic / LDAG / bodhi360 (middle ring, open the line with brain-dump tag), Book of Oneness / Family / Creative (outer ring, same).
+VIEWS (Views button, bottom-right : hidden while the Direct Line panel is open)
+  • Cockpit : the full two-column dashboard (default).
+  • Altar : strips the sidebar down to a single horizontal pill strip (brand + State pill + Page pill + Links pill, each with a dropdown).
+  • Orbit : planetary canvas. A cyan sun ("bodhi 360°", click = Home) sits at center with orbiting planets: Red Phone (opens the line with session opener), Harmonic / LDAG / bodhi360 (middle ring, open the line with brain-dump tag), Book of Oneness / Family / Creative (outer ring, same).
 
 [ end share kit ]`;
 
