@@ -1,6 +1,10 @@
 // Bodhi 360 Command Center · interactions
 
-const save = () => {};
+const SUPABASE_URL = 'https://gcbvvausrmbbkfazojpl.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_dx9sYWtLtpXacM9ZIXoYRg_VPiKG69P';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const save = () => {}; // replaced stage by stage with real Supabase writes
 
 let state = {
   mode: 'harmonic',
@@ -739,6 +743,79 @@ VIEWS (Views button, bottom-right : hidden while the Direct Line panel is open)
   if (shareBtn) shareBtn.addEventListener('click', () => {
     copyWithFeedback(shareBtn, SHARE_KIT, 'Share kit · copied · paste into Cowork', 'Copied');
   });
+
+  // ============================================================
+  // SUPABASE INIT (Stage 1: load tasks)
+  // ============================================================
+
+  // Map a Supabase tasks row to the internal task object
+  function rowToTask(row) {
+    return {
+      id:    row.id,
+      label: row.title,
+      done:  row.done,
+      focus: false,
+      meta:  row.bucket || 'SELF',
+      notes: '',  // loaded separately in Stage 3
+    };
+  }
+
+  async function initFromSupabase() {
+    try {
+      // Load all tasks for today and this week
+      const { data: tasks, error } = await sb
+        .from('tasks')
+        .select('id, title, bucket, horizon, done, sort_order')
+        .eq('user_id', 'bodhi')
+        .in('horizon', ['today', 'week'])
+        .order('sort_order', { ascending: true });
+
+      if (error) throw error;
+
+      state.today = tasks.filter(t => t.horizon === 'today').map(rowToTask);
+      state.week  = tasks.filter(t => t.horizon === 'week').map(rowToTask);
+
+      ['today', 'week'].forEach(w => renderList(w));
+      renderCounts();
+
+      // Realtime: re-render task lists when any task row changes
+      sb.channel('tasks-live')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks', filter: "user_id=eq.bodhi" },
+          async (payload) => {
+            const updated = payload.new;
+            if (!updated) return;
+            // Patch the task in state rather than full re-fetch for speed
+            const horizon = updated.horizon;
+            const list = state[horizon];
+            if (!list) return;
+            const idx = list.findIndex(t => t.id === updated.id);
+            const patched = rowToTask(updated);
+            if (idx >= 0) {
+              list[idx] = { ...list[idx], ...patched }; // preserve local notes
+            } else {
+              list.push(patched);
+            }
+            renderList(horizon);
+            renderCounts();
+          })
+        .subscribe();
+
+      // Log app_opened
+      sb.from('interaction_log').insert({
+        user_id: 'bodhi',
+        event_type: 'app_opened',
+        event_data: { view: state.variant, page: state.page, energy_state: state.mode },
+      }).then(({ error: e }) => { if (e) console.warn('interaction_log write failed:', e); });
+
+    } catch (err) {
+      console.error('Supabase init failed:', err);
+      toastErr('Supabase: ' + (err.message || 'connection failed'));
+    }
+  }
+
+  // ============================================================
+  // BOOT
+  // ============================================================
   renderStates();
   buildOrbit; teardownOrbit; // keep references live
   ['today','week'].forEach(w => { renderList(w); bindAdder(w); });
@@ -746,3 +823,5 @@ VIEWS (Views button, bottom-right : hidden while the Direct Line panel is open)
   setPage(state.page);
   setTab(state.tab);
   applyVariant();
+  // Fire async after sync render so the page isn't blank during network round-trip
+  initFromSupabase();
