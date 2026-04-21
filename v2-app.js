@@ -314,7 +314,7 @@ let state = {
         tag: tagValue || null,
         processed: false,
       });
-    if (error) { toastErr('Queue write failed'); return false; }
+    if (error) { console.error('[Supabase] direct_line_messages insert failed:', error); toastErr('Queue write failed: ' + (error.message || error.code || 'unknown')); return false; }
     toastOk('Queued · CoS picks this up when you open the line.');
     sb.from('interaction_log').insert({
       user_id: 'bodhi',
@@ -547,9 +547,9 @@ let state = {
       input.value = '';
       const { data, error } = await sb.from('tasks').insert({
         title: v,
-        bucket: which === 'today' ? 'bodhi360' : 'bodhi360',
+        bucket: 'bodhi360',
         horizon: which,
-        status: 'pending',
+        done: false,
         user_id: 'bodhi',
       }).select().single();
       if (error) {
