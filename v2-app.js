@@ -364,10 +364,22 @@ let state = {
         <div class="meta-m">${escapeHtml(it.meta || '')}</div>
       `;
       // click the checkbox → toggle done
-      row.querySelector('.box').addEventListener('click', (e) => {
+      row.querySelector('.box').addEventListener('click', async (e) => {
         e.stopPropagation();
         it.done = !it.done;
-        save(state); renderList(which); renderCounts();
+        renderList(which); renderCounts();
+        const { error } = await sb.from('tasks').update({ done: it.done }).eq('id', it.id);
+        if (error) {
+          toastErr('Save failed');
+          it.done = !it.done; // revert
+          renderList(which); renderCounts();
+        } else {
+          sb.from('interaction_log').insert({
+            user_id: 'bodhi',
+            event_type: 'task_checked',
+            event_data: { task_id: it.id, done: it.done },
+          }).then(({ error: e }) => { if (e) console.warn('interaction_log write failed:', e); });
+        }
       });
       // click anywhere else → open drawer
       row.addEventListener('click', () => openDrawer(which, it.id));
@@ -390,14 +402,25 @@ let state = {
 
   function bindAdder(which) {
     const form = document.getElementById(which + 'Add');
-    form.addEventListener('submit', (e) => {
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const input = form.querySelector('input');
       const v = input.value.trim();
       if (!v) return;
-      state[which].push({ id: Date.now().toString(36), label: v, done: false, meta: 'NEW', notes: '' });
       input.value = '';
-      save(state); renderList(which); renderCounts();
+      const { data, error } = await sb.from('tasks').insert({
+        title: v,
+        bucket: which === 'today' ? 'bodhi360' : 'bodhi360',
+        horizon: which,
+        done: false,
+        user_id: 'bodhi',
+      }).select().single();
+      if (error) {
+        toastErr('Add failed');
+        return;
+      }
+      state[which].push({ id: data.id, label: data.title, done: false, meta: data.bucket || '', notes: '' });
+      renderList(which); renderCounts();
     });
   }
 
@@ -440,17 +463,38 @@ let state = {
     if (e.key === 'Escape' && drawer.classList.contains('is-open')) closeDrawer();
   });
 
-  // auto-save notes
+  // auto-save notes (in-memory on input, persist to Supabase on blur)
   drawerNotes.addEventListener('input', () => {
     if (!drawerCtx) return;
     const it = findItem(drawerCtx.which, drawerCtx.id);
     if (!it) return;
     it.notes = drawerNotes.value;
-    save(state);
-    // update note indicator on the list row without full re-render
-    const rows = document.querySelectorAll('#' + drawerCtx.which + 'List .item');
-    // simple: full re-render is fine; it's cheap
     renderList(drawerCtx.which);
+  });
+
+  drawerNotes.addEventListener('blur', async () => {
+    if (!drawerCtx) return;
+    const it = findItem(drawerCtx.which, drawerCtx.id);
+    if (!it || !it.notes) return;
+
+    const { error } = await sb
+      .from('task_notes')
+      .upsert({
+        task_id: it.id,
+        user_id: 'bodhi',
+        body: it.notes,
+      }, { onConflict: 'task_id' });
+
+    if (error) {
+      toastErr('Note save failed');
+    } else {
+      toastOk('Note saved');
+      sb.from('interaction_log').insert({
+        user_id: 'bodhi',
+        event_type: 'note_saved',
+        event_data: { task_id: it.id, length: it.notes.length },
+      }).then(({ error: e }) => { if (e) console.warn('interaction_log write failed:', e); });
+    }
   });
 
   drawerDelete.addEventListener('click', () => {
