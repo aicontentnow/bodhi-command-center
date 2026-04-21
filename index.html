@@ -509,6 +509,8 @@ const PCARDS=[
   {id:'ldag-cos',label:'LDAG CoS',icon:'🧠',desc:'Chief of Staff',text:'Load this skill and follow its instructions:\nskills/ldag-cos/SKILL.md\n\nThat is your complete working context. Start immediately.'},
   {id:'skills-reorg',label:'Skills Reorg',icon:'📂',desc:'Phase 3',text:'Read: _command-center/reorg/INVENTORY_2026-04-20.md\n\nContinue Phase 3: audit and move remaining skills to canonical iCloud location at skills/<name>/SKILL.md.'},
   {id:'mirror-cos',label:'MIRROR CoS',icon:'📖',desc:'Publishing ops',text:'Read the MIRROR Chief of Staff section of mirror/CLAUDE.md. You are the MIRROR Chief of Staff. Review the current state and surface what needs Bodhi\'s attention today.'},
+  {id:'harmonic-cos',label:'Harmonic CoS',icon:'⚡',desc:'Day job ops',text:'Read harmonic/CLAUDE.md. You are the Harmonic Chief of Staff. Review active campaigns, deadlines, and what needs Bodhi\'s attention today at Harmonic. Surface the one highest-leverage action.'},
+  {id:'session-flush',label:'Session Wrap',icon:'💾',desc:'Flush to Supabase',text:'Before we close: write everything we covered today -- all tasks, decisions, status updates, and action items -- to two places:\n1. _inbox/_processed/STATUS_UPDATE_2026-04-21.md (full summary of what was discussed and decided)\n2. Supabase tasks table: insert every concrete action item as a task row with user_id=\'bodhi\', horizon=\'today\' or \'week\' as appropriate, and the correct bucket (MIRROR, LDAG, Harmonic, FRAMEZERØ, Career, bodhi360, Family, Command).\nAfter writing, confirm what was inserted so I can see it in the command center.'},
 ];
 const APP={sb:null,view:'cockpit',page:'home',tasks:[],portfolioState:'flow',dlOpen:false,dlThread:[]};
 </script>

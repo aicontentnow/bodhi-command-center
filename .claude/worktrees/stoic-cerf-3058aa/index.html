@@ -1,901 +1,351 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bodhi 360° Command Center</title>
-<style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-:root {
-  --bg: #0a0a0a;
-  --surface: #1a1a1a;
-  --surface-2: #252525;
-  --surface-3: #2e2e2e;
-  --border: #3d3d3d;
-  --text: #ffffff;
-  --text-2: #d4d4d4;
-  --text-3: #a8a8a8;
-  --accent: #e04b4b;
-  --accent-hover: #f05555;
-  --warn: #f0b960;
-  --ok: #7fb56f;
-  --info: #6fa8dc;
-  --radius: 12px;
-}
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
-  font-size: 18px;
-  line-height: 1.6;
-  min-height: 100vh;
-}
-.layout { display: grid; grid-template-columns: 300px 1fr; min-height: 100vh; }
-@media (max-width: 768px) { .layout { grid-template-columns: 1fr; } .sidebar { border-right: none; border-bottom: 1px solid var(--border); } }
-
-.sidebar {
-  background: var(--surface);
-  border-right: 1px solid var(--border);
-  padding: 28px 22px;
-  overflow-y: auto;
-}
-.sidebar h2 {
-  font-size: 14px;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--text-2);
-  margin-bottom: 16px;
-  font-weight: 600;
-}
-.sidebar h2:not(:first-child) { margin-top: 32px; }
-.roadmap-item {
-  padding: 12px 14px;
-  margin-bottom: 8px;
-  border-radius: 8px;
-  font-size: 16px;
-  color: var(--text-2);
-  border-left: 3px solid var(--border);
-  background: var(--surface-2);
-}
-.roadmap-item.active {
-  color: var(--text);
-  border-left-color: var(--accent);
-  font-weight: 500;
-}
-.roadmap-item.done {
-  color: var(--text-3);
-  text-decoration: line-through;
-  text-decoration-color: var(--text-3);
-}
-.roadmap-item .phase {
-  font-size: 12px;
-  color: var(--warn);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  margin-bottom: 4px;
-  font-weight: 600;
-}
-.roadmap-item.done .phase { color: var(--text-3); }
-.roadmap-item a { color: var(--text); text-decoration: none; }
-.roadmap-item a:hover { color: var(--accent-hover); }
-.roadmap-btn {
-  display: block;
-  margin-top: 10px;
-  background: var(--accent);
-  color: white;
-  border: none;
-  padding: 9px 14px;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: inherit;
-  width: 100%;
-  text-align: center;
-  letter-spacing: 0.02em;
-}
-.roadmap-btn:hover { background: var(--accent-hover); }
-.roadmap-btn:active { transform: scale(0.98); }
-.roadmap-btn.ok { background: var(--ok); }
-.roadmap-btn.ok:hover { background: #6da05f; }
-.roadmap-status {
-  display: block;
-  margin-top: 8px;
-  font-size: 12px;
-  color: var(--text-3);
-  font-style: italic;
-}
-
-.main { padding: 40px 56px; max-width: 1100px; }
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: 36px;
-  padding-bottom: 24px;
-  border-bottom: 1px solid var(--border);
-}
-.header .date { font-size: 17px; color: var(--text-2); letter-spacing: 0.02em; font-weight: 500; }
-.header h1 { font-size: 40px; font-weight: 600; margin-top: 8px; letter-spacing: -0.01em; }
-.state-select {
-  background: var(--surface-2);
-  color: var(--warn);
-  font-size: 15px;
-  font-weight: 500;
-  padding: 10px 20px;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  font-family: inherit;
-  cursor: pointer;
-}
-
-.red-phone-section {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 36px;
-  margin-bottom: 32px;
-  text-align: center;
-}
-.red-phone-label {
-  font-size: 14px;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--warn);
-  margin-bottom: 20px;
-  font-weight: 600;
-}
-.red-phone-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  background: var(--accent);
-  color: white;
-  border: none;
-  padding: 22px 44px;
-  border-radius: var(--radius);
-  font-size: 22px;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: inherit;
-}
-.red-phone-button:hover { background: var(--accent-hover); }
-.red-phone-button:active { transform: scale(0.98); }
-.red-phone-hint {
-  margin-top: 20px;
-  font-size: 16px;
-  color: var(--text-2);
-}
-.red-phone-hint code {
-  background: var(--surface-2);
-  padding: 3px 10px;
-  border-radius: 4px;
-  font-size: 15px;
-  color: var(--text);
-  border: 1px solid var(--border);
-}
-
-.section { margin-bottom: 40px; }
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
-.section-header h3 {
-  font-size: 14px;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--warn);
-  font-weight: 600;
-}
-.section-header .count { font-size: 15px; color: var(--text-2); font-weight: 500; }
-
-.buckets-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 12px;
-}
-.bucket {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 18px;
-  cursor: pointer;
-  border-left: 4px solid var(--info);
-  transition: transform 0.1s, border-color 0.15s;
-}
-.bucket:hover { border-color: var(--text-3); }
-.bucket:active { transform: scale(0.99); }
-.bucket-name { font-size: 17px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
-.bucket-desc { font-size: 14px; color: var(--text-2); line-height: 1.5; }
-.bucket[data-color="harmonic"] { border-left-color: #6fa8dc; }
-.bucket[data-color="creative"] { border-left-color: #e04b4b; }
-.bucket[data-color="family"] { border-left-color: #7fb56f; }
-.bucket[data-color="audhd"] { border-left-color: #f0b960; }
-.bucket[data-color="book"] { border-left-color: #b074dc; }
-.bucket[data-color="ldag"] { border-left-color: #f59742; }
-.bucket[data-color="unsorted"] { border-left-color: #a8a8a8; }
-
-.dump-modal-bg {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.85);
-  z-index: 200;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-}
-.dump-modal-bg.show { display: flex; }
-.dump-modal {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 28px;
-  max-width: 700px;
-  width: 100%;
-  max-height: 90vh;
-  overflow-y: auto;
-}
-.dump-modal h3 { font-size: 22px; margin-bottom: 8px; color: var(--text); }
-.dump-modal .bucket-path { font-size: 14px; color: var(--text-3); margin-bottom: 18px; font-family: ui-monospace, monospace; }
-.dump-modal textarea {
-  width: 100%;
-  min-height: 200px;
-  background: var(--bg);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 16px;
-  font-size: 17px;
-  font-family: inherit;
-  line-height: 1.6;
-  resize: vertical;
-}
-.dump-modal textarea:focus { outline: none; border-color: var(--accent); }
-.dump-modal-actions {
-  display: flex;
-  gap: 12px;
-  margin-top: 16px;
-  justify-content: flex-end;
-}
-.dump-modal button {
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-size: 16px;
-  font-weight: 500;
-  cursor: pointer;
-  font-family: inherit;
-  border: 1px solid var(--border);
-}
-.dump-modal .btn-cancel { background: var(--surface-2); color: var(--text-2); }
-.dump-modal .btn-send { background: var(--accent); color: white; border-color: var(--accent); }
-.dump-modal .btn-send:hover { background: var(--accent-hover); }
-.dump-modal .hint { font-size: 14px; color: var(--text-3); margin-top: 10px; }
-
-.task {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  margin-bottom: 12px;
-  overflow: hidden;
-}
-.task-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  padding: 18px 20px;
-}
-.task.done { opacity: 0.55; }
-.task.done .task-title { text-decoration: line-through; }
-.task-checkbox {
-  width: 24px;
-  height: 24px;
-  border: 2px solid var(--text-2);
-  border-radius: 5px;
-  cursor: pointer;
-  flex-shrink: 0;
-  margin-top: 2px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-}
-.task.done .task-checkbox { background: var(--ok); border-color: var(--ok); }
-.task.done .task-checkbox::after {
-  content: "✓";
-  color: white;
-  font-size: 15px;
-  font-weight: 700;
-}
-.task-body { flex: 1; }
-.task-title { font-size: 17px; color: var(--text); font-weight: 500; }
-.task-meta { font-size: 15px; color: var(--text-2); margin-top: 4px; }
-.task-project {
-  display: inline-block;
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  padding: 3px 10px;
-  border-radius: 999px;
-  margin-top: 8px;
-  color: var(--text);
-  background: var(--surface-3);
-}
-.task-context-toggle {
-  background: transparent;
-  border: 1px solid var(--border);
-  color: var(--text-2);
-  padding: 6px 12px;
-  border-radius: 6px;
-  font-size: 13px;
-  cursor: pointer;
-  margin-top: 10px;
-  font-family: inherit;
-}
-.task-context-toggle:hover { color: var(--text); border-color: var(--text-3); }
-.task-context {
-  padding: 0 20px 16px 58px;
-  display: none;
-}
-.task-context.show { display: block; }
-.task-context textarea {
-  width: 100%;
-  min-height: 80px;
-  background: var(--bg);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 12px;
-  font-size: 15px;
-  font-family: inherit;
-  resize: vertical;
-}
-.task-context-saved { font-size: 14px; color: var(--ok); margin-top: 6px; }
-.task-context-existing { background: var(--surface-2); border-left: 3px solid var(--info); padding: 10px 14px; border-radius: 6px; margin-top: 10px; font-size: 15px; color: var(--text-2); }
-.task-context-existing .context-date { font-size: 12px; color: var(--text-3); display: block; margin-bottom: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
-
-.prompts-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 12px;
-}
-.prompt-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 20px;
-  cursor: pointer;
-  transition: border-color 0.15s, transform 0.1s;
-}
-.prompt-card:hover { border-color: var(--accent); }
-.prompt-card:active { transform: scale(0.99); }
-.prompt-card-label { font-size: 17px; font-weight: 600; margin-bottom: 6px; color: var(--text); }
-.prompt-card-desc { font-size: 15px; color: var(--text-2); line-height: 1.5; }
-
-.toast {
-  position: fixed;
-  bottom: 32px;
-  left: 50%;
-  transform: translateX(-50%) translateY(20px);
-  background: var(--surface-2);
-  color: var(--text);
-  padding: 18px 28px;
-  border-radius: var(--radius);
-  border: 2px solid var(--accent);
-  font-size: 16px;
-  font-weight: 500;
-  opacity: 0;
-  pointer-events: none;
-  transition: all 0.3s;
-  z-index: 300;
-  max-width: 90%;
-  text-align: center;
-}
-.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-.toast .next { display: block; font-size: 14px; color: var(--text-2); margin-top: 6px; font-weight: 400; }
-</style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Bodhi 360 · Command Center · v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,500&family=Source+Serif+4:ital,opsz,wght@1,8..60,400;1,8..60,500;1,8..60,600&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="v2-styles.css" />
 </head>
-<body>
+<body class="variant-cockpit">
 
-<div class="layout">
+<div id="bg-field" aria-hidden="true"></div>
+<div id="vignette" aria-hidden="true"></div>
+
+<main class="app" data-screen-label="01 Bodhi Command Center v2">
+
+  <!-- ============================= SIDEBAR ============================= -->
   <aside class="sidebar">
-    <h2>Roadmap</h2>
-    <div class="roadmap-item done">
-      <div class="phase">Phase 0 · Done</div>
-      LDAG dashboard v4.6 live
-    </div>
-    <div class="roadmap-item done">
-      <div class="phase">Phase 0 · Done</div>
-      bodhi-chief-of-staff skill
-    </div>
-    <div class="roadmap-item done">
-      <div class="phase">Phase 1 · Done</div>
-      Command Center MVP (red phone)
-    </div>
-    <div class="roadmap-item active">
-      <div class="phase">Phase 2 · Now</div>
-      Brain dump buckets + task feedback
-    </div>
-    <div class="roadmap-item">
-      <div class="phase">Phase 3 · Next</div>
-      Visual design system (Claude designer)
-    </div>
-    <div class="roadmap-item">
-      <div class="phase">Phase 4</div>
-      Supabase-backed state (cross-device)
-    </div>
-    <div class="roadmap-item">
-      <div class="phase">Phase 5</div>
-      Harmonic sub-hub
-    </div>
-    <div class="roadmap-item">
-      <div class="phase">Phase 6</div>
-      LDAG website rebuild
-    </div>
-    <div class="roadmap-item">
-      <div class="phase">Phase 7</div>
-      Wispr Flow direct integration
-    </div>
-    <div class="roadmap-item">
-      <div class="phase">Phase 8</div>
-      Bell and red phone push notifications
-    </div>
-    <div class="roadmap-item">
-      <div class="phase">Phase 9</div>
-      Agent orchestration + PRD routing
+
+    <!-- Brand -->
+    <button class="brand liquid-glass-strong" id="brandHome" style="border:none; text-align:left; cursor:pointer; font-family:inherit; width:100%;">
+      <div class="brand-inner">
+        <div class="brand-mark">
+          <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M16 23 C 6 20, 3 12, 7 7 C 10 10, 13 15, 16 23 Z"/>
+            <path d="M16 23 C 26 20, 29 12, 25 7 C 22 10, 19 15, 16 23 Z"/>
+            <path d="M16 24 C 9 22, 7 14, 11 9 C 13 13, 15 18, 16 24 Z"/>
+            <path d="M16 24 C 23 22, 25 14, 21 9 C 19 13, 17 18, 16 24 Z"/>
+            <path d="M16 24 C 14 18, 14 12, 16 7 C 18 12, 18 18, 16 24 Z"/>
+            <path d="M5 24 C 9 25.2, 23 25.2, 27 24" opacity="0.55"/>
+          </svg>
+        </div>
+        <div class="brand-title">
+          <div class="n">bodhi <em>360°</em></div>
+          <div class="s">Command · Center · v2</div>
+        </div>
+        <div class="pulse" title="live"></div>
+      </div>
+    </button>
+
+    <!-- State picker — collapsed -->
+    <div class="card liquid-glass state-card" id="stateCard" style="overflow: visible;">
+      <div class="card-inner">
+        <div class="card-head">
+          <span class="eyebrow">State · now</span>
+          <span class="eyebrow" id="stateToggle" style="cursor:pointer;">change ↓</span>
+        </div>
+        <div class="state-current" id="stateCurrent">
+          <span class="pip"></span>
+          <span class="label"></span>
+          <span class="meta"></span>
+        </div>
+        <div class="states" id="statesList">
+          <div class="state" data-state="green"    data-state-label="Go"><span class="pip"></span><span class="label">Go</span><span class="meta">GO</span></div>
+          <div class="state" data-state="yellow"   data-state-label="Hold"><span class="pip"></span><span class="label">Hold</span><span class="meta">HOLD</span></div>
+          <div class="state" data-state="red"      data-state-label="Rest"><span class="pip"></span><span class="label">Rest</span><span class="meta">REST</span></div>
+          <div class="state" data-state="potato"   data-state-label="Potato"><span class="pip"></span><span class="label">Potato</span><span class="meta">SOFT</span></div>
+          <div class="state" data-state="focus"    data-state-label="Deep"><span class="pip"></span><span class="label">Deep</span><span class="meta">DEEP</span></div>
+          <div class="state" data-state="crash"    data-state-label="Crashed"><span class="pip"></span><span class="label">Crashed</span><span class="meta">DOWN</span></div>
+          <div class="state" data-state="harmonic" data-state-label="Work day"><span class="pip"></span><span class="label">Work day</span><span class="meta">DAY</span></div>
+        </div>
+      </div>
     </div>
 
-    <h2>Skills Reorg Audit</h2>
-    <div class="roadmap-item done">
-      <div class="phase">Phase 1 · Done</div>
-      Full inventory written
-      <span class="roadmap-status">_command-center/reorg/INVENTORY_2026-04-20.md</span>
-    </div>
-    <div class="roadmap-item done">
-      <div class="phase">Phase 2 · Done</div>
-      CoS skill errors corrected
-      <span class="roadmap-status">4 wrong TODO entries fixed in bodhi-chief-of-staff SKILL.md</span>
-    </div>
-    <div class="roadmap-item active">
-      <div class="phase">Phase 3 · Do this next</div>
-      Canonical structure proposal
-      <button class="roadmap-btn" onclick="copyPrompt('skills_reorg_p3', 'Phase 3 starter copied — paste into a new Cowork session')">Copy starter prompt</button>
-    </div>
-    <div class="roadmap-item">
-      <div class="phase">Phase 4 · After Phase 3 approved</div>
-      Migration + archive
-      <span class="roadmap-status">Starter prompt unlocks after Phase 3 proposal is approved</span>
-    </div>
-    <div class="roadmap-item">
-      <div class="phase">Cleanup</div>
-      Rogue Hard Hat Healthcare/ folder
-      <button class="roadmap-btn ok" onclick="copyPrompt('hhh_cleanup', 'HHH cleanup prompt copied')">Copy cleanup prompt</button>
+    <!-- Navigation -->
+    <div class="card liquid-glass">
+      <div class="card-inner">
+        <div class="card-head"><span class="eyebrow">Navigate</span></div>
+        <nav class="navlist">
+          <button class="navitem is-on" data-page="today"><span class="ni-key">H</span><span>Home · Today</span><span class="ni-badge" id="ni-today">0 / 0</span></button>
+          <button class="navitem" data-page="buckets"><span class="ni-key">B</span><span>Brain dump</span><span class="ni-badge">6</span></button>
+          <button class="navitem" data-page="prompts"><span class="ni-key">P</span><span>Key prompts</span><span class="ni-badge">6</span></button>
+          <button class="navitem" data-page="roadmap"><span class="ni-key">M</span><span>Roadmap</span><span class="ni-badge">12</span></button>
+          <button class="navitem" data-page="share"><span class="ni-key">S</span><span>Share with Cowork</span><span class="ni-badge">kit</span></button>
+        </nav>
+      </div>
     </div>
 
-    <h2>Live Surfaces</h2>
-    <div class="roadmap-item">
-      <a href="https://latedxaudhdguy.com/dashboard.html">LDAG dashboard</a>
+    <!-- Live surfaces -->
+    <div class="card liquid-glass">
+      <div class="card-inner">
+        <div class="card-head"><span class="eyebrow">Live · surfaces</span></div>
+        <div class="surfaces">
+          <a class="surface" href="https://latedxaudhdguy.com/dashboard.html" target="_blank" rel="noopener">
+            <span class="dot"></span><span style="flex:1">LDAG dashboard</span><span class="arr">↗</span>
+          </a>
+          <a class="surface" href="https://ops.thebookofoneness.com" target="_blank" rel="noopener">
+            <span class="dot"></span><span style="flex:1">MIRROR ops</span><span class="arr">↗</span>
+          </a>
+          <a class="surface" href="https://thebookofoneness.com" target="_blank" rel="noopener">
+            <span class="dot"></span><span style="flex:1">Book of Oneness</span><span class="arr">↗</span>
+          </a>
+        </div>
+      </div>
     </div>
-    <div class="roadmap-item">
-      <a href="https://ops.thebookofoneness.com">MIRROR ops</a>
-    </div>
-    <div class="roadmap-item">
-      <a href="https://thebookofoneness.com">Book of Oneness</a>
-    </div>
+
   </aside>
 
-  <main class="main">
-    <div class="header">
+  <!-- ============================= MAIN ============================= -->
+  <section class="main" style="display:flex; flex-direction:column;">
+
+    <!-- PAGE: HOME -->
+    <div class="page is-on" data-page="today" id="section-home">
+
+      <!-- Red Phone -->
+      <div class="redphone liquid-glass-strong" id="section-redphone">
+        <div class="inner">
+          <div class="top">
+            <div>
+              <div class="eyebrow-red"><span class="red-dot"></span>Red Phone · direct line to chief of staff</div>
+              <h2>One <em>next action</em> — nothing more.</h2>
+              <p class="sub">Opens the line. Your message goes into the queue; the chief of staff replies in the panel.</p>
+            </div>
+            <div class="actions" style="display:flex; flex-direction:column; align-items:flex-end; gap:0;">
+              <button class="btn red-phone-btn" id="openRedPhone">
+                <span class="ico">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.86 19.86 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.86 19.86 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92Z"/></svg>
+                </span>
+                <span>Open the line</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tabs" role="tablist">
+        <button class="tab is-on" data-tab="today">Today <span id="countToday" style="opacity:0.6;font-size:0.72rem;margin-left:0.4rem;">0/0</span></button>
+        <button class="tab" data-tab="week">This week <span id="countWeek" style="opacity:0.6;font-size:0.72rem;margin-left:0.4rem;">0/0</span></button>
+      </div>
+
+      <div class="list-card liquid-glass" data-tabpane="today">
+        <div class="card-inner">
+          <div class="list-items" id="todayList"></div>
+          <form class="add-row" id="todayAdd" autocomplete="off">
+            <input class="add-input" type="text" placeholder="Add to today…" />
+            <button class="add-btn" type="submit" aria-label="Add">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <div class="list-card liquid-glass" data-tabpane="week" hidden>
+        <div class="card-inner">
+          <div class="list-items" id="weekList"></div>
+          <form class="add-row" id="weekAdd" autocomplete="off">
+            <input class="add-input" type="text" placeholder="Add to this week…" />
+            <button class="add-btn" type="submit" aria-label="Add">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <div style="font-size:0.7rem; color:var(--t-4); font-family:'JetBrains Mono',monospace; letter-spacing:0.15em;">
+        Click an item to check · click its label area to open context
+      </div>
+    </div>
+
+    <!-- PAGE: Brain dump -->
+    <div class="page" data-page="buckets">
+      <div class="buckets liquid-glass" id="section-buckets">
+        <div class="card-inner">
+          <div class="card-head">
+            <span class="eyebrow">Brain dump · opens the line</span>
+          </div>
+          <div class="buckets-grid">
+            <div class="bucket liquid-glass" data-bucket="bodhi360"><div class="n">bodhi360</div><div class="tag">01</div></div>
+            <div class="bucket liquid-glass" data-bucket="harmonic"><div class="n">Harmonic</div><div class="tag">02</div></div>
+            <div class="bucket liquid-glass" data-bucket="ldag"><div class="n">LDAG</div><div class="tag">03</div></div>
+            <div class="bucket liquid-glass" data-bucket="book"><div class="n">The Book of Oneness</div><div class="tag">04</div></div>
+            <div class="bucket liquid-glass" data-bucket="family"><div class="n">Family</div><div class="tag">05</div></div>
+            <div class="bucket liquid-glass" data-bucket="creative"><div class="n">Creative</div><div class="tag">06</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE: Key prompts -->
+    <div class="page" data-page="prompts">
+      <div class="prompts liquid-glass" id="section-prompts">
+        <div class="card-inner">
+          <div class="card-head"><span class="eyebrow">Key prompts · click to send on the line</span></div>
+          <div class="prompts-grid">
+            <div class="prompt liquid-glass" data-prompt="morning"><div class="n">Morning · where am I</div><div class="d">Chief of staff reads state, gives one next action.</div><div class="copy">send</div></div>
+            <div class="prompt liquid-glass" data-prompt="ldag_prod"><div class="n">LDAG · pick up production</div><div class="d">Transcripts, episodes, dashboard.</div><div class="copy">send</div></div>
+            <div class="prompt liquid-glass" data-prompt="ldag_draft"><div class="n">LDAG · draft an episode</div><div class="d">Concept + moments → Opus Agent brief.</div><div class="copy">send</div></div>
+            <div class="prompt liquid-glass" data-prompt="status"><div class="n">Status update · something changed</div><div class="d">Captures what shifted so the brains update.</div><div class="copy">send</div></div>
+            <div class="prompt liquid-glass" data-prompt="design_prd"><div class="n">Design PRD · into Claude Designer</div><div class="d">Product requirements doc for UI design handoff.</div><div class="copy">send</div></div>
+            <div class="prompt liquid-glass" data-prompt="skills_reorg_p3" style="grid-column: 1 / -1;"><div class="n">Skills reorg · Phase 3</div><div class="d">Inventory reviewed, canonical structure proposed, migration plan in one pass.</div><div class="copy">send</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE: Share with Cowork -->
+    <div class="page" data-page="share">
+      <div class="card liquid-glass">
+        <div class="card-inner">
+          <div class="card-head"><span class="eyebrow">Share with Cowork · clipboard (Cowork is a separate surface)</span></div>
+          <p style="color:var(--t-2); font-size:0.9rem; line-height:1.6; max-width:62ch; margin:0 0 1rem;">A packaged summary of this Command Center — structure, pages, interactions, and the new Direct Line paradigm — so Cowork can see what we've built. This is the one legitimate clipboard pattern: everything else flows through the Direct Line.</p>
+          <button class="btn" id="shareCopy">
+            <span>Copy share kit</span>
+            <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE: Roadmap -->
+    <div class="page" data-page="roadmap">
+      <div class="card liquid-glass" id="section-roadmap">
+        <div class="card-inner">
+          <div class="card-head"><span class="eyebrow">Roadmap · 0 → 9</span></div>
+          <div class="roadmap">
+            <div class="phase" data-status="done"><span class="num">00</span><span class="name">LDAG dashboard v4.6 live</span><span class="stat">done</span></div>
+            <div class="phase" data-status="done"><span class="num">00</span><span class="name">bodhi-chief-of-staff skill</span><span class="stat">done</span></div>
+            <div class="phase" data-status="done"><span class="num">01</span><span class="name">Command Center MVP · red phone</span><span class="stat">done</span></div>
+            <div class="phase" data-status="now"> <span class="num">02</span><span class="name">Direct Line panel · queue-backed CoS</span><span class="stat">now</span></div>
+            <div class="phase" data-status="next"><span class="num">03</span><span class="name">Scheduled CoS poller (reads queue, replies)</span><span class="stat">next</span></div>
+            <div class="phase"><span class="num">04</span><span class="name">Supabase-backed state (cross-device)</span><span class="stat">TBD</span></div>
+            <div class="phase"><span class="num">05</span><span class="name">Harmonic sub-hub</span><span class="stat">TBD</span></div>
+            <div class="phase"><span class="num">06</span><span class="name">LDAG website rebuild</span><span class="stat">TBD</span></div>
+            <div class="phase"><span class="num">07</span><span class="name">Wispr Flow direct integration</span><span class="stat">TBD</span></div>
+            <div class="phase"><span class="num">08</span><span class="name">Bell + red phone push</span><span class="stat">TBD</span></div>
+            <div class="phase"><span class="num">09</span><span class="name">Agent orchestration · PRD routing</span><span class="stat">TBD</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card liquid-glass" style="margin-top:1rem;">
+        <div class="card-inner">
+          <div class="card-head"><span class="eyebrow">Skills reorg audit · 2026-04-20</span></div>
+          <div class="roadmap">
+            <div class="phase" data-status="done"><span class="num">P1</span><span class="name">Inventory · 26 skill files, 9 location patterns, 6 canonical</span><span class="stat">done</span></div>
+            <div class="phase" data-status="done"><span class="num">P2</span><span class="name">Fix bodhi-chief-of-staff CoS skill: corrected 4 wrong TODO entries</span><span class="stat">done</span></div>
+            <div class="phase" data-status="now"> <span class="num">P3</span><span class="name">Canonical structure proposal · migration plan</span><span class="stat">now</span></div>
+            <div class="phase" data-status="next"><span class="num">P4</span><span class="name">Migration + archive execution</span><span class="stat">next</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </section>
+</main>
+
+<!-- Context drawer (task detail) -->
+<div class="drawer-scrim" id="drawerScrim"></div>
+<aside class="drawer liquid-glass-strong" id="drawer" aria-hidden="true">
+  <div class="d-head">
+    <div style="flex:1; min-width:0;">
+      <div class="eyebrow" id="drawerEyebrow">Task context</div>
+      <h3 class="d-title" id="drawerTitle">Task</h3>
+      <div class="d-meta" id="drawerMeta"></div>
+    </div>
+    <button class="x" id="drawerClose" aria-label="Close">×</button>
+  </div>
+  <div style="position:relative; z-index:2; display:flex; flex-direction:column; gap:0.5rem; flex:1; min-height:0;">
+    <div class="section-label">Context · for the agent</div>
+    <textarea class="d-notes" id="drawerNotes" placeholder="Add anything the chief of staff should know about this task — background, why it matters, blockers, links, previous attempts. Saved automatically."></textarea>
+  </div>
+  <div class="d-actions">
+    <button class="d-del" id="drawerDelete">Delete task</button>
+    <button class="btn" id="drawerCopy">
+      <span>Send to the line</span>
+      <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4Z"/></svg></span>
+    </button>
+  </div>
+</aside>
+
+<!-- ============================= DIRECT LINE PANEL ============================= -->
+<aside class="line-panel liquid-glass-strong" id="linePanel" aria-hidden="true">
+  <div class="line-head">
+    <div class="line-title">
+      <div class="line-dot"></div>
       <div>
-        <div class="date" id="date-line">Loading</div>
-        <h1>Bodhi 360°</h1>
+        <div class="line-eyebrow">Direct line · bodhi chief of staff</div>
+        <h3>The line <em>is open.</em></h3>
       </div>
-      <select class="state-select" id="state-select" onchange="saveState()">
-        <option value="green">Green · ship mode</option>
-        <option value="yellow">Yellow · maintenance</option>
-        <option value="red">Red · rest / process only</option>
-        <option value="potato">Potato day</option>
-        <option value="hyperfocus">Hyperfocus</option>
-        <option value="crashed">Crashed</option>
-        <option value="workday">Work day (Harmonic)</option>
-      </select>
     </div>
+    <button class="x" id="lineClose" aria-label="Close">×</button>
+  </div>
 
-    <div class="red-phone-section">
-      <div class="red-phone-label">Red Phone · Start every session here</div>
-      <button class="red-phone-button" onclick="copyRedPhone()">
-        Copy Red Phone prompt
+  <!-- Structured launch -->
+  <div class="line-launch" id="lineLaunch">
+    <div class="launch-label">Structured launch · one tap</div>
+    <button class="launch" data-launch="next_step">
+      <span class="launch-n">Next step on roadmap</span>
+      <span class="launch-d">Frames where we are and what's next.</span>
+    </button>
+    <button class="launch" data-launch="issue">
+      <span class="launch-n">I have an issue</span>
+      <span class="launch-d">Opens a conversational thread here.</span>
+    </button>
+    <button class="launch" data-launch="strategy">
+      <span class="launch-n">High-level strategy</span>
+      <span class="launch-d">Flags for an Opus Chat session.</span>
+    </button>
+  </div>
+
+  <!-- Thread -->
+  <div class="line-thread" id="lineThread">
+    <div class="line-empty" id="lineEmpty">
+      <div class="le-mark">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.86 19.86 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.86 19.86 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92Z"/></svg>
+      </div>
+      <div class="le-copy">
+        <div class="le-n">Say what needs to change.</div>
+        <div class="le-d">Messages queue to <code>agent_triggers</code>. Chief of staff reads on its next run and replies here. No copying, no new sessions.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Composer -->
+  <form class="line-composer" id="lineComposer" autocomplete="off">
+    <div class="tag-bar" id="lineTagBar" hidden>
+      <span class="tag-label">Context</span>
+      <span class="tag" id="lineTag"></span>
+      <button type="button" class="tag-x" id="lineTagClear" aria-label="Clear context">×</button>
+    </div>
+    <textarea class="line-input" id="lineInput" placeholder="Talk to the chief of staff. Enter to send · Shift+Enter for a new line." rows="2"></textarea>
+    <div class="line-foot">
+      <div class="line-hint"><span class="pulse-dot"></span>Queue · in-memory per session · Supabase integration planned.</div>
+      <button class="btn" type="submit" id="lineSend">
+        <span>Send</span>
+        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4Z"/></svg></span>
       </button>
-      <div class="red-phone-hint">
-        Paste into a new <code>Cowork session</code>. Not a regular chat.
-      </div>
     </div>
+  </form>
+</aside>
 
-    <div class="section">
-      <div class="section-header">
-        <h3>Brain dump · pick a bucket, talk or type, send</h3>
-      </div>
-      <div class="buckets-grid">
-        <div class="bucket" data-color="harmonic" onclick="openDump('harmonic','Harmonic','_inbox/harmonic')">
-          <div class="bucket-name">Harmonic</div>
-          <div class="bucket-desc">Day job · stakeholders, campaigns, deliverables</div>
-        </div>
-        <div class="bucket" data-color="creative" onclick="openDump('creative','Creative','_inbox/creative')">
-          <div class="bucket-name">Creative</div>
-          <div class="bucket-desc">SEASØNS, FRAMEZERØ, music, ideas</div>
-        </div>
-        <div class="bucket" data-color="ldag" onclick="openDump('ldag','LDAG','_inbox/ldag')">
-          <div class="bucket-name">LDAG</div>
-          <div class="bucket-desc">Episodes, transcripts, production, brand</div>
-        </div>
-        <div class="bucket" data-color="book" onclick="openDump('book','Book / MIRROR','_inbox/book')">
-          <div class="bucket-name">Book / MIRROR</div>
-          <div class="bucket-desc">Outreach, cover, Signal, Charles, publishing</div>
-        </div>
-        <div class="bucket" data-color="family" onclick="openDump('family','Family','_inbox/family')">
-          <div class="bucket-name">Family</div>
-          <div class="bucket-desc">Dad, kids, Amy, logistics, grief</div>
-        </div>
-        <div class="bucket" data-color="audhd" onclick="openDump('audhd','Personal / AuDHD','_inbox/audhd')">
-          <div class="bucket-name">Personal · AuDHD</div>
-          <div class="bucket-desc">Unmasking, regulation, health, self</div>
-        </div>
-        <div class="bucket" data-color="unsorted" onclick="openDump('unsorted','Unsorted','_inbox/unsorted')">
-          <div class="bucket-name">Unsorted</div>
-          <div class="bucket-desc">Not sure yet. Route on open.</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="section">
-      <div class="section-header">
-        <h3>Today · click to check off, expand to add context</h3>
-        <span class="count" id="task-count">0 of 0</span>
-      </div>
-      <div id="task-list"></div>
-    </div>
-
-    <div class="section">
-      <div class="section-header">
-        <h3>Key prompts · click to copy</h3>
-      </div>
-      <div class="prompts-grid">
-        <div class="prompt-card" onclick="copyPrompt('red_phone', 'Red phone copied')">
-          <div class="prompt-card-label">Morning · where am I</div>
-          <div class="prompt-card-desc">Chief of staff reads state, gives one next action</div>
-        </div>
-        <div class="prompt-card" onclick="copyPrompt('ldag', 'LDAG chief of staff prompt copied')">
-          <div class="prompt-card-label">LDAG · pick up production</div>
-          <div class="prompt-card-desc">Transcripts, episodes, dashboard</div>
-        </div>
-        <div class="prompt-card" onclick="copyPrompt('ldag_episode', 'LDAG episode script prompt copied')">
-          <div class="prompt-card-label">LDAG · draft an episode</div>
-          <div class="prompt-card-desc">Concept + moments to Opus Agent brief</div>
-        </div>
-        <div class="prompt-card" onclick="copyPrompt('status_update', 'Status update prompt copied')">
-          <div class="prompt-card-label">Status update · something changed</div>
-          <div class="prompt-card-desc">Captures what shifted so the brains update</div>
-        </div>
-        <div class="prompt-card" onclick="copyPrompt('design_prd', 'Design PRD prompt copied')">
-          <div class="prompt-card-label">Design PRD · into Claude Designer</div>
-          <div class="prompt-card-desc">Product requirements doc for UI design handoff</div>
-        </div>
-        <div class="prompt-card" onclick="copyPrompt('skills_reorg_p3', 'Skills reorg Phase 3 prompt copied')">
-          <div class="prompt-card-label">Skills reorg · Phase 3</div>
-          <div class="prompt-card-desc">Canonical structure proposal. Also on the sidebar.</div>
-        </div>
-      </div>
-    </div>
-  </main>
-</div>
-
-<div class="dump-modal-bg" id="dump-modal-bg" onclick="if(event.target===this)closeDump()">
-  <div class="dump-modal">
-    <h3 id="dump-title">Brain dump</h3>
-    <div class="bucket-path" id="dump-path"></div>
-    <textarea id="dump-text" placeholder="Talk or type. Wispr Flow works here. Send when done."></textarea>
-    <div class="hint">On Send: copies a prompt to clipboard. Paste into a Cowork session. The chief of staff writes it to the right inbox folder.</div>
-    <div class="dump-modal-actions">
-      <button class="btn-cancel" onclick="closeDump()">Cancel</button>
-      <button class="btn-send" onclick="sendDump()">Send</button>
-    </div>
+<!-- Tweaks -->
+<button class="btn ghost liquid-glass" id="tweaksBtn" style="position:fixed; bottom:1rem; right:1rem; z-index:81;">
+  <span>Views</span>
+  <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg></span>
+</button>
+<div id="tweaks" class="liquid-glass-strong">
+  <div class="inner">
+    <h4>View</h4>
+    <div class="tweak-opt" data-variant="cockpit">Cockpit · dashboard</div>
+    <div class="tweak-opt" data-variant="altar">Altar · horizontal pill strip</div>
+    <div class="tweak-opt" data-variant="orbit">Orbit · planetary canvas</div>
   </div>
 </div>
 
-<div class="toast" id="toast"></div>
-
-<script>
-const PROMPTS = {
-  red_phone: `Load this skill and follow its instructions:
-skills/bodhi-chief-of-staff/SKILL.md
-
-(Resolve the full path if needed: ~/Library/Mobile Documents/com~apple~CloudDocs/Claude-Workspace/skills/bodhi-chief-of-staff/SKILL.md)
-
-State: [green / yellow / red / potato day / workday / describe]
-What's on my mind: [one line, or "I don't know, tell me"]`,
-
-  ldag: `Load this skill and follow its instructions:
-skills/ldag-cos/SKILL.md
-
-(Resolve the full path if needed: ~/Library/Mobile Documents/com~apple~CloudDocs/Claude-Workspace/skills/ldag-cos/SKILL.md)`,
-
-  ldag_episode: `Load this skill and follow its instructions:
-skills/ldag-episode-script/SKILL.md
-
-Episode concept: [describe]
-Moment IDs (if any): [paste]`,
-
-  status_update: `I have a status update. Something shipped or shifted and I want the system to know.
-
-Write a status file at:
-_inbox/_processed/STATUS_UPDATE_[today].md
-
-Update _brain/bodhi-state.md with anything that changes portfolio state.
-
-Here's what happened:
-[talk]`,
-
-  skills_reorg_p3: `Skills reorganization audit -- Phase 3: canonical structure proposal.
-
-Read this first:
-_command-center/reorg/INVENTORY_2026-04-20.md
-
-Phase 1 (inventory) and Phase 2 (CoS skill error corrections) are complete.
-
-Phase 3 task: write a canonical structure proposal to:
-_command-center/reorg/PROPOSAL_2026-04-20.md
-
-The proposal must cover:
-1. Recommended canonical location for all 26 skill files
-2. YAML frontmatter standard for SKILL.md files
-3. Which skills move where (migration map)
-4. Which legacy session skills (.skills/skills/) can be archived
-5. What to do with the hidden .claude/skills/ folder
-
-Do NOT move any files. Do NOT edit any CLAUDE.md. Proposal only.
-Stop and wait for Bodhi approval before Phase 4.`,
-
-  hhh_cleanup: `Archive the rogue Hard Hat Healthcare/ folder at the workspace root.
-
-Canonical location for HHH is: framezero/clients/hhh/
-
-Steps:
-1. Snapshot any CLAUDE.md files inside Hard Hat Healthcare/ before moving (brain file protection protocol)
-2. Compare Hard Hat Healthcare/framezero/clients/hhh/CLAUDE.md against the canonical framezero/clients/hhh/CLAUDE.md -- flag any content in the rogue copy that is NOT in the canonical copy
-3. If the canonical copy has everything, move the entire Hard Hat Healthcare/ folder to:
-   _archive/rogue-duplicates/Hard-Hat-Healthcare-root-2026-04-20/
-4. Do NOT delete anything
-5. Report what was archived and confirm the canonical copy is intact`,
-
-  skills_reorg: `Skills reorganization audit -- Phase 3: canonical structure proposal.
-
-Read this first:
-_command-center/reorg/INVENTORY_2026-04-20.md
-
-Phase 1 (inventory) and Phase 2 (CoS skill error corrections) are complete.
-
-Phase 3 task: write a canonical structure proposal to:
-_command-center/reorg/PROPOSAL_2026-04-20.md
-
-The proposal must cover:
-1. Recommended canonical location for all 26 skill files
-2. YAML frontmatter standard for SKILL.md files
-3. Which skills move where (migration map)
-4. Which legacy session skills (.skills/skills/) can be archived
-5. What to do with the hidden .claude/skills/ folder
-
-Do NOT move any files. Do NOT edit any CLAUDE.md. Proposal only.
-Stop and wait for Bodhi approval before Phase 4.`,
-
-  design_prd: `I need a Product Requirements Doc for a visual design handoff to Claude Designer.
-
-Read:
-- _brain/BODHI_360_BRAIN.md (who I am, how my brain works)
-- Any relevant project brain (ask me which)
-- Any existing brand assets in the project folder
-
-Then write a PRD at:
-_command-center/design-prds/PRD_[project]_[date].md
-
-The PRD must include:
-1. Who this is for (me, my AuDHD, my vision needs)
-2. What the surface is and what it must do
-3. Existing assets and inspiration references I'll provide
-4. Accessibility non-negotiables (large text, AAA contrast, dark mode, no dark gray on black)
-5. Tech stack constraints (GitHub Pages, Supabase planned, no Netlify)
-6. Success criteria
-
-Ask me clarifying questions before writing. Do not invent visual direction.`
-};
-
-const TASKS_KEY = "bodhi_mvp_tasks_v2";
-const STATE_KEY = "bodhi_mvp_state_v1";
-
-const DEFAULT_TASKS = [
-  { id: "t1", title: "Build brain dump buckets into the dashboard", meta: "So dumping into a bucket routes automatically", project: "360", done: true, context: [] },
-  { id: "t2", title: "Test the red phone in a Cowork session", meta: "Confirm the CoS skill loads properly", project: "360", done: false, context: [] },
-  { id: "t3", title: "Hardcover proof review · glitch-effect version", meta: "Proof rejected 2026-04-19. What's wrong, what's next round.", project: "Book", done: false, context: [] },
-  { id: "t4", title: "Rocky Mountaineer logistics with Lee", meta: "Early May trip with Dad", project: "Family", done: false, context: [] },
-  { id: "t5", title: "Harmonic priorities for the week", meta: "Work sync cadence, Sarah timezone handoff", project: "Harmonic", done: false, context: [] },
-  { id: "t6", title: "Skills reorg Phase 1: inventory", meta: "Full scan of all SKILL.md files across Mac. Inventory at _command-center/reorg/INVENTORY_2026-04-20.md", project: "360", done: true, context: [] },
-  { id: "t7", title: "Skills reorg Phase 2: fix CoS skill errors", meta: "4 skills incorrectly marked TODO. All corrected in bodhi-chief-of-staff SKILL.md", project: "360", done: true, context: [] },
-  { id: "t8", title: "Skills reorg Phase 3: canonical structure proposal", meta: "26 skill files across 9 location patterns. Proposal doc needed before migration.", project: "360", done: false, context: [] },
-  { id: "t9", title: "Skills reorg Phase 4: migration + archive", meta: "Dedicated session. Archive-before-move. Requires Bodhi present.", project: "360", done: false, context: [] },
-  { id: "t10", title: "Archive rogue Hard Hat Healthcare/ folder at workspace root", meta: "Duplicate of framezero/clients/hhh/. 3 rogue CLAUDE.md files inside.", project: "360", done: false, context: [] }
-];
-
-function loadTasks() {
-  try {
-    const saved = localStorage.getItem(TASKS_KEY);
-    if (saved) return JSON.parse(saved);
-  } catch(e) {}
-  return JSON.parse(JSON.stringify(DEFAULT_TASKS));
-}
-function saveTasks(tasks) {
-  try { localStorage.setItem(TASKS_KEY, JSON.stringify(tasks)); } catch(e) {}
-}
-function loadState() {
-  try { return localStorage.getItem(STATE_KEY) || "workday"; } catch(e) { return "workday"; }
-}
-function saveState() {
-  const v = document.getElementById("state-select").value;
-  try { localStorage.setItem(STATE_KEY, v); } catch(e) {}
-}
-
-function escapeHtml(s) {
-  return (s || "").replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]));
-}
-
-function renderTasks() {
-  const tasks = loadTasks();
-  const list = document.getElementById("task-list");
-  list.innerHTML = "";
-  tasks.forEach(t => {
-    const el = document.createElement("div");
-    el.className = "task" + (t.done ? " done" : "");
-    const existing = (t.context || []).map(c =>
-      '<div class="task-context-existing"><span class="context-date">' + escapeHtml(c.date) + '</span>' + escapeHtml(c.text) + '</div>'
-    ).join("");
-    el.innerHTML =
-      '<div class="task-row">' +
-        '<div class="task-checkbox" onclick="toggleTask(\'' + t.id + '\')"></div>' +
-        '<div class="task-body">' +
-          '<div class="task-title">' + escapeHtml(t.title) + '</div>' +
-          '<div class="task-meta">' + escapeHtml(t.meta || "") + '</div>' +
-          (t.project ? '<div class="task-project">' + escapeHtml(t.project) + '</div>' : '') +
-          ' <button class="task-context-toggle" onclick="toggleContext(\'' + t.id + '\')">Add context / note</button>' +
-        '</div>' +
-      '</div>' +
-      '<div class="task-context" id="ctx-' + t.id + '">' +
-        existing +
-        '<textarea id="ctx-text-' + t.id + '" placeholder="Follow-up context. What happened, what\'s next, what the CoS needs to know."></textarea>' +
-        '<div class="dump-modal-actions">' +
-          '<button class="btn-send" onclick="saveContext(\'' + t.id + '\')">Save context</button>' +
-        '</div>' +
-      '</div>';
-    list.appendChild(el);
-  });
-  const doneCount = tasks.filter(t => t.done).length;
-  document.getElementById("task-count").textContent = doneCount + " of " + tasks.length;
-}
-
-function toggleTask(id) {
-  const tasks = loadTasks();
-  const task = tasks.find(t => t.id === id);
-  if (task) { task.done = !task.done; saveTasks(tasks); renderTasks(); }
-}
-
-function toggleContext(id) {
-  const el = document.getElementById("ctx-" + id);
-  if (el) el.classList.toggle("show");
-}
-
-function saveContext(id) {
-  const tasks = loadTasks();
-  const task = tasks.find(t => t.id === id);
-  const ta = document.getElementById("ctx-text-" + id);
-  if (!task || !ta || !ta.value.trim()) return;
-  task.context = task.context || [];
-  task.context.push({
-    date: new Date().toISOString().slice(0,16).replace("T"," "),
-    text: ta.value.trim()
-  });
-  saveTasks(tasks);
-  ta.value = "";
-  renderTasks();
-  showToast("Context saved on task", "Next Cowork session will see this");
-}
-
-let currentDump = null;
-function openDump(bucket, name, path) {
-  currentDump = { bucket, name, path };
-  document.getElementById("dump-title").textContent = "Dump · " + name;
-  document.getElementById("dump-path").textContent = "Writes to: " + path + "/<timestamp>.md";
-  document.getElementById("dump-text").value = "";
-  document.getElementById("dump-modal-bg").classList.add("show");
-  setTimeout(() => document.getElementById("dump-text").focus(), 50);
-}
-
-function closeDump() {
-  document.getElementById("dump-modal-bg").classList.remove("show");
-  currentDump = null;
-}
-
-function sendDump() {
-  if (!currentDump) return;
-  const text = document.getElementById("dump-text").value.trim();
-  if (!text) { showToast("Nothing to send", "Type or dictate something first"); return; }
-  const today = new Date().toISOString().slice(0, 10);
-  const time = new Date().toTimeString().slice(0, 5).replace(":", "");
-  const filename = "dump_" + today + "_" + time + ".md";
-  const fullPath = currentDump.path + "/" + filename;
-  const prompt =
-    "I'm dumping into my " + currentDump.name + " bucket from the command center.\n\n" +
-    "Write this content to:\n" +
-    fullPath + "\n\n" +
-    "Use the full iCloud path:\n" +
-    "~/Library/Mobile Documents/com~apple~CloudDocs/Claude-Workspace/" + fullPath + "\n\n" +
-    "Then process it: extract action items, flag anything urgent, update _brain/bodhi-state.md if portfolio state changed, and tell me what you did.\n\n" +
-    "Content:\n---\n" + text + "\n---";
-  navigator.clipboard.writeText(prompt).then(() => {
-    showToast("Dump prompt copied", "Paste into a Cowork session to save and process");
-    closeDump();
-  }).catch(() => {
-    const ta = document.createElement("textarea");
-    ta.value = prompt;
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand("copy");
-    document.body.removeChild(ta);
-    showToast("Dump prompt copied", "Paste into a Cowork session to save and process");
-    closeDump();
-  });
-}
-
-function copyPrompt(key, message) {
-  const text = PROMPTS[key];
-  if (!text) return;
-  navigator.clipboard.writeText(text).then(() => {
-    showToast(message || "Copied", "Paste into a new Cowork session");
-  }).catch(() => {
-    const ta = document.createElement("textarea");
-    ta.value = text;
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand("copy");
-    document.body.removeChild(ta);
-    showToast(message || "Copied", "Paste into a new Cowork session");
-  });
-}
-
-function copyRedPhone() { copyPrompt("red_phone", "Red phone copied"); }
-
-function showToast(message, next) {
-  const toast = document.getElementById("toast");
-  toast.innerHTML = escapeHtml(message) + (next ? '<span class="next">' + escapeHtml(next) + '</span>' : '');
-  toast.classList.add("show");
-  setTimeout(() => toast.classList.remove("show"), 3500);
-}
-
-function updateDate() {
-  const now = new Date();
-  const opts = { weekday: "long", month: "long", day: "numeric", year: "numeric" };
-  document.getElementById("date-line").textContent = now.toLocaleDateString("en-US", opts);
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-  updateDate();
-  const sel = document.getElementById("state-select");
-  if (sel) sel.value = loadState();
-  renderTasks();
-});
-
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") closeDump();
-});
-</script>
+<div class="toast liquid-glass-strong" id="toast"></div>
+<script src="v2-app.js"></script>
 </body>
 </html>
