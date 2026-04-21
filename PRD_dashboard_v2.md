@@ -310,6 +310,38 @@ Read: _command-center/reorg/INVENTORY_2026-04-20.md
 Write proposal to: _command-center/reorg/PROPOSAL_2026-04-20.md
 Do NOT move any files. Proposal only. Wait for approval before Phase 4.
 
+**Build QA: did it follow the PRD?** (tag: 'build_qa')
+Pre-seed:
+Claude Code just finished a build. QA it against the PRD.
+
+PRD location: _command-center/PRD_dashboard_v2.md
+Built files: _command-center/index.html, _command-center/v2-app.js, _command-center/v2-styles.css
+
+Read the PRD in full. Then read the built files. For each major section of the PRD, check:
+- Is this section implemented?
+- Does the implementation match the spec?
+- Are there gaps, deviations, or cosmetic-only wiring?
+
+Output a gap report in three sections:
+CORRECT: what matches the PRD
+MISSING: what the PRD specifies but the build did not implement
+WRONG: what the build implemented differently than the PRD specified
+
+Be specific. Name the file, function, and line number where possible.
+Do not suggest fixes -- just report the gaps. Bodhi decides what to fix next.
+
+**UI feedback: restyle in Claude Code** (tag: 'ui_feedback')
+Pre-seed:
+You are restyling an existing file. Do NOT rebuild from scratch. CSS and visual layer only. Do not touch any Supabase connection, table names, or JS logic. No em dashes. No localStorage.
+
+Project: [name the project]
+File to restyle: [exact path, e.g. _command-center/index.html]
+
+Feedback:
+[describe exactly what looks wrong or what you want changed]
+
+If you need to see the file first, read it before writing a single line of output.
+
 ### Roadmap
 
 Two sections:
@@ -634,3 +666,90 @@ What is NOT in scope for this build (separate tasks):
 
 Claude Code session starter prompt is in the CLAUDE CODE SESSION STARTER section above.
 Copy it exactly. Do not abbreviate it.
+
+---
+
+## CURRENT STATE AUDIT (2026-04-21) -- READ THIS BEFORE NEXT CLAUDE CODE SESSION
+
+This section documents what is actually wired vs what is cosmetic in the deployed v2 dashboard.
+The next Claude Code session uses this as the honest starting point.
+
+### What is fake right now
+
+- `save()` is `const save = () => {};` -- a no-op. Nothing persists anywhere.
+- Messages pushed to the Direct Line panel exist in browser memory only. They vanish on refresh.
+- "On the line, queued" toast is cosmetic. Nothing writes to Supabase direct_line_messages.
+- Tasks in the dashboard are hardcoded in the JS state object. They are NOT loaded from Supabase.
+- Supabase is initialized but tasks are never fetched from it (no `supabase.from('tasks').select()` call wired to the task list).
+- Task checkboxes do not write to Supabase. Toggling done is local state only.
+- Task notes textarea does not write to Supabase.
+- Interaction log receives zero writes.
+
+### What is real
+
+- Supabase tables exist: tasks, portfolio_state, task_notes, interaction_log, direct_line_messages, direct_line_responses
+- 15 tasks exist in the Supabase tasks table (inserted by CoS flush session)
+- Realtime enabled on tasks, portfolio_state, direct_line_responses
+- The schema is correct and ready
+- The Supabase credentials in the PRD are correct
+
+### The full Direct Line queue architecture (Bodhi's vision, confirmed 2026-04-21)
+
+This is what the system must become. The next Claude Code session implements this.
+
+**The two actions are distinct:**
+
+"Send to the line" (appears on task drawers, bucket cards, prompt cards):
+- Silently writes the message to Supabase direct_line_messages
+- Shows a small confirmation toast: "Queued. CoS picks this up when you open the line."
+- Does NOT open the panel. Does NOT interrupt focus.
+- Bodhi can queue up multiple items throughout the day across different surfaces
+
+"Open the line" (red button only):
+- Opens the Direct Line panel
+- The panel shows the current queue: all unprocessed messages from direct_line_messages
+- Bodhi reviews what's queued, can add a final free-text message
+- When he hits Send from the panel, the CoS reads ALL unprocessed messages in one pass
+- CoS response covers everything: "Here's what I saw, here's what I'm doing about it"
+
+**Why this matters:**
+Bodhi may leave context on 4 different tasks, drop 2 brain dumps, and add a creative note throughout the morning. When he opens the line, the CoS sees all of it as a unified debrief. It does not require Bodhi to recap anything. The queue IS the debrief.
+
+**What the CoS does with the queue:**
+- Reads all unprocessed direct_line_messages ordered by created_at
+- Groups by kind (tasks get task handling, brain_dumps get routing to correct bucket, prompts get skill loading)
+- Responds with a unified summary: "Here's everything I saw. Here's what I'm doing."
+- Marks all processed messages as processed = true
+- Any action items become tasks in the Supabase tasks table
+- Any brain files that need updating get flagged for the next session with Bodhi present
+
+**What the next Claude Code session must wire:**
+1. Replace hardcoded state.today and state.week with real Supabase queries
+2. Task checkbox writes done status to Supabase tasks table
+3. Task notes textarea saves to task_notes on blur
+4. "Send to the line" (from drawer, bucket card, prompt card) writes to direct_line_messages silently
+5. Direct Line panel loads current queue from direct_line_messages on open
+6. Panel send button writes a final message and triggers the CoS reading of the full queue
+7. Direct_line_responses realtime subscription pushes CoS replies into the panel thread
+8. Portfolio state loads from and saves to portfolio_state table
+9. All interaction_log writes wired for every action
+
+**The queue display in the panel:**
+When the panel opens, before the compose area, show a "In the queue" summary:
+- Count of unprocessed messages
+- Brief list: "[kind] -- [first 60 chars of content]" per message
+- A "Clear queue" option (marks all processed without sending -- for cleanup only)
+- Then the compose area for adding a final message before launching
+
+### Session wrap prompt update
+
+The Key Prompts "Session wrap" card pre-seed text must include the queue flush: before closing,
+any unsent queue items should be sent so the CoS can act on them in the next run.
+
+Updated session wrap pre-seed:
+"Before we close: check direct_line_messages for any unprocessed items and include them
+in the session summary. Then write everything we covered -- all tasks, decisions, status updates,
+and action items -- to two places:
+1. _inbox/_processed/STATUS_UPDATE_[today].md
+2. Supabase tasks table: every concrete action item as a task row with user_id='bodhi'
+After writing, confirm what was inserted."
