@@ -43,17 +43,16 @@ Everything else supports that ritual and the work that follows.
 - No React. No Vue. No build tools.
 - Deployed via git push to GitHub Pages (aicontentnow/bodhi-command-center repo)
 
-### Supabase credentials (hardcode these -- do not ask Bodhi)
+### Supabase credentials (Bodhi supplies these)
 
 At the top of the JS, define:
 ```js
-const SUPABASE_URL = 'https://gcbvvausrmbbkfazojpl.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_dx9sYWtLtpXacM9ZIXoYRg_VPiKG69P';
+const SUPABASE_URL = 'YOUR_PROJECT_URL';
+const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
 ```
 
-Project: bodhi-360 (standalone from MIRROR -- separate Supabase project).
-The publishable key is public-safe. Do not use the service role key.
-Note: this key uses the newer `sb_publishable_` format (Supabase 2025+) -- this is correct.
+Bodhi finds these at: supabase.com > his project > Settings > API.
+The anon key is public-safe. Do not use the service role key.
 
 ---
 
@@ -105,30 +104,19 @@ CREATE TABLE IF NOT EXISTS interaction_log (
   created_at timestamptz DEFAULT now()
 );
 
--- Direct line messages: Bodhi sends here, agent reads and processes
-CREATE TABLE IF NOT EXISTS direct_line_messages (
+-- Brain dumps
+CREATE TABLE IF NOT EXISTS brain_dumps (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id text DEFAULT 'bodhi',
+  bucket text NOT NULL,
   content text NOT NULL,
-  kind text DEFAULT 'freeform',  -- redphone | brain_dump | prompt | task | launch | freeform
-  tag text,                       -- bucket name, prompt key, or task id depending on kind
-  processed boolean DEFAULT false,
+  prompt_copied boolean DEFAULT false,
   created_at timestamptz DEFAULT now()
 );
 
--- Direct line responses: CoS agent writes here, dashboard reads via realtime
-CREATE TABLE IF NOT EXISTS direct_line_responses (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  message_id uuid REFERENCES direct_line_messages(id),
-  agent text DEFAULT 'bodhi-chief-of-staff',
-  content text NOT NULL,
-  created_at timestamptz DEFAULT now()
-);
-
--- Enable realtime on tasks, portfolio_state, and direct_line_responses
+-- Enable realtime on tasks and portfolio_state
 ALTER PUBLICATION supabase_realtime ADD TABLE tasks;
 ALTER PUBLICATION supabase_realtime ADD TABLE portfolio_state;
-ALTER PUBLICATION supabase_realtime ADD TABLE direct_line_responses;
 ```
 
 ### Interaction log event types
@@ -137,11 +125,12 @@ Log every one of these to interaction_log with event_data as JSON:
 - task_checked: { task_id, task_title, done: true/false }
 - task_added: { task_id, task_title, horizon, bucket }
 - note_saved: { task_id, note_preview (first 80 chars) }
-- message_sent: { kind, tag, char_count } -- replaces prompt_copied and brain_dump_sent
+- prompt_copied: { prompt_key, prompt_label }
 - state_changed: { from, to }
 - view_changed: { from, to }
 - page_changed: { from, to }
-- line_opened: { trigger } -- when Direct Line panel is opened; trigger = 'redphone' | 'bucket' | 'prompt' | 'task'
+- brain_dump_sent: { bucket, char_count }
+- red_phone_lifted: {}
 - app_opened: { view, page, energy_state }
 
 ---
@@ -197,12 +186,12 @@ Orbiting nodes (pill-shaped, glass style, 8-12px cyan dot left):
 - Creative (lower center orbit)
 
 Special node:
-- Red Phone: red pill, positioned near the sun (not in outer orbit). Always visible. Clicking opens the Direct Line panel (kind: redphone) and logs line_opened. Does NOT navigate away.
+- Red Phone: red pill, positioned near the sun (not in outer orbit). Always visible. Clicking copies the CoS prompt and logs red_phone_lifted. Does NOT navigate away.
 
 Orbit behavior:
 - Nodes have a slow elliptical CSS animation (different speeds per node, 20-40s rotation).
 - Clicking any project node navigates to Brain dump with that bucket pre-selected.
-- Instructions at bottom: "TAP A PLANET · RED PHONE OPENS LINE · SUN RETURNS HOME" in JetBrains Mono, muted.
+- Instructions at bottom: "TAP A PLANET · RED PHONE COPIES · SUN RETURNS HOME" in JetBrains Mono, muted.
 
 View switcher: bottom right "VIEW" panel showing Cockpit, Altar, Orbit options. Active one highlighted cyan.
 
@@ -218,12 +207,8 @@ Two sections, always visible:
 - Background: dark glass (liquid-glass-strong style)
 - Eyebrow: "RED PHONE · START EVERY SESSION HERE" in JetBrains Mono, red dot
 - Heading: "One *next action* -- nothing more." (Source Serif 4 italic on "next action")
-- Subtext: "Open the line. Tell the Chief of Staff what's on your mind."
-- CTA: "Open the line" button (red, large, phone icon). Clicking opens the Direct Line panel with kind: 'redphone', logs line_opened.
-
-The panel slides in from the right. The header reads "The line is open." in the panel.
-Three structured quick-launch buttons appear first (see Direct Line panel spec).
-The free-text area is below with placeholder "Say what needs to change".
+- Subtext: "Copy the prompt. Paste it into a new **Cowork** session."
+- CTA: "Lift the Red Phone" button (red, large, phone icon). Clicking copies the CoS prompt and logs red_phone_lifted.
 
 **Task section**:
 - Tab switcher: "Today X/Y" and "This week X/Y" (counts update live)
@@ -236,75 +221,55 @@ The free-text area is below with placeholder "Say what needs to change".
 **Context drawer** (slides in from right or expands inline):
 - Task title + horizon + bucket displayed
 - Notes textarea: live-saved to task_notes on blur. Logs note_saved.
-- "Send to the line" button: opens the Direct Line panel with kind: 'task', tag: task_id.
-  Pre-seeds the textarea with:
-  "Task: [task title]
-  Context: [all notes for this task, joined]
-  What do you need from me on this?"
-  Logs line_opened with trigger: 'task'.
+- "Copy w/ context" button: bundles task title + all notes into a Cowork-ready prompt, copies to clipboard, logs prompt_copied.
 - Close button.
 
 ### Brain dump
 
 6 bucket cards in a grid: bodhi360, Harmonic, LDAG, The Book of Oneness, Family, Creative.
-Each card: bucket name + short description.
+Each card: bucket name + short description. Clicking opens a compose modal.
 
-Clicking any bucket card opens the Direct Line panel with:
-- kind: 'brain_dump'
-- tag: the bucket name (e.g., 'LDAG', 'Harmonic')
-- The panel header shows "Dump into: [Bucket name]"
-- The textarea placeholder reads "Brain dump here. Raw is fine."
-- On send: writes to direct_line_messages with kind and tag set, logs message_sent.
-- The panel shows the confirmation: "Sent. Chief of Staff picks this up on next run."
-
-No separate modal. No copy-to-clipboard. Everything goes through the Direct Line panel.
-
-Note: brain_dumps table is no longer the primary write target. direct_line_messages handles all brain dump routing. The agent reads kind/tag to know which bucket to process into.
+Compose modal:
+- "Dump: [Bucket name]" header
+- Large textarea (Wispr Flow compatible -- just a standard textarea)
+- "Send" button: saves content to brain_dumps table, then copies a routed Cowork prompt to clipboard, logs brain_dump_sent, closes modal.
+- The copied prompt format:
+  "I'm dumping into my [Bucket] bucket from the command center.
+  Write this to: _inbox/[bucket]/dump_[timestamp].md
+  Then process it: extract action items, flag anything urgent, update _brain/bodhi-state.md if portfolio state changed.
+  Content: [content]"
+- Cancel button.
 
 ### Key prompts
 
-Grid of prompt cards. Clicking any card opens the Direct Line panel with the prompt text pre-seeded in the textarea.
-All prompts log message_sent to interaction_log when the user hits Send.
+Grid of prompt cards. Clicking any card copies the prompt and shows a brief toast.
+All prompts write to interaction_log with event_type prompt_copied.
 
-Exception: "Share with Cowork" is the only page that still uses copy-to-clipboard. That page is the clipboard bridge by design.
+Prompts (with their text):
 
-On card click:
-- Opens Direct Line panel with kind: 'prompt', tag: [prompt_key]
-- The textarea is pre-filled with the prompt text (editable before sending)
-- The panel header shows the prompt name
-- User can edit the pre-filled text (e.g., fill in [describe] placeholders) before sending
-- On Send: writes to direct_line_messages, logs message_sent
-
-Prompt cards (with their pre-seed text):
-
-**Morning: where am I** (tag: 'morning_cos')
-Pre-seed:
+**Morning: where am I**
 Load this skill and follow its instructions:
 skills/bodhi-chief-of-staff/SKILL.md
 State: [green / yellow / red / potato day / workday / describe]
 What's on my mind: [one line, or "I don't know, tell me"]
 
-**LDAG: pick up production** (tag: 'ldag_cos')
-Pre-seed:
+**LDAG: pick up production**
 Load this skill and follow its instructions:
 skills/ldag-cos/SKILL.md
 
-**LDAG: draft an episode** (tag: 'ldag_episode')
-Pre-seed:
+**LDAG: draft an episode**
 Load this skill and follow its instructions:
 skills/ldag-episode-script/SKILL.md
 Episode concept: [describe]
 Moment IDs (if any): [paste]
 
-**Status update: something changed** (tag: 'status_update')
-Pre-seed:
+**Status update: something changed**
 I have a status update. Something shipped or shifted and I want the system to know.
 Write a status file at: _inbox/_processed/STATUS_UPDATE_[today].md
 Update _brain/bodhi-state.md with anything that changes portfolio state.
 Here's what happened: [talk]
 
-**Skills reorg: Phase 3** (tag: 'skills_reorg_p3')
-Pre-seed:
+**Skills reorg: Phase 3**
 Skills reorganization audit -- Phase 3: canonical structure proposal.
 Read: _command-center/reorg/INVENTORY_2026-04-20.md
 Write proposal to: _command-center/reorg/PROPOSAL_2026-04-20.md
@@ -350,7 +315,7 @@ Display a live preview of what will be copied:
 - Any pending brain dump count
 
 "Copy full context" button: bundles everything above into a structured prompt and copies it.
-Logs message_sent with kind: 'freeform', tag: 'share_with_cowork'.
+Logs prompt_copied with prompt_key: 'share_with_cowork'.
 
 The copied prompt format:
 "Bodhi 360° current state as of [timestamp]:
@@ -485,27 +450,19 @@ The Supabase anon key is safe to include in the HTML (it is public-safe by desig
 
 ## CLAUDE CODE SESSION STARTER
 
-Paste this to start the build in Claude Code:
+Paste this to start the build:
 
 ```
 Build the Bodhi 360° Command Center v2 per the PRD at:
 ~/Library/Mobile Documents/com~apple~CloudDocs/Claude-Workspace/_command-center/PRD_dashboard_v2.md
 
-Design reference screenshots are in the same folder. Three screenshots to share with Claude Code before it starts:
-- Cockpit view (sidebar + main)
-- Altar view (centered)
-- Orbit view (planetary canvas)
-Plus the v2 share kit showing the Direct Line panel open and closed.
+Design reference screenshots are in the same folder (share the screenshots when starting).
 
 Before writing any code:
-1. Read the entire PRD -- every section, including DIRECT LINE PANEL
+1. Read the entire PRD
 2. Confirm you understand the three views (Cockpit, Altar, Orbit)
-3. Confirm you understand that localStorage is forbidden -- Supabase only, zero exceptions
-4. Confirm you understand that the Direct Line panel is the primary interaction surface --
-   clicking a bucket card, prompt card, or task "Send to the line" ALL open this panel.
-   The only copy-to-clipboard remaining is the "Share with Cowork" page.
-5. The Supabase credentials are already in the PRD. Do not ask Bodhi for them.
-6. Run the SQL schema from the PRD in Supabase > SQL Editor BEFORE starting to build
+3. Confirm you understand that localStorage is forbidden -- Supabase only
+4. Ask Bodhi for his Supabase URL and anon key (he gets them from supabase.com > his project > Settings > API)
 
 Output: a single index.html file saved to:
 ~/Library/Mobile Documents/com~apple~CloudDocs/Claude-Workspace/_command-center/index.html
@@ -514,7 +471,7 @@ This overwrites the current dashboard. The current dashboard is backed up at:
 ~/Library/Mobile Documents/com~apple~CloudDocs/Claude-Workspace/_archive/dashboard-v1-backup/index.html
 
 Deploy after Bodhi approves the build:
-cd "/Users/bodhivalentine/Library/Mobile Documents/com~apple~CloudDocs/Claude-Workspace/_command-center" && git add -A && git commit -m "deploy: dashboard-v2" && git push origin main
+cd "~/Library/Mobile Documents/com~apple~CloudDocs/Claude-Workspace/_command-center" && git add -A && git commit -m "deploy: dashboard-v2" && git push origin main
 ```
 
 ---
@@ -530,107 +487,90 @@ Next action: open Claude Code, paste the session starter above, share the three 
 
 ---
 
-## DIRECT LINE PANEL (authoritative spec)
+## RED PHONE: DIRECT LINE PANEL (updated spec -- replaces simple copy button)
 
-The Direct Line panel is the primary interaction surface of the entire dashboard.
-It replaces every copy-to-clipboard pattern except "Share with Cowork."
+The Red Phone is not a "copy prompt" button. It is a direct line to the Chief of Staff.
+Inspired by the MIRROR ops dashboard pattern: a slide-out panel with a live message queue.
 
-**Every entry point into the line:**
-- Red Phone card "Open the line" button (Home)
-- Bucket card click (Brain dump page)
-- Prompt card click (Key prompts page)
-- "Send to the line" in task context drawer (Home)
-- Red Phone node click (Orbit view)
+### Panel behavior
 
-### Visual design (from v2 share kit)
+Clicking "Lift the Red Phone" slides out a panel from the right side of the screen (all three views).
+Panel width: 420px on desktop, full-width on mobile.
+Panel has an X to close.
+Panel header: "Chief of Staff" + "Direct line -- queues into agent_triggers" in JetBrains Mono.
 
-Panel slides in from the right. Width: 440px on desktop, full-width on mobile.
-Panel persists across page navigation within a session -- it does not close when switching pages.
-X button closes. Escape key closes.
-Panel header: "Chief of Staff" in Poppins 500 + a connection status pill in JetBrains Mono.
+### Two modes inside the panel
 
-**Panel open state -- three sections (top to bottom):**
+**Mode 1: Direct line (default)**
+A textarea at the bottom: "What needs to change? What's on your mind?"
+Send button (red, arrow icon).
+On send: writes message to `direct_line_messages` table in Supabase, shows confirmation
+("Sent. Chief of Staff picks this up on next run.").
+The panel shows a conversation thread: user messages on the right, agent responses on the left.
+Responses appear when the scheduled CoS agent writes back to Supabase (realtime subscription).
 
-1. Header bar: "The line is open." in Poppins 300, plus the X close button.
+**Mode 2: Structured launch (tab or toggle inside the panel)**
+Three quick-launch options. Each is a button, not a copy-paste:
+- "Next step on roadmap" -- reads current roadmap state from Supabase, identifies the active phase,
+  opens Cowork with the correct starter prompt pre-loaded (via clipboard + instruction to paste).
+- "I have an issue" -- switches to Mode 1 with the prompt pre-filled: "Issue: " and focus on textarea.
+- "High-level strategy" -- flags message as strategy-tier, adds a note to copy to Opus Chat
+  (these need synthesis, not execution). Copies a framing prompt for Claude Chat (not Cowork).
 
-2. Structured launch buttons (shown when kind = 'redphone' or panel opened with no pre-seed):
-   Three buttons in a column:
-   - "Next step on roadmap" -- pre-seeds the textarea with a roadmap-status prompt (reads active phase)
-   - "I have an issue" -- pre-seeds textarea with "Issue: " and focuses it
-   - "High-level strategy" -- pre-seeds textarea with a strategy framing prompt and notes
-     this is Opus Chat territory, not Cowork (adds a subtle note: "Flag: bring this to Opus Chat")
-   
-   When kind is brain_dump / prompt / task: skip the structured buttons and go straight to pre-seeded textarea.
+### Supabase tables for direct line
 
-3. Message thread area:
-   - User messages (role: 'me') appear on the right, glass pill style
-   - Agent responses (role: 'cos') appear on the left, darker glass, labeled "CoS"
-   - Empty state: "No messages yet. Say what needs to change."
-   - New messages appear at the bottom (standard chat scroll)
+```sql
+CREATE TABLE IF NOT EXISTS direct_line_messages (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id text DEFAULT 'bodhi',
+  content text NOT NULL,
+  mode text DEFAULT 'direct',
+  launch_type text,
+  processed boolean DEFAULT false,
+  created_at timestamptz DEFAULT now()
+);
 
-4. Compose area (bottom):
-   - Textarea (4 rows, expands up to 8). Placeholder: "Say what needs to change."
-   - When pre-seeded: textarea shows the pre-seeded text (editable)
-   - Context tag pill (top-left of textarea area): shows the kind/tag (e.g., "Red Phone" / "LDAG bucket" / "Morning CoS"). Muted cyan, small.
-   - Queue status line (below textarea, JetBrains Mono, muted): "QUEUED TO SUPABASE · CoS reads on next run"
-   - Send button (right side, cyan arrow icon). Sends on click or Cmd+Enter.
+CREATE TABLE IF NOT EXISTS direct_line_responses (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  message_id uuid REFERENCES direct_line_messages(id),
+  agent text DEFAULT 'bodhi-chief-of-staff',
+  content text NOT NULL,
+  created_at timestamptz DEFAULT now()
+);
 
-### Message shape (written to direct_line_messages)
-
-```js
-{
-  id: uuid,
-  user_id: 'bodhi',
-  content: string,         // the textarea content at send time
-  kind: string,            // 'redphone' | 'brain_dump' | 'prompt' | 'task' | 'launch' | 'freeform'
-  tag: string | null,      // bucket name, prompt key, task_id, or launch_type depending on kind
-  processed: false,
-  created_at: timestamp
-}
+ALTER PUBLICATION supabase_realtime ADD TABLE direct_line_responses;
 ```
 
-kind values:
-- redphone: opened from Red Phone card or Orbit node
-- brain_dump: opened from a bucket card (tag = bucket name)
-- prompt: opened from a prompt card (tag = prompt_key)
-- task: opened from task context drawer "Send to the line" (tag = task_id)
-- launch: opened via structured launch button (tag = 'roadmap' | 'issue' | 'strategy')
-- freeform: opened any other way
+### Agent dependency (separate build, not part of this dashboard build)
 
-### Thread persistence
-
-The panel shows all messages from the current session in the thread. On panel close and reopen, the thread reloads from Supabase (direct_line_messages + direct_line_responses joined). Thread is scoped to the last 50 messages for performance.
-
-### Agent dependency (separate build -- NOT part of this dashboard)
-
-Responses appear when the bodhi-chief-of-staff scheduled task polls direct_line_messages (processed = false), processes them, and writes to direct_line_responses. Same pattern as MIRROR CoS. Realtime subscription on direct_line_responses pushes new agent responses into the panel without reload.
+For responses to appear in the panel, the bodhi-chief-of-staff needs a scheduled task variant
+that polls `direct_line_messages` where processed = false, processes them, and writes to
+`direct_line_responses`. This is the same pattern as the MIRROR CoS (runs on a schedule,
+reads Supabase, writes back).
 
 For v1 of the dashboard: the panel sends messages and shows a pending state.
-No fake immediate responses. The confirmation after send: "Sent. Chief of Staff picks this up on next run."
-The queue status line at the bottom of the compose area is always honest about this.
+Responses appear when the agent processes them. No fake immediate responses.
+The confirmation message is honest: "Sent. Chief of Staff picks this up on next run."
+
+Add to the SQL schema above when building the CoS scheduled task.
 
 ---
 
 ## FINAL PRD STATUS
 
 Written: 2026-04-20
-Updated: 2026-04-20 (v2 share kit incorporated -- Direct Line panel replaces all copy patterns)
-Design source: Claude Design (Cockpit, Altar, Orbit + v2 Direct Line panel) + MIRROR ops reference
-Phase: READY FOR CLAUDE CODE. No open questions. Build can start.
+Updated: 2026-04-20 (direct line panel spec added)
+Design source: Claude Design (Cockpit, Altar, Orbit views) + MIRROR ops reference pattern
+Phase: Ready for Claude Code implementation
 
 What Claude Code needs to start:
-1. This PRD (complete -- no missing info)
-2. The design screenshots from the same folder:
-   - cockpit view screenshot
-   - altar view screenshot
-   - orbit view screenshot
-   - v2 Direct Line panel screenshots (panel closed + panel open)
-3. Supabase credentials: already in the PRD (hardcoded). Do not ask Bodhi.
+1. This PRD
+2. The three design screenshots (Cockpit, Altar, Orbit)
+3. Bodhi's Supabase URL + anon key (Settings > API in his Supabase project)
 
 What is NOT in scope for this build (separate tasks):
-- The bodhi-chief-of-staff scheduled task that processes direct line messages and writes responses
+- The bodhi-chief-of-staff scheduled task that processes direct line messages
 - The skills reorganization Phase 3 and 4
 - The rogue Hard Hat Healthcare folder cleanup
 
 Claude Code session starter prompt is in the CLAUDE CODE SESSION STARTER section above.
-Copy it exactly. Do not abbreviate it.

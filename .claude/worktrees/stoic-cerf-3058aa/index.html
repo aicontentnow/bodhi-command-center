@@ -711,27 +711,20 @@ The PRD must include:
 Ask me clarifying questions before writing. Do not invent visual direction.`
 };
 
-const TASKS_KEY = "bodhi_mvp_tasks_v3";
+const TASKS_KEY = "bodhi_mvp_tasks_v2";
 const STATE_KEY = "bodhi_mvp_state_v1";
 
 const DEFAULT_TASKS = [
-  // 360 / Ops
   { id: "t1", title: "Build brain dump buckets into the dashboard", meta: "So dumping into a bucket routes automatically", project: "360", done: true, context: [] },
   { id: "t2", title: "Test the red phone in a Cowork session", meta: "Confirm the CoS skill loads properly", project: "360", done: false, context: [] },
-  { id: "t13", title: "Harmonic PIPELINE.md standup (Apr 9-16 transcripts)", meta: "9 transcripts processed. PIPELINE.md updated 2026-04-20. All 13 priorities current.", project: "360", done: true, context: [] },
+  { id: "t3", title: "Hardcover proof review · glitch-effect version", meta: "Proof rejected 2026-04-19. What's wrong, what's next round.", project: "Book", done: false, context: [] },
+  { id: "t4", title: "Rocky Mountaineer logistics with Lee", meta: "Early May trip with Dad", project: "Family", done: false, context: [] },
+  { id: "t5", title: "Harmonic priorities for the week", meta: "Work sync cadence, Sarah timezone handoff", project: "Harmonic", done: false, context: [] },
   { id: "t6", title: "Skills reorg Phase 1: inventory", meta: "Full scan of all SKILL.md files across Mac. Inventory at _command-center/reorg/INVENTORY_2026-04-20.md", project: "360", done: true, context: [] },
   { id: "t7", title: "Skills reorg Phase 2: fix CoS skill errors", meta: "4 skills incorrectly marked TODO. All corrected in bodhi-chief-of-staff SKILL.md", project: "360", done: true, context: [] },
   { id: "t8", title: "Skills reorg Phase 3: canonical structure proposal", meta: "26 skill files across 9 location patterns. Proposal doc needed before migration.", project: "360", done: false, context: [] },
   { id: "t9", title: "Skills reorg Phase 4: migration + archive", meta: "Dedicated session. Archive-before-move. Requires Bodhi present.", project: "360", done: false, context: [] },
-  { id: "t10", title: "Archive rogue Hard Hat Healthcare/ folder at workspace root", meta: "Duplicate of framezero/clients/hhh/. 3 rogue CLAUDE.md files inside.", project: "360", done: false, context: [] },
-  // Harmonic
-  { id: "t11", title: "SensAI video 1 script · 30-second rewrite", meta: "Write with Sarah. Target week of May 4 launch. Gabe animates in Weavy after.", project: "Harmonic", done: false, context: [] },
-  { id: "t12", title: "Draft ANGA + Fiber Connect event emails", meta: "Fiber Connect first (earlier event). Messaging locked: O&T, distributed PON, C-star.", project: "Harmonic", done: false, context: [] },
-  { id: "t5", title: "Chase Sarah: loop Gabe in on the 5 completed video scripts", meta: "Scripts done. Sarah needs to notify Gabe they are ready for animation.", project: "Harmonic", done: false, context: [] },
-  // Book
-  { id: "t3", title: "Hardcover proof review · glitch-effect version", meta: "Proof rejected 2026-04-19. What is wrong, what is next round.", project: "Book", done: false, context: [] },
-  // Family
-  { id: "t4", title: "Rocky Mountaineer logistics with Lee", meta: "Early May trip with Dad", project: "Family", done: false, context: [] }
+  { id: "t10", title: "Archive rogue Hard Hat Healthcare/ folder at workspace root", meta: "Duplicate of framezero/clients/hhh/. 3 rogue CLAUDE.md files inside.", project: "360", done: false, context: [] }
 ];
 
 function loadTasks() {
