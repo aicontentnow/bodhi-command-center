@@ -110,7 +110,7 @@
           <div class="top">
             <div>
               <div class="eyebrow-red"><span class="red-dot"></span>Red Phone · direct line to chief of staff</div>
-              <h2>One <em>next action</em> — nothing more.</h2>
+              <h2>One <em>next action.</em> Nothing more.</h2>
               <p class="sub">Opens the line. Your message goes into the queue; the chief of staff replies in the panel.</p>
             </div>
             <div class="actions" style="display:flex; flex-direction:column; align-items:flex-end; gap:0;">
@@ -284,6 +284,7 @@
       <div class="line-dot"></div>
       <div>
         <div class="line-eyebrow">Direct line · bodhi chief of staff</div>
+        <span id="lineStatus" style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--t-4);letter-spacing:0.1em;padding:0.15rem 0.5rem;border-radius:999px;background:rgba(255,255,255,0.05);">offline</span>
         <h3>The line <em>is open.</em></h3>
       </div>
     </div>
@@ -315,7 +316,7 @@
       </div>
       <div class="le-copy">
         <div class="le-n">Say what needs to change.</div>
-        <div class="le-d">Messages queue to <code>agent_triggers</code>. Chief of staff reads on its next run and replies here. No copying, no new sessions.</div>
+        <div class="le-d">Messages queue to <code>direct_line_messages</code>. Chief of staff reads on its next run and replies here. No copying, no new sessions.</div>
       </div>
     </div>
   </div>
@@ -329,7 +330,7 @@
     </div>
     <textarea class="line-input" id="lineInput" placeholder="Talk to the chief of staff. Enter to send · Shift+Enter for a new line." rows="2"></textarea>
     <div class="line-foot">
-      <div class="line-hint"><span class="pulse-dot"></span>Queue · in-memory per session · Supabase integration planned.</div>
+      <div class="line-hint"><span class="pulse-dot"></span>Queue · direct_line_messages · CoS reads on next run.</div>
       <button class="btn" type="submit" id="lineSend">
         <span>Send</span>
         <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4Z"/></svg></span>

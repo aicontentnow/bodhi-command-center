@@ -6,6 +6,16 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const save = () => {}; // replaced stage by stage with real Supabase writes
 
+let sbLive = false;
+function setLineStatus(live) {
+  sbLive = live;
+  const el = document.getElementById('lineStatus');
+  if (!el) return;
+  el.textContent = live ? 'live' : 'offline';
+  el.style.color = live ? 'hsl(188 90% 62%)' : 'var(--t-4)';
+  el.style.background = live ? 'hsla(188 90% 62% / 0.12)' : 'rgba(255,255,255,0.05)';
+}
+
 let state = {
   mode: 'harmonic',
   variant: 'cockpit',
@@ -140,6 +150,7 @@ let state = {
     const map = { h: 'today', t: 'today', b: 'buckets', p: 'prompts', m: 'roadmap', s: 'share' };
     const page = map[e.key.toLowerCase()];
     if (page) setPage(page);
+    if (e.key.toLowerCase() === 'v') tweaksPanel.classList.toggle('is-open');
   });
 
   // --- Today / Week tabs
@@ -473,7 +484,7 @@ ${it.notes || '(no additional context yet)'}`;
     ldag_draft: { label: 'LDAG · draft an episode',       text: `LDAG · draft an episode. Given the concept + moments below, produce an Opus Agent brief: title working options, cold open idea, 3–5 beats, and a CTA hypothesis.\n\n---\n[paste concept + moments here]` },
     status:          { label: 'Status update',                   text: `Status update: something changed. I'll describe it in one line. Update the brains, flag any downstream implications for the current mode, and revise today's one next action if needed.\n\n---\n[what changed]` },
     design_prd:      { label: 'Design PRD · Claude Designer',    text: `Design PRD · Claude Designer handoff. Turn the following into a product requirements doc the designer can build from: audience, job-to-be-done, screens/states needed, interaction notes, references, non-goals.\n\n---\n[paste raw context]` },
-    session_wrap:    { label: 'Session wrap · flush and close',     text: `Before we close: write everything we covered today -- all tasks, decisions, status updates, and action items -- to two places:\n1. _inbox/_processed/STATUS_UPDATE_${new Date().toISOString().slice(0,10)}.md (full summary of what was discussed and decided)\n2. Supabase tasks table: insert every concrete action item as a task row with user_id='bodhi', horizon='today' or 'week' as appropriate, and the correct bucket.\nAfter writing, confirm what was inserted so I can see it in the dashboard.` },
+    session_wrap:    { label: 'Session wrap · flush and close',     text: `Before we close: check direct_line_messages for any unprocessed items and include them in the session summary. Then write everything we covered -- all tasks, decisions, status updates, and action items -- to two places:\n1. _inbox/_processed/STATUS_UPDATE_${new Date().toISOString().slice(0,10)}.md (full summary of what was discussed and decided)\n2. Supabase tasks table: insert every concrete action item as a task row with user_id='bodhi', horizon='today' or 'week' as appropriate, and the correct bucket.\nAfter writing, confirm what was inserted so I can see it in the dashboard.` },
     skills_reorg_p3: { label: 'Skills reorg · Phase 3',          text: `Skills reorg Phase 3: canonical structure proposal. Review the inventory at _command-center/reorg/INVENTORY_2026-04-20.md. Propose the canonical folder structure, which skills move where, and what gets archived. One concrete migration plan, no frameworks.` },
     build_qa:        { label: 'Build QA · did it follow the PRD?',     text: `Claude Code just finished a build. QA it against the PRD.\n\nPRD location: _command-center/PRD_dashboard_v2.md\nBuilt files: _command-center/index.html, _command-center/v2-app.js, _command-center/v2-styles.css\n\nRead the PRD in full. Then read the built files. For each major section of the PRD, check:\n- Is this section implemented?\n- Does the implementation match the spec?\n- Are there gaps, deviations, or cosmetic-only wiring?\n\nOutput a gap report in three sections:\nCORRECT: what matches the PRD\nMISSING: what the PRD specifies but the build did not implement\nWRONG: what the build implemented differently than the PRD specified\n\nBe specific. Name the file, function, and line number where possible.\nDo not suggest fixes -- just report the gaps. Bodhi decides what to fix next.` },
     ui_feedback:     { label: 'UI feedback · restyle in Claude Code', text: `You are restyling an existing file. Do NOT rebuild from scratch. CSS and visual layer only. Do not touch any Supabase connection, table names, or JS logic. No em dashes. No localStorage.\n\nProject: [name the project]\nFile to restyle: [exact path, e.g. _command-center/index.html]\n\nFeedback:\n[describe exactly what looks wrong or what you want changed]\n\nIf you need to see the file first, read it before writing a single line of output.` },
@@ -633,7 +644,7 @@ ${it.notes || '(no additional context yet)'}`;
       <div class="planet p-family"   data-bucket="family"><span>Family</span></div>
       <div class="planet p-creative" data-bucket="creative"><span>Creative</span></div>
       <div class="planet p-bodhi"    data-bucket="bodhi360"><span>bodhi360</span></div>
-      <div class="orbit-hint">Tap a planet · Red Phone copies · Sun returns home</div>
+      <div class="orbit-hint">Tap a planet · Red Phone opens line · Sun returns home</div>
     `;
     document.body.appendChild(orbitRoot);
     orbitRoot.querySelectorAll('[data-go]').forEach(n => {
@@ -682,7 +693,7 @@ A personal command center for a neurodivergent (AuDHD), non-dual operator runnin
 CORE PARADIGM · DIRECT LINE (v2)
 v1 relied on copying prompts and pasting them into a new Cowork session every time. v2 replaces that with a Direct Line panel : a 440px conversational surface that slides in from the right. Every action (Red Phone, brain-dump bucket, key prompt, "Send to the line" from a task) opens this panel and queues a message into the chief-of-staff inbox. The chief of staff reads on its next run and replies in the same thread. No copying, no new sessions, one continuous conversation.
 
-  • Message shape (in memory per session; Supabase \`agent_triggers\` when the backend is live):
+  • Message shape (in memory per session; Supabase \`direct_line_messages\` when the backend is live):
       { id, role: 'me'|'cos', kind, tag, text, ts, status: 'pending'|'routed'|'replied' }
   • kind values: redphone · brain_dump · prompt · task · launch · freeform
   • Panel persists across page changes. Close only via the explicit X or Escape.
@@ -777,6 +788,7 @@ VIEWS (Views button, bottom-right : hidden while the Direct Line panel is open)
 
       ['today', 'week'].forEach(w => renderList(w));
       renderCounts();
+      setLineStatus(true);
 
       // Realtime: re-render task lists when any task row changes
       sb.channel('tasks-live')
@@ -810,6 +822,7 @@ VIEWS (Views button, bottom-right : hidden while the Direct Line panel is open)
     } catch (err) {
       console.error('Supabase init failed:', err);
       toastErr('Supabase: ' + (err.message || 'connection failed'));
+      setLineStatus(false);
     }
   }
 
