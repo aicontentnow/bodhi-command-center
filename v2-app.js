@@ -1022,12 +1022,19 @@ VIEWS (Views button, bottom-right : hidden while the Direct Line panel is open)
 
       if (error) throw error;
 
-      state.today = tasks.filter(t => t.horizon === 'today').map(rowToTask);
-      state.week  = tasks.filter(t => t.horizon === 'week').map(rowToTask);
-
-      ['today', 'week'].forEach(w => renderList(w));
-      renderCounts();
-      setLineStatus(true);
+      // Guard: Supabase returns { data: [], error: null } when RLS blocks anon SELECT.
+      // Without this guard, state.today and state.week get overwritten with [] and all
+      // hardcoded defaults vanish silently about 1 second after load.
+      if (!tasks || tasks.length === 0) {
+        console.warn('[Supabase] tasks query returned 0 rows. RLS is likely blocking anon SELECT on the tasks table. Hardcoded defaults are preserved. Fix: run the RLS grant SQL in the Supabase dashboard for project gcbvvausrmbbkfazojpl.');
+        setLineStatus(true);
+      } else {
+        state.today = tasks.filter(t => t.horizon === 'today').map(rowToTask);
+        state.week  = tasks.filter(t => t.horizon === 'week').map(rowToTask);
+        ['today', 'week'].forEach(w => renderList(w));
+        renderCounts();
+        setLineStatus(true);
+      }
 
       // Realtime: re-render task lists when any task row changes
       sb.channel('tasks-live')
