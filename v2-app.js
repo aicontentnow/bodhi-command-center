@@ -1,7 +1,7 @@
 // Bodhi 360 Command Center · interactions
 
-const SUPABASE_URL = 'https://pobddtmnzimcdiaujyyf.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBvYmRkdG1uemltY2RpYXVqeXlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyNzU3OTUsImV4cCI6MjA4OTg1MTc5NX0.WuIrn9nOMLqJXL5kou8MyOb4yO6pCEa3QvfqoO3hnls';
+const SUPABASE_URL = 'https://gcbvvausrmbbkfazojpl.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_dx9sYWtLtpXacM9ZIXoYRg_VPiKG69P';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const save = () => {}; // replaced stage by stage with real Supabase writes
