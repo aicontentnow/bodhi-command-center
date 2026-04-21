@@ -967,7 +967,7 @@ VIEWS (Views button, bottom-right : hidden while the Direct Line panel is open)
       if (!psErr && ps) {
         if (ps.energy_state) state.mode    = ps.energy_state;
         if (ps.active_view)  state.variant = ps.active_view;
-        if (ps.active_page)  state.page    = ps.active_page;
+        if (ps.active_page && ps.active_page !== 'home')  state.page = ps.active_page;
         if (ps.active_tab)   state.tab     = ps.active_tab;
         renderStates();
         setPage(state.page);
