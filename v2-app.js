@@ -201,19 +201,16 @@ let state = {
 
   let pendingTag = null; // {kind, label, seed?}
 
-  function openLine(opts = {}) {
+  async function openLine(opts = {}) {
     linePanel.classList.add('is-open');
     document.body.classList.add('line-open');
     linePanel.setAttribute('aria-hidden', 'false');
     if (opts.tag) setTag(opts.tag);
-    if (opts.seed !== undefined) {
-      lineInput.value = opts.seed;
-    }
-    // hide/show structured launch based on whether thread has content
+    if (opts.seed !== undefined) lineInput.value = opts.seed;
     lineLaunch.hidden = state.line.messages.length > 0;
     renderThread();
-    // collapse empty state when seed is present so it doesn't compete with seeded text
     if (opts.seed && opts.seed.trim().length > 0) lineEmpty.hidden = true;
+    await loadQueueSummary();
     setTimeout(() => lineInput.focus(), 180);
   }
   function closeLine() {
@@ -222,6 +219,110 @@ let state = {
     linePanel.setAttribute('aria-hidden', 'true');
   }
   lineClose.addEventListener('click', closeLine);
+
+  async function loadQueueSummary() {
+    document.getElementById('lineQueueSummary')?.remove();
+    if (!sbLive) return;
+
+    const { data: msgs, error } = await sb
+      .from('direct_line_messages')
+      .select('id, content, kind, created_at')
+      .eq('user_id', 'bodhi')
+      .eq('processed', false)
+      .order('created_at', { ascending: true })
+      .limit(50);
+
+    if (error || !msgs || msgs.length === 0) return;
+
+    const summary = document.createElement('div');
+    summary.id = 'lineQueueSummary';
+    summary.className = 'line-queue-summary';
+
+    // header row: label + count badge + clear button
+    const hdr = document.createElement('div');
+    hdr.className = 'lqs-header';
+
+    const lbl = document.createElement('span');
+    lbl.className = 'lqs-label';
+    lbl.textContent = 'In the queue';
+
+    const countBadge = document.createElement('span');
+    countBadge.className = 'lqs-count';
+    countBadge.textContent = String(msgs.length);
+
+    const clearBtn = document.createElement('button');
+    clearBtn.type = 'button';
+    clearBtn.className = 'lqs-clear';
+    clearBtn.textContent = 'Clear';
+
+    hdr.appendChild(lbl);
+    hdr.appendChild(countBadge);
+    hdr.appendChild(clearBtn);
+    summary.appendChild(hdr);
+
+    // item list
+    const list = document.createElement('div');
+    list.className = 'lqs-list';
+    msgs.forEach(m => {
+      const item = document.createElement('div');
+      item.className = 'lqs-item';
+
+      const kindEl = document.createElement('span');
+      kindEl.className = 'lqs-kind';
+      kindEl.textContent = m.kind || 'freeform';
+
+      const raw = m.content || '';
+      const previewEl = document.createElement('span');
+      previewEl.className = 'lqs-preview';
+      previewEl.textContent = raw.length > 60 ? raw.slice(0, 60) + '...' : raw;
+
+      item.appendChild(kindEl);
+      item.appendChild(previewEl);
+      list.appendChild(item);
+    });
+    summary.appendChild(list);
+
+    lineThread.insertBefore(summary, lineThread.firstChild);
+    lineEmpty.hidden = true;
+
+    clearBtn.addEventListener('click', async () => {
+      const ids = msgs.map(m => m.id);
+      const { error: e } = await sb
+        .from('direct_line_messages')
+        .update({ processed: true })
+        .in('id', ids)
+        .eq('user_id', 'bodhi');
+      if (e) { toastErr('Clear failed'); return; }
+      summary.remove();
+      lineEmpty.hidden = state.line.messages.length > 0;
+      toastOk('Queue cleared');
+      sb.from('interaction_log').insert({
+        user_id: 'bodhi',
+        event_type: 'queue_cleared',
+        event_data: { count: ids.length },
+      }).then(() => {});
+    });
+  }
+
+  async function queueToLine(content, kind, tagValue) {
+    const { error } = await sb
+      .from('direct_line_messages')
+      .insert({
+        user_id: 'bodhi',
+        content,
+        kind,
+        tag: tagValue || null,
+        processed: false,
+      });
+    if (error) { toastErr('Queue write failed'); return false; }
+    toastOk('Queued · CoS picks this up when you open the line.');
+    sb.from('interaction_log').insert({
+      user_id: 'bodhi',
+      event_type: 'message_queued',
+      event_data: { kind, tag: tagValue, length: content.length },
+    }).then(({ error: e }) => { if (e) console.warn('interaction_log write failed:', e); });
+    return true;
+  }
 
   function setTag(t) {
     pendingTag = t;
@@ -289,15 +390,37 @@ let state = {
     return msg;
   }
 
-  function send(text, kindOverride) {
+  async function send(text, kindOverride) {
     const t = (text || lineInput.value || '').trim();
     if (!t) return;
     const kind = kindOverride || (pendingTag?.kind ?? 'freeform');
     const tag = pendingTag;
+    const tagValue = tag?.label || tag?.bucket || tag?.taskId || null;
+
+    const { error } = await sb
+      .from('direct_line_messages')
+      .insert({
+        user_id: 'bodhi',
+        content: t,
+        kind,
+        tag: tagValue,
+        processed: false,
+      });
+
+    if (error) { toastErr('Send failed · try again'); return; }
+
     pushMessage({ text: t, kind, tag, status: 'pending' });
     lineInput.value = '';
     setTag(null);
-    toastOk('On the line · queued');
+    toastOk('Sent · Chief of Staff picks this up on next run.');
+
+    sb.from('interaction_log').insert({
+      user_id: 'bodhi',
+      event_type: 'message_sent',
+      event_data: { kind, tag: tagValue, length: t.length },
+    }).then(({ error: e }) => { if (e) console.warn('interaction_log write failed:', e); });
+
+    await loadQueueSummary();
   }
 
   lineComposer.addEventListener('submit', (e) => {
@@ -520,21 +643,18 @@ let state = {
     toast('Task · deleted');
   });
 
-  drawerCopy.addEventListener('click', () => {
+  drawerCopy.addEventListener('click', async () => {
     if (!drawerCtx) return;
     const it = findItem(drawerCtx.which, drawerCtx.id);
     if (!it) return;
     const which = drawerCtx.which;
     const taskId = drawerCtx.id;
-    const text = `Task · ${it.label}
+    const text = `Task: ${it.label}
 Bucket: ${it.meta || '(none)'} · Horizon: ${which === 'today' ? 'Today' : 'This week'} · Status: ${it.done ? 'done' : 'open'}
 
 ${it.notes || '(no additional context yet)'}`;
     closeDrawer();
-    openLine({
-      tag: { kind: 'task', label: `Task · ${it.label}`, taskId, horizon: which },
-      seed: text,
-    });
+    await queueToLine(text, 'task', taskId);
   });
 
   // --- Key prompts
@@ -854,6 +974,29 @@ VIEWS (Views button, bottom-right : hidden while the Direct Line panel is open)
         setTab(state.tab);
         applyVariant();
       }
+
+      // Realtime: push CoS replies into the panel thread
+      sb.channel('direct-line-responses-live')
+        .on('postgres_changes', {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'direct_line_responses',
+        }, (payload) => {
+          const resp = payload.new;
+          if (!resp) return;
+          pushMessage({
+            role: 'cos',
+            kind: 'freeform',
+            tag: null,
+            text: resp.content,
+            ts: new Date(resp.created_at).getTime(),
+            status: 'replied',
+          });
+          if (!linePanel.classList.contains('is-open')) {
+            toastOk('Chief of Staff replied · open the line');
+          }
+        })
+        .subscribe();
 
       // Realtime: reflect CoS-written energy_state changes immediately
       sb.channel('portfolio-state-live')
