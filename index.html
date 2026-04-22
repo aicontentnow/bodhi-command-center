@@ -127,6 +127,21 @@
         </div>
       </div>
 
+      <div class="task-controls" id="taskControls">
+        <select class="ctrl-sel" id="taskBucketFilter" aria-label="Filter by bucket">
+          <option value="all">All buckets</option>
+          <option value="bodhi360">bodhi360</option>
+          <option value="Harmonic">Harmonic</option>
+          <option value="MIRROR">Mirror</option>
+          <option value="LDAG">LDAG</option>
+          <option value="FRAMEZERO">FZ</option>
+          <option value="Family">Family</option>
+          <option value="Career">Career</option>
+          <option value="Command">Command</option>
+        </select>
+        <button type="button" class="ctrl-btn" id="taskSortToggle" data-sort="oldest">Oldest first</button>
+      </div>
+
       <div class="tabs" role="tablist">
         <button class="tab is-on" data-tab="today">Today <span id="countToday" style="opacity:0.6;font-size:0.72rem;margin-left:0.4rem;">0/0</span></button>
         <button class="tab" data-tab="week">This week <span id="countWeek" style="opacity:0.6;font-size:0.72rem;margin-left:0.4rem;">0/0</span></button>
@@ -186,7 +201,8 @@
       <div class="buckets liquid-glass" id="section-buckets">
         <div class="card-inner">
           <div class="card-head">
-            <span class="eyebrow">Brain dump · opens the line</span>
+            <span class="eyebrow">Filter tasks by bucket · tap to filter, tap again to clear</span>
+            <button type="button" class="bucket-filter-all" id="bucketFilterAll">All</button>
           </div>
           <div class="buckets-grid">
             <div class="bucket liquid-glass" data-bucket="bodhi360"><div class="n">bodhi360</div><div class="tag">01</div></div>
@@ -278,7 +294,7 @@
 
 <!-- Context drawer (task detail) -->
 <div class="drawer-scrim" id="drawerScrim"></div>
-<aside class="drawer liquid-glass-strong" id="drawer" aria-hidden="true">
+<aside class="drawer liquid-glass-strong" id="drawer" aria-hidden="true" inert>
   <div class="d-head">
     <div style="flex:1; min-width:0;">
       <div class="eyebrow" id="drawerEyebrow">Task context</div>
@@ -301,7 +317,7 @@
 </aside>
 
 <!-- ============================= DIRECT LINE PANEL ============================= -->
-<aside class="line-panel liquid-glass-strong" id="linePanel" aria-hidden="true">
+<aside class="line-panel liquid-glass-strong" id="linePanel" aria-hidden="true" inert>
   <div class="line-head">
     <div class="line-title">
       <div class="line-dot"></div>
@@ -314,21 +330,33 @@
     <button class="x" id="lineClose" aria-label="Close">×</button>
   </div>
 
-  <!-- Structured launch -->
+  <!-- Queue badge -->
+  <div class="line-queue-badge" id="lineQueueBadge" hidden>
+    <span class="lqb-label">In the queue</span>
+    <span class="lqb-count" id="lqbCount">0</span>
+    <button type="button" class="lqb-clear" id="lqbClear">Clear all</button>
+  </div>
+
+  <!-- Structured launch (collapsible) -->
   <div class="line-launch" id="lineLaunch">
-    <div class="launch-label">Structured launch · one tap</div>
-    <button class="launch" data-launch="next_step">
-      <span class="launch-n">Next step on roadmap</span>
-      <span class="launch-d">Frames where we are and what's next.</span>
+    <button type="button" class="launch-toggle" id="launchToggle">
+      <span>Quick actions</span>
+      <span class="launch-toggle-chevron">›</span>
     </button>
-    <button class="launch" data-launch="issue">
-      <span class="launch-n">I have an issue</span>
-      <span class="launch-d">Opens a conversational thread here.</span>
-    </button>
-    <button class="launch" data-launch="strategy">
-      <span class="launch-n">High-level strategy</span>
-      <span class="launch-d">Flags for an Opus Chat session.</span>
-    </button>
+    <div class="launch-items" id="launchItems">
+      <button class="launch" data-launch="next_step">
+        <span class="launch-n">Next step on roadmap</span>
+        <span class="launch-d">Frames where we are and what's next.</span>
+      </button>
+      <button class="launch" data-launch="issue">
+        <span class="launch-n">I have an issue</span>
+        <span class="launch-d">Opens a conversational thread here.</span>
+      </button>
+      <button class="launch" data-launch="strategy">
+        <span class="launch-n">High-level strategy</span>
+        <span class="launch-d">Flags for an Opus Chat session.</span>
+      </button>
+    </div>
   </div>
 
   <!-- Thread -->

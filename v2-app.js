@@ -218,11 +218,12 @@ let state = {
   let pendingTag = null; // {kind, label, seed?}
 
   async function openLine(opts = {}) {
+    linePanel.inert = false;
     linePanel.classList.add('is-open');
     document.body.classList.add('line-open');
     linePanel.setAttribute('aria-hidden', 'false');
     if (opts.tag) setTag(opts.tag);
-    if (opts.seed !== undefined) lineInput.value = opts.seed;
+    lineInput.value = opts.seed !== undefined ? opts.seed : '';
     lineLaunch.hidden = state.line.messages.length > 0;
     renderThread();
     if (opts.seed && opts.seed.trim().length > 0) lineEmpty.hidden = true;
@@ -230,98 +231,67 @@ let state = {
     setTimeout(() => lineInput.focus(), 180);
   }
   function closeLine() {
-    if (document.activeElement && linePanel.contains(document.activeElement)) {
-      document.body.focus();
-    }
+    lineClose.blur();
     linePanel.classList.remove('is-open');
     document.body.classList.remove('line-open');
     linePanel.setAttribute('aria-hidden', 'true');
+    linePanel.inert = true;
   }
   lineClose.addEventListener('click', closeLine);
 
+  // Launch toggle (collapse/expand quick actions)
+  const launchToggle = document.getElementById('launchToggle');
+  const launchItems = document.getElementById('launchItems');
+  launchToggle.addEventListener('click', () => {
+    const open = launchItems.classList.toggle('is-open');
+    launchToggle.classList.toggle('is-open', open);
+  });
+
+  const lineQueueBadge = document.getElementById('lineQueueBadge');
+  const lqbCount = document.getElementById('lqbCount');
+  const lqbClear = document.getElementById('lqbClear');
+  let _queueIds = [];
+
   async function loadQueueSummary() {
-    document.getElementById('lineQueueSummary')?.remove();
     if (!sbLive) return;
 
     const { data: msgs, error } = await sb
       .from('direct_line_messages')
-      .select('id, content, kind, created_at')
+      .select('id')
       .eq('user_id', 'bodhi')
       .eq('processed', false)
       .order('created_at', { ascending: true })
       .limit(50);
 
-    if (error || !msgs || msgs.length === 0) return;
+    if (error || !msgs || msgs.length === 0) {
+      lineQueueBadge.hidden = true;
+      _queueIds = [];
+      return;
+    }
 
-    const summary = document.createElement('div');
-    summary.id = 'lineQueueSummary';
-    summary.className = 'line-queue-summary';
-
-    // header row: label + count badge + clear button
-    const hdr = document.createElement('div');
-    hdr.className = 'lqs-header';
-
-    const lbl = document.createElement('span');
-    lbl.className = 'lqs-label';
-    lbl.textContent = 'In the queue';
-
-    const countBadge = document.createElement('span');
-    countBadge.className = 'lqs-count';
-    countBadge.textContent = String(msgs.length);
-
-    const clearBtn = document.createElement('button');
-    clearBtn.type = 'button';
-    clearBtn.className = 'lqs-clear';
-    clearBtn.textContent = 'Clear';
-
-    hdr.appendChild(lbl);
-    hdr.appendChild(countBadge);
-    hdr.appendChild(clearBtn);
-    summary.appendChild(hdr);
-
-    // item list
-    const list = document.createElement('div');
-    list.className = 'lqs-list';
-    msgs.forEach(m => {
-      const item = document.createElement('div');
-      item.className = 'lqs-item';
-
-      const kindEl = document.createElement('span');
-      kindEl.className = 'lqs-kind';
-      kindEl.textContent = m.kind || 'freeform';
-
-      const raw = m.content || '';
-      const previewEl = document.createElement('span');
-      previewEl.className = 'lqs-preview';
-      previewEl.textContent = raw.length > 60 ? raw.slice(0, 60) + '...' : raw;
-
-      item.appendChild(kindEl);
-      item.appendChild(previewEl);
-      list.appendChild(item);
-    });
-    summary.appendChild(list);
-
-    lineThread.insertBefore(summary, lineThread.firstChild);
-    lineEmpty.hidden = true;
-
-    clearBtn.addEventListener('click', async () => {
-      const ids = msgs.map(m => m.id);
-      const { error: e } = await sb
-        .from('direct_line_messages')
-        .update({ processed: true })
-        .in('id', ids)
-        .eq('user_id', 'bodhi');
-      if (e) { toastErr('Clear failed'); return; }
-      summary.remove();
-      lineEmpty.hidden = state.line.messages.length > 0;
-      toastOk('Queue cleared');
-      sb.from('interaction_log').insert({
-        user_id: 'bodhi',
-        event_type: 'queue_cleared',
-        event_data: { count: ids.length },
-      }).then(() => {});
-    });
+    _queueIds = msgs.map(m => m.id);
+    lqbCount.textContent = String(_queueIds.length);
+    lineQueueBadge.hidden = false;
   }
+
+  lqbClear.addEventListener('click', async () => {
+    if (!_queueIds.length) return;
+    const { error: e } = await sb
+      .from('direct_line_messages')
+      .update({ processed: true })
+      .in('id', _queueIds)
+      .eq('user_id', 'bodhi');
+    if (e) { toastErr('Clear failed'); return; }
+    lineQueueBadge.hidden = true;
+    const cleared = _queueIds.length;
+    _queueIds = [];
+    toastOk('Queue cleared');
+    sb.from('interaction_log').insert({
+      user_id: 'bodhi',
+      event_type: 'queue_cleared',
+      event_data: { count: cleared },
+    }).then(() => {});
+  });
 
   async function queueToLine(content, kind, tagValue) {
     const { error } = await sb
@@ -482,20 +452,36 @@ let state = {
     confirmBtn(openRedPhoneBtn, 'ok', 'Line open');
   });
 
-  // --- Buckets · open the line with bucket tag
+  // --- Buckets · filter task view, long-press / alt-click to open line
   const BUCKET_LABELS = {
     bodhi360: 'bodhi360', harmonic: 'Harmonic', ldag: 'LDAG',
     book: 'THE BOOK OF ONENESS', family: 'Family', creative: 'Creative',
   };
+  let bucketFilter = null;
+
   document.querySelectorAll('.bucket').forEach(b => {
     b.addEventListener('click', () => {
       const key = b.dataset.bucket;
-      openLine({
-        tag: { kind: 'brain_dump', label: `Brain dump · ${BUCKET_LABELS[key] || key}`, bucket: key },
-        seed: '',
-      });
+      if (bucketFilter === key) {
+        bucketFilter = null;
+        b.classList.remove('is-active');
+      } else {
+        bucketFilter = key;
+        document.querySelectorAll('.bucket').forEach(x => x.classList.remove('is-active'));
+        b.classList.add('is-active');
+      }
+      renderBucketsPage();
     });
   });
+
+  const bfAllBtn = document.getElementById('bucketFilterAll');
+  if (bfAllBtn) {
+    bfAllBtn.addEventListener('click', () => {
+      bucketFilter = null;
+      document.querySelectorAll('.bucket').forEach(x => x.classList.remove('is-active'));
+      renderBucketsPage();
+    });
+  }
 
   // close on Escape
   document.addEventListener('keydown', (e) => {
@@ -505,10 +491,35 @@ let state = {
     }
   });
 
+  // --- Task filter and sort controls
+  let taskFilter = { bucket: 'all', sort: 'oldest' };
+
+  const taskBucketFilter = document.getElementById('taskBucketFilter');
+  const taskSortToggle = document.getElementById('taskSortToggle');
+
+  taskBucketFilter.addEventListener('change', () => {
+    taskFilter.bucket = taskBucketFilter.value;
+    renderList('today'); renderList('week');
+  });
+  taskSortToggle.addEventListener('click', () => {
+    taskFilter.sort = taskFilter.sort === 'oldest' ? 'newest' : 'oldest';
+    taskSortToggle.textContent = taskFilter.sort === 'oldest' ? 'Oldest first' : 'Newest first';
+    taskSortToggle.dataset.sort = taskFilter.sort;
+    renderList('today'); renderList('week');
+  });
+
   // --- Today / This week render
   function renderList(which) {
     const root = document.getElementById(which + 'List');
-    const items = state[which];
+    let items = [...state[which]];
+    // Apply bucket filter
+    if (taskFilter.bucket !== 'all') {
+      items = items.filter(it => (it.meta || 'bodhi360') === taskFilter.bucket);
+    }
+    // Apply sort
+    if (taskFilter.sort === 'newest') {
+      items = items.slice().reverse();
+    }
     root.innerHTML = '';
     items.forEach(it => {
       const row = document.createElement('div');
@@ -589,34 +600,84 @@ let state = {
   function renderBucketsPage() {
     const container = document.getElementById('buckets-task-view');
     if (!container) return;
-    // Group all tasks (today + week) by bucket
-    const all = [...state.today, ...state.week];
-    const groups = {};
-    all.forEach(t => {
-      const key = t.meta || 'bodhi360';
-      if (!groups[key]) groups[key] = [];
-      groups[key].push(t);
-    });
+    // Collect all tasks (today + week)
+    const todayItems = state.today.map(t => ({ ...t, horizon: 'today' }));
+    const weekItems = state.week.map(t => ({ ...t, horizon: 'week' }));
+    const all = [...todayItems, ...weekItems];
+    // Apply filter
+    const visible = bucketFilter
+      ? all.filter(t => (t.meta || 'bodhi360').toLowerCase() === bucketFilter.toLowerCase())
+      : all;
     container.textContent = '';
-    const bucketOrder = ['bodhi360', 'Harmonic', 'MIRROR', 'LDAG', 'FRAMEZERO', 'Family', 'Career', 'Command'];
-    const present = bucketOrder.filter(b => groups[b] && groups[b].length > 0);
-    const rest = Object.keys(groups).filter(b => !bucketOrder.includes(b));
-    [...present, ...rest].forEach(bucket => {
-      const items = groups[bucket];
-      if (!items || items.length === 0) return;
-      const hdr = document.createElement('div');
-      hdr.className = 'bucket-group-hdr';
-      hdr.textContent = (BUCKET_LABELS[bucket.toLowerCase()] || bucket).toUpperCase();
-      container.appendChild(hdr);
-      items.forEach(it => {
-        const row = document.createElement('div');
-        row.className = 'bucket-task-row' + (it.done ? ' is-done' : '');
-        const lbl = document.createElement('span');
-        lbl.className = 'lbl';
-        lbl.textContent = it.label;
-        row.appendChild(lbl);
-        container.appendChild(row);
+    if (visible.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'bt-empty';
+      empty.textContent = bucketFilter ? 'No tasks in this bucket.' : 'No tasks yet.';
+      container.appendChild(empty);
+      return;
+    }
+    visible.forEach(it => {
+      const row = document.createElement('div');
+      row.className = 'item' + (it.done ? ' done' : '') + (it.notes ? ' has-note' : '');
+
+      const boxEl = document.createElement('div');
+      boxEl.className = 'box';
+      boxEl.title = 'check';
+
+      const lblEl = document.createElement('div');
+      lblEl.className = 'lbl';
+      lblEl.textContent = it.label;
+
+      const noteEl = document.createElement('div');
+      noteEl.className = 'note-ind';
+      noteEl.textContent = '◈';
+
+      const hzTag = document.createElement('div');
+      hzTag.className = 'bucket-horizon-tag';
+      hzTag.textContent = it.horizon === 'today' ? 'today' : 'week';
+
+      const moveBtn = document.createElement('button');
+      moveBtn.className = 'move-horizon';
+      moveBtn.type = 'button';
+      moveBtn.title = it.horizon === 'today' ? 'Move to this week' : 'Move to today';
+      moveBtn.textContent = it.horizon === 'today' ? 'W' : 'T';
+
+      row.appendChild(boxEl);
+      row.appendChild(lblEl);
+      row.appendChild(noteEl);
+      row.appendChild(hzTag);
+      row.appendChild(moveBtn);
+
+      boxEl.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const which = it.horizon;
+        it.done = !it.done;
+        const src = state[which].find(s => s.id === it.id);
+        if (src) src.done = it.done;
+        renderBucketsPage(); renderCounts();
+        const { error } = await sb.from('tasks').update({ done: it.done }).eq('id', it.id);
+        if (error) {
+          toastErr('Save failed');
+          it.done = !it.done;
+          if (src) src.done = it.done;
+          renderBucketsPage(); renderCounts();
+        }
       });
+
+      moveBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const which = it.horizon;
+        const newHorizon = which === 'today' ? 'week' : 'today';
+        const { error } = await sb.from('tasks').update({ horizon: newHorizon }).eq('id', it.id);
+        if (error) { toastErr('Move failed'); return; }
+        state[which] = state[which].filter(i => i.id !== it.id);
+        state[newHorizon].push({ ...it, horizon: newHorizon });
+        renderList(which); renderList(newHorizon); renderCounts(); renderBucketsPage();
+        toast(`Moved to ${newHorizon === 'today' ? 'today' : 'this week'}`);
+      });
+
+      row.addEventListener('click', () => openDrawer(it.horizon, it.id));
+      container.appendChild(row);
     });
   }
 
@@ -670,18 +731,18 @@ let state = {
     drawerMeta.textContent = `${which === 'today' ? 'Today' : 'This week'} · ${it.meta || ''}${it.done ? ' · done' : ''}`;
     drawerEyebrow.textContent = 'Task context · for the agent';
     drawerNotes.value = it.notes || '';
+    drawer.inert = false;
     drawer.classList.add('is-open');
     drawerScrim.classList.add('is-open');
     drawer.setAttribute('aria-hidden', 'false');
     setTimeout(() => drawerNotes.focus(), 200);
   }
   function closeDrawer() {
-    if (document.activeElement && drawer.contains(document.activeElement)) {
-      document.body.focus();
-    }
+    drawerClose.blur();
     drawer.classList.remove('is-open');
     drawerScrim.classList.remove('is-open');
     drawer.setAttribute('aria-hidden', 'true');
+    drawer.inert = true;
     drawerCtx = null;
   }
   drawerClose.addEventListener('click', closeDrawer);
