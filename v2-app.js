@@ -28,6 +28,22 @@ function persistState(field, value, eventType) {
   }).then(({ error: e }) => { if (e) console.warn('interaction_log write failed:', e); });
 }
 
+const BUCKET_CANONICAL = {
+  'bodhi360': 'bodhi360', 'bodhi': 'bodhi360', '360': 'bodhi360',
+  'mirror': 'MIRROR',
+  'harmonic': 'Harmonic',
+  'family': 'Family',
+  'framezero': 'FRAMEZERO', 'framezer': 'FRAMEZERO',
+  'ldag': 'LDAG',
+  'career': 'Career',
+  'command': 'Command',
+};
+function normalizeBucket(v) {
+  if (!v) return 'bodhi360';
+  const k = v.toLowerCase().replace('ø', 'o').trim();
+  return BUCKET_CANONICAL[k] || 'bodhi360';
+}
+
 let state = {
   mode: 'harmonic',
   variant: 'cockpit',
@@ -214,6 +230,9 @@ let state = {
     setTimeout(() => lineInput.focus(), 180);
   }
   function closeLine() {
+    if (document.activeElement && linePanel.contains(document.activeElement)) {
+      document.body.focus();
+    }
     linePanel.classList.remove('is-open');
     document.body.classList.remove('line-open');
     linePanel.setAttribute('aria-hidden', 'true');
@@ -466,7 +485,7 @@ let state = {
   // --- Buckets · open the line with bucket tag
   const BUCKET_LABELS = {
     bodhi360: 'bodhi360', harmonic: 'Harmonic', ldag: 'LDAG',
-    book: 'The Book of Oneness', family: 'Family', creative: 'Creative',
+    book: 'THE BOOK OF ONENESS', family: 'Family', creative: 'Creative',
   };
   document.querySelectorAll('.bucket').forEach(b => {
     b.addEventListener('click', () => {
@@ -494,12 +513,29 @@ let state = {
     items.forEach(it => {
       const row = document.createElement('div');
       row.className = 'item' + (it.done ? ' done' : '') + (it.focus ? ' is-focus' : '') + (it.notes ? ' has-note' : '');
-      row.innerHTML = `
-        <div class="box" title="check"></div>
-        <div class="lbl">${escapeHtml(it.label)}</div>
-        <div class="note-ind">◈</div>
-        <div class="meta-m">${escapeHtml(it.meta || '')}</div>
-      `;
+      // build row structure via DOM to avoid innerHTML security warnings on dynamic content
+      const boxEl = document.createElement('div');
+      boxEl.className = 'box';
+      boxEl.title = 'check';
+      const lblEl = document.createElement('div');
+      lblEl.className = 'lbl';
+      lblEl.textContent = it.label;
+      const noteEl = document.createElement('div');
+      noteEl.className = 'note-ind';
+      noteEl.textContent = '◈';
+      const metaEl = document.createElement('div');
+      metaEl.className = 'meta-m';
+      metaEl.textContent = it.meta || '';
+      const moveBtn = document.createElement('button');
+      moveBtn.className = 'move-horizon';
+      moveBtn.type = 'button';
+      moveBtn.title = which === 'today' ? 'Move to this week' : 'Move to today';
+      moveBtn.textContent = which === 'today' ? 'W' : 'T';
+      row.appendChild(boxEl);
+      row.appendChild(lblEl);
+      row.appendChild(noteEl);
+      row.appendChild(metaEl);
+      row.appendChild(moveBtn);
       // click the checkbox → toggle done
       row.querySelector('.box').addEventListener('click', async (e) => {
         e.stopPropagation();
@@ -517,6 +553,19 @@ let state = {
             event_data: { task_id: it.id, done: it.done },
           }).then(({ error: e }) => { if (e) console.warn('interaction_log write failed:', e); });
         }
+      });
+      // move button → swap horizon
+      moveBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const newHorizon = which === 'today' ? 'week' : 'today';
+        const { error } = await sb.from('tasks').update({ horizon: newHorizon }).eq('id', it.id);
+        if (error) { toastErr('Move failed'); return; }
+        state[which] = state[which].filter(i => i.id !== it.id);
+        state[newHorizon].push({ ...it });
+        renderList(which);
+        renderList(newHorizon);
+        renderCounts();
+        toast(`Moved to ${newHorizon === 'today' ? 'today' : 'this week'}`);
       });
       // click anywhere else → open drawer
       row.addEventListener('click', () => openDrawer(which, it.id));
@@ -537,17 +586,54 @@ let state = {
     }
   }
 
+  function renderBucketsPage() {
+    const container = document.getElementById('buckets-task-view');
+    if (!container) return;
+    // Group all tasks (today + week) by bucket
+    const all = [...state.today, ...state.week];
+    const groups = {};
+    all.forEach(t => {
+      const key = t.meta || 'bodhi360';
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(t);
+    });
+    container.textContent = '';
+    const bucketOrder = ['bodhi360', 'Harmonic', 'MIRROR', 'LDAG', 'FRAMEZERO', 'Family', 'Career', 'Command'];
+    const present = bucketOrder.filter(b => groups[b] && groups[b].length > 0);
+    const rest = Object.keys(groups).filter(b => !bucketOrder.includes(b));
+    [...present, ...rest].forEach(bucket => {
+      const items = groups[bucket];
+      if (!items || items.length === 0) return;
+      const hdr = document.createElement('div');
+      hdr.className = 'bucket-group-hdr';
+      hdr.textContent = (BUCKET_LABELS[bucket.toLowerCase()] || bucket).toUpperCase();
+      container.appendChild(hdr);
+      items.forEach(it => {
+        const row = document.createElement('div');
+        row.className = 'bucket-task-row' + (it.done ? ' is-done' : '');
+        const lbl = document.createElement('span');
+        lbl.className = 'lbl';
+        lbl.textContent = it.label;
+        row.appendChild(lbl);
+        container.appendChild(row);
+      });
+    });
+  }
+
   function bindAdder(which) {
     const form = document.getElementById(which + 'Add');
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const input = form.querySelector('input');
+      const input = form.querySelector('input[type="text"]');
+      const bucketSel = form.querySelector('select.bucket-sel');
       const v = input.value.trim();
       if (!v) return;
       input.value = '';
+      const rawBucket = bucketSel ? bucketSel.value : 'bodhi360';
+      const bucket = normalizeBucket(rawBucket);
       const { data, error } = await sb.from('tasks').insert({
         title: v,
-        bucket: 'bodhi360',
+        bucket,
         horizon: which,
         done: false,
         user_id: 'bodhi',
@@ -558,6 +644,7 @@ let state = {
       }
       state[which].push({ id: data.id, label: data.title, done: false, meta: data.bucket || '', notes: '' });
       renderList(which); renderCounts();
+      renderBucketsPage();
     });
   }
 
@@ -589,6 +676,9 @@ let state = {
     setTimeout(() => drawerNotes.focus(), 200);
   }
   function closeDrawer() {
+    if (document.activeElement && drawer.contains(document.activeElement)) {
+      document.body.focus();
+    }
     drawer.classList.remove('is-open');
     drawerScrim.classList.remove('is-open');
     drawer.setAttribute('aria-hidden', 'true');
@@ -1018,7 +1108,7 @@ VIEWS (Views button, bottom-right : hidden while the Direct Line panel is open)
         .select('id, title, bucket, horizon, done, sort_order, created_at')
         .eq('user_id', 'bodhi')
         .in('horizon', ['today', 'week'])
-        .order('sort_order', { ascending: true });
+        .order('created_at', { ascending: true });
 
       if (error) throw error;
 
@@ -1058,6 +1148,20 @@ VIEWS (Views button, bottom-right : hidden while the Direct Line panel is open)
           })
         .subscribe();
 
+      // Reload unprocessed direct_line_messages into thread on refresh
+      const { data: queuedMsgs } = await sb
+        .from('direct_line_messages')
+        .select('id, content, kind, tag, created_at')
+        .eq('user_id', 'bodhi')
+        .eq('processed', false)
+        .order('created_at', { ascending: true });
+      if (queuedMsgs && queuedMsgs.length > 0) {
+        queuedMsgs.forEach(m => {
+          pushMessage({ role: 'me', kind: m.kind || 'freeform', tag: m.tag || '', text: m.content, ts: m.created_at, status: 'pending' });
+        });
+        lineEmpty.hidden = true;
+      }
+
       // Log app_opened
       sb.from('interaction_log').insert({
         user_id: 'bodhi',
@@ -1065,16 +1169,21 @@ VIEWS (Views button, bottom-right : hidden while the Direct Line panel is open)
         event_data: { view: state.variant, page: state.page, energy_state: state.mode },
       }).then(({ error: e }) => { if (e) console.warn('interaction_log write failed:', e); });
 
+      document.body.classList.remove('is-loading');
+
     } catch (err) {
       console.error('Supabase init failed:', err);
       toastErr('Supabase: ' + (err.message || 'connection failed'));
       setLineStatus(false);
+      document.body.classList.remove('is-loading');
     }
   }
 
   // ============================================================
   // BOOT
   // ============================================================
+  // Apply loading state BEFORE renderList so hardcoded tasks are hidden during Supabase fetch
+  document.body.classList.add('is-loading');
   renderStates();
   buildOrbit; teardownOrbit; // keep references live
   ['today','week'].forEach(w => { renderList(w); bindAdder(w); });
@@ -1082,5 +1191,4 @@ VIEWS (Views button, bottom-right : hidden while the Direct Line panel is open)
   setPage(state.page);
   setTab(state.tab);
   applyVariant();
-  // Fire async after sync render so the page isn't blank during network round-trip
   initFromSupabase();

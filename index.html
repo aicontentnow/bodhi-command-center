@@ -7,10 +7,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,500&family=Source+Serif+4:ital,opsz,wght@1,8..60,400;1,8..60,500;1,8..60,600&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+<link rel="icon" type="image/svg+xml" href="favicon.svg" />
 <link rel="stylesheet" href="v2-styles.css" />
 </head>
 <body class="variant-cockpit">
 
+<div id="loadingSpinner">Loading...</div>
 <div id="bg-field" aria-hidden="true"></div>
 <div id="vignette" aria-hidden="true"></div>
 
@@ -90,7 +92,7 @@
             <span class="dot"></span><span style="flex:1">MIRROR ops</span><span class="arr">↗</span>
           </a>
           <a class="surface" href="https://thebookofoneness.com" target="_blank" rel="noopener">
-            <span class="dot"></span><span style="flex:1">Book of Oneness</span><span class="arr">↗</span>
+            <span class="dot"></span><span style="flex:1">THE BOOK OF ONENESS</span><span class="arr">↗</span>
           </a>
         </div>
       </div>
@@ -135,6 +137,16 @@
           <div class="list-items" id="todayList"></div>
           <form class="add-row" id="todayAdd" autocomplete="off">
             <input class="add-input" type="text" placeholder="Add to today…" />
+            <select class="bucket-sel" aria-label="Bucket">
+              <option value="bodhi360">360</option>
+              <option value="Harmonic">Harmonic</option>
+              <option value="MIRROR">Mirror</option>
+              <option value="LDAG">LDAG</option>
+              <option value="FRAMEZERO">FZ</option>
+              <option value="Family">Family</option>
+              <option value="Career">Career</option>
+              <option value="Command">Command</option>
+            </select>
             <button class="add-btn" type="submit" aria-label="Add">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
             </button>
@@ -147,6 +159,16 @@
           <div class="list-items" id="weekList"></div>
           <form class="add-row" id="weekAdd" autocomplete="off">
             <input class="add-input" type="text" placeholder="Add to this week…" />
+            <select class="bucket-sel" aria-label="Bucket">
+              <option value="bodhi360">360</option>
+              <option value="Harmonic">Harmonic</option>
+              <option value="MIRROR">Mirror</option>
+              <option value="LDAG">LDAG</option>
+              <option value="FRAMEZERO">FZ</option>
+              <option value="Family">Family</option>
+              <option value="Career">Career</option>
+              <option value="Command">Command</option>
+            </select>
             <button class="add-btn" type="submit" aria-label="Add">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
             </button>
@@ -174,6 +196,7 @@
             <div class="bucket liquid-glass" data-bucket="family"><div class="n">Family</div><div class="tag">05</div></div>
             <div class="bucket liquid-glass" data-bucket="creative"><div class="n">Creative</div><div class="tag">06</div></div>
           </div>
+          <div id="buckets-task-view"></div>
         </div>
       </div>
     </div>
@@ -315,8 +338,8 @@
         <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.86 19.86 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.86 19.86 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92Z"/></svg>
       </div>
       <div class="le-copy">
-        <div class="le-n">Say what needs to change.</div>
-        <div class="le-d">Messages queue to <code>direct_line_messages</code>. Chief of staff reads on its next run and replies here. No copying, no new sessions.</div>
+        <div class="le-n">Direct line to the chief of staff.</div>
+        <div class="le-d">Type below. Replies surface here when the bridge agent runs.</div>
       </div>
     </div>
   </div>
