@@ -953,6 +953,20 @@ body:has(.drawer.is-open) #tweaksBtn { opacity: 0; pointer-events: none; transit
   font-family: 'JetBrains Mono', ui-monospace, monospace;
   letter-spacing: 0.08em;
 }
+/* Bucket grouped view section headers */
+.bt-group-header {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.55rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--t-4);
+  padding: 0.65rem 0 0.2rem;
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
+.bt-group-header.bt-group-header--first {
+  border-top: none;
+  padding-top: 0.25rem;
+}
 .bucket-horizon-tag {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
   font-size: 0.58rem;

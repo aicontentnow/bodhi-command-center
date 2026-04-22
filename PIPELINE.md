@@ -181,3 +181,46 @@
 | 2026-04-14 | Sarah & Bodhi Post Fiber Connect & Anga scope meeting Tue April 14 2026_otter_ai.txt | Harmonic | Post-scope debrief. Fiber Connect messaging locked (O&T, distributed PON, C-star). ANGA emails Bodhi's work. Bodhi to draft Fiber Connect emails first. |
 | 2026-04-14 | Jocelyn Intro Meet Tue April 14 2026_otter_ai.txt | Harmonic | Intro with Jocelyn (20yo French intern, 4-month, ends August). Working on SEO/HubSpot with Priyanka. Not Bodhi's concern. |
 | 2026-04-16 | SensAI Pod Weekly Sync Thu Apr 16 2026_otter_ai.txt | Harmonic | Most recent. Launch target week of May 4 (Pam confirmed). Landing page nearly done (one funnel image pending darker icon). Video 1 script needs 30-sec rewrite (Bodhi + Sarah). 5 scripts done. Weavy shared with Gabe. 3D vectorization deferred. Trademark stuck on Pam. |
+
+---
+
+## Command Center v2 Enhancement Backlog
+*Captured 2026-04-21 during QA session*
+
+| Priority | Feature | Context |
+|----------|---------|---------|
+| HIGH | File attachment for brain dumps | Bodhi exports transcripts from Otter as .txt files. Currently must copy-paste into Direct Line. Need file picker or drag-and-drop upload that reads text content and sends as a brain dump message. |
+| MEDIUM | Bucket selector on task creation | New tasks currently hardcode to bodhi360. Need a dropdown or smart-routing so Bodhi can assign bucket (MIRROR, Harmonic, LDAG, FRAMEZERØ, etc.) at creation time. |
+| MEDIUM | Visible save affordance on task input | Enter key is not obvious as the save trigger. Add a visible send/save button next to the input field, or at minimum a hint label. |
+| LOW | Favicon | Add a favicon.ico to the command center root to suppress the 404 on every load. |
+
+
+| HIGH | Loading state on boot (suppress flash) | On hard refresh, hardcoded default tasks flash briefly before Supabase loads real data. Fix: hide task lists on boot, show loading spinner, only render once initFromSupabase() resolves. |
+| MEDIUM | Clear completed button | Checked tasks stay in list indefinitely. Add a "Clear completed" button that bulk-removes all done=true tasks. Do not auto-remove on check (accidental check recovery needed). |
+
+---
+
+## Formal Priority Items -- 2026-04-21
+
+### PRIORITY: Energy State Wiring (bodhi360 -- Phase 2 CoS Architecture)
+**What it is:** The energy state selector in the command center saves to Supabase but nothing reads it. Every scheduled agent and CoS skill must read portfolio_state.energy_state before running and adjust behavior accordingly.
+**What needs to be built:**
+- Behavior profile table: maps each state (workday/green/yellow/red/potato/focus/crash/harmonic/hold) to rules (what runs, what waits, what gets suppressed, what volume of asks is appropriate)
+- Every scheduled agent updated to read energy_state first and apply the profile
+- CoS skill updated to check state before generating output
+- Morning/afternoon recap agents respect the profile (e.g. crash = silence, hold = critical only)
+**Bucket:** bodhi360
+**Session type:** Dedicated build session. Not a small add-on.
+
+### PRIORITY: Transcript and Brain Dump Processing Pipeline (Next Test Target)
+**What it is:** Bodhi has a backlog of Otter transcript exports (.txt files) across Harmonic and other buckets sitting in _inbox/. The system needs to reliably ingest them, extract tasks, and surface those tasks in the command center.
+**What needs to be tested/built:**
+- Drop an Otter transcript into _inbox/transcripts/
+- Inbox watcher classifies it by bucket (Harmonic, LDAG, MIRROR, etc.)
+- Extraction agent pulls concrete tasks and action items
+- Tasks land in Supabase tasks table with correct bucket and horizon
+- Tasks appear in command center without manual intervention
+- File attachment via Direct Line (HIGH priority UX item above) feeds into same pipeline
+**Current state:** Inbox watcher scheduled task exists. ldag-transcript-intake skill exists and is proven for LDAG. Cross-bucket extraction not yet tested.
+**Next session focus:** Run a live test with a real Harmonic transcript. Diagnose what breaks.
+**Bucket:** bodhi360 / Harmonic

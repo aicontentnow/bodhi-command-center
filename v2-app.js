@@ -181,6 +181,10 @@ let state = {
     const page = map[e.key.toLowerCase()];
     if (page) setPage(page);
     if (e.key.toLowerCase() === 'v') tweaksPanel.classList.toggle('is-open');
+    // FIX 4: O toggles Direct Line panel
+    if (e.key.toLowerCase() === 'o') {
+      if (linePanel.classList.contains('is-open')) { closeLine(); } else { openLine(); }
+    }
   });
 
   // --- Today / Week tabs
@@ -218,6 +222,8 @@ let state = {
   let pendingTag = null; // {kind, label, seed?}
 
   async function openLine(opts = {}) {
+    // FIX 2: only one panel open at a time
+    if (drawer.classList.contains('is-open')) closeDrawer();
     linePanel.inert = false;
     linePanel.classList.add('is-open');
     document.body.classList.add('line-open');
@@ -558,7 +564,7 @@ let state = {
       moveBtn.className = 'move-horizon';
       moveBtn.type = 'button';
       moveBtn.title = which === 'today' ? 'Move to this week' : 'Move to today';
-      moveBtn.textContent = which === 'today' ? 'week' : 'today';
+      moveBtn.textContent = which === 'today' ? 'week >' : '< today';
       row.appendChild(boxEl);
       row.appendChild(lblEl);
       row.appendChild(noteEl);
@@ -630,23 +636,13 @@ let state = {
   function renderBucketsPage() {
     const container = document.getElementById('buckets-task-view');
     if (!container) return;
-    // Collect all tasks (today + week)
     const todayItems = state.today.map(t => ({ ...t, horizon: 'today' }));
     const weekItems = state.week.map(t => ({ ...t, horizon: 'week' }));
     const all = [...todayItems, ...weekItems];
-    // Apply filter
-    const visible = bucketFilter
-      ? all.filter(t => (t.meta || 'bodhi360').toLowerCase() === bucketFilter.toLowerCase())
-      : all;
     container.textContent = '';
-    if (visible.length === 0) {
-      const empty = document.createElement('div');
-      empty.className = 'bt-empty';
-      empty.textContent = bucketFilter ? 'No tasks in this bucket.' : 'No tasks yet.';
-      container.appendChild(empty);
-      return;
-    }
-    visible.forEach(it => {
+
+    // Build a single task row (shared by both filtered and grouped branches)
+    function makeBucketRow(it) {
       const row = document.createElement('div');
       row.className = 'item' + (it.done ? ' done' : '') + (it.notes ? ' has-note' : '');
 
@@ -670,7 +666,8 @@ let state = {
       moveBtn.className = 'move-horizon';
       moveBtn.type = 'button';
       moveBtn.title = it.horizon === 'today' ? 'Move to this week' : 'Move to today';
-      moveBtn.textContent = it.horizon === 'today' ? 'week' : 'today';
+      // FIX 3: directional arrow
+      moveBtn.textContent = it.horizon === 'today' ? 'week >' : '< today';
 
       row.appendChild(boxEl);
       row.appendChild(lblEl);
@@ -707,8 +704,53 @@ let state = {
       });
 
       row.addEventListener('click', () => openDrawer(it.horizon, it.id));
-      container.appendChild(row);
-    });
+      return row;
+    }
+
+    if (bucketFilter) {
+      // Filtered view: flat list for the active bucket
+      const visible = all.filter(t => (t.meta || 'bodhi360').toLowerCase() === bucketFilter.toLowerCase());
+      if (visible.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'bt-empty';
+        empty.textContent = 'No tasks in this bucket.';
+        container.appendChild(empty);
+        return;
+      }
+      visible.forEach(it => container.appendChild(makeBucketRow(it)));
+    } else {
+      // FIX 1: Grouped view -- one section per bucket with tasks
+      if (all.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'bt-empty';
+        empty.textContent = 'No tasks yet.';
+        container.appendChild(empty);
+        return;
+      }
+      const BUCKET_ORDER = ['bodhi360','harmonic','ldag','book','family','creative','mirror','career','command'];
+      const grouped = {};
+      all.forEach(it => {
+        const k = (it.meta || 'bodhi360').toLowerCase();
+        if (!grouped[k]) grouped[k] = [];
+        grouped[k].push(it);
+      });
+      // Known buckets first, then any extras not in the canonical list
+      const keys = [
+        ...BUCKET_ORDER.filter(k => grouped[k]),
+        ...Object.keys(grouped).filter(k => !BUCKET_ORDER.includes(k)),
+      ];
+      let firstGroup = true;
+      keys.forEach(k => {
+        const tasks = grouped[k];
+        if (!tasks || !tasks.length) return;
+        const hdr = document.createElement('div');
+        hdr.className = 'bt-group-header' + (firstGroup ? ' bt-group-header--first' : '');
+        firstGroup = false;
+        hdr.textContent = BUCKET_LABELS[k] || k;
+        container.appendChild(hdr);
+        tasks.forEach(it => container.appendChild(makeBucketRow(it)));
+      });
+    }
   }
 
   function bindAdder(which) {
@@ -755,6 +797,8 @@ let state = {
   function findItem(which, id) { return state[which].find(i => i.id === id); }
 
   function openDrawer(which, id) {
+    // FIX 2: only one panel open at a time
+    if (linePanel.classList.contains('is-open')) closeLine();
     const it = findItem(which, id);
     if (!it) return;
     drawerCtx = { which, id };
