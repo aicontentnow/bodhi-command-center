@@ -72,7 +72,8 @@
         <div class="card-head"><span class="eyebrow">Navigate</span></div>
         <nav class="navlist">
           <button class="navitem is-on" data-page="today"><span class="ni-key">H</span><span>Home · Today</span><span class="ni-badge" id="ni-today">0 / 0</span></button>
-          <button class="navitem" data-page="buckets"><span class="ni-key">B</span><span>Brain dump</span><span class="ni-badge">6</span></button>
+          <button class="navitem" data-page="buckets"><span class="ni-key">B</span><span>Brain dump</span><span class="ni-badge">8</span></button>
+          <button class="navitem" data-page="bucket-view"><span class="ni-key">K</span><span>Buckets</span><span class="ni-badge" id="ni-buckets">0</span></button>
           <button class="navitem" data-page="prompts"><span class="ni-key">P</span><span>Key prompts</span><span class="ni-badge">9</span></button>
           <button class="navitem" data-page="roadmap"><span class="ni-key">M</span><span>Roadmap</span><span class="ni-badge">12</span></button>
           <button class="navitem" data-page="share"><span class="ni-key">S</span><span>Share with Cowork</span><span class="ni-badge">kit</span></button>
@@ -127,24 +128,25 @@
         </div>
       </div>
 
-      <div class="task-controls" id="taskControls">
-        <select class="ctrl-sel" id="taskBucketFilter" aria-label="Filter by bucket">
-          <option value="all">All buckets</option>
-          <option value="bodhi360">bodhi360</option>
-          <option value="Harmonic">Harmonic</option>
-          <option value="MIRROR">Mirror</option>
-          <option value="LDAG">LDAG</option>
-          <option value="FRAMEZERO">FZ</option>
-          <option value="Family">Family</option>
-          <option value="Career">Career</option>
-          <option value="Command">Command</option>
-        </select>
-        <button type="button" class="ctrl-btn" id="taskSortToggle" data-sort="oldest">Oldest first</button>
-      </div>
-
-      <div class="tabs" role="tablist">
-        <button class="tab is-on" data-tab="today">Today <span id="countToday" style="opacity:0.6;font-size:0.72rem;margin-left:0.4rem;">0/0</span></button>
-        <button class="tab" data-tab="week">This week <span id="countWeek" style="opacity:0.6;font-size:0.72rem;margin-left:0.4rem;">0/0</span></button>
+      <div class="tabs-row">
+        <div class="tabs" role="tablist">
+          <button class="tab is-on" data-tab="today">Today <span id="countToday" style="opacity:0.6;font-size:0.72rem;margin-left:0.4rem;">0/0</span></button>
+          <button class="tab" data-tab="week">This week <span id="countWeek" style="opacity:0.6;font-size:0.72rem;margin-left:0.4rem;">0/0</span></button>
+        </div>
+        <div class="task-controls" id="taskControls">
+          <select class="ctrl-sel" id="taskBucketFilter" aria-label="Filter by bucket">
+            <option value="all">All buckets</option>
+            <option value="bodhi360">bodhi360</option>
+            <option value="Harmonic">Harmonic</option>
+            <option value="MIRROR">Mirror</option>
+            <option value="LDAG">LDAG</option>
+            <option value="FRAMEZERO">FZ</option>
+            <option value="Family">Family</option>
+            <option value="Career">Career</option>
+            <option value="Command">Command</option>
+          </select>
+          <button type="button" class="ctrl-btn" id="taskSortToggle" data-sort="oldest">Oldest first</button>
+        </div>
       </div>
 
       <div class="list-card liquid-glass" data-tabpane="today">
@@ -201,16 +203,40 @@
       <div class="buckets liquid-glass" id="section-buckets">
         <div class="card-inner">
           <div class="card-head">
-            <span class="eyebrow">Filter tasks by bucket · tap to filter, tap again to clear</span>
+            <span class="eyebrow">Brain dump · tap a bucket to open the line</span>
+          </div>
+          <div class="buckets-grid">
+            <div class="bucket-dump liquid-glass" data-bucket="bodhi360"><div class="n">bodhi360</div><div class="tag">01</div></div>
+            <div class="bucket-dump liquid-glass" data-bucket="harmonic"><div class="n">Harmonic</div><div class="tag">02</div></div>
+            <div class="bucket-dump liquid-glass" data-bucket="ldag"><div class="n">LDAG</div><div class="tag">03</div></div>
+            <div class="bucket-dump liquid-glass" data-bucket="book"><div class="n">THE BOOK OF ONENESS</div><div class="tag">04</div></div>
+            <div class="bucket-dump liquid-glass" data-bucket="family"><div class="n">Family</div><div class="tag">05</div></div>
+            <div class="bucket-dump liquid-glass" data-bucket="creative"><div class="n">Creative</div><div class="tag">06</div></div>
+            <div class="bucket-dump liquid-glass" data-bucket="mirror"><div class="n">MIRROR</div><div class="tag">07</div></div>
+            <div class="bucket-dump liquid-glass" data-bucket="career"><div class="n">Career</div><div class="tag">08</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE: Buckets -->
+    <div class="page" data-page="bucket-view">
+      <div class="buckets liquid-glass">
+        <div class="card-inner">
+          <div class="card-head">
+            <span class="eyebrow">Buckets · all tasks · tap to filter</span>
             <button type="button" class="bucket-filter-all" id="bucketFilterAll">All</button>
           </div>
           <div class="buckets-grid">
-            <div class="bucket liquid-glass" data-bucket="bodhi360"><div class="n">bodhi360</div><div class="tag">01</div></div>
-            <div class="bucket liquid-glass" data-bucket="harmonic"><div class="n">Harmonic</div><div class="tag">02</div></div>
-            <div class="bucket liquid-glass" data-bucket="ldag"><div class="n">LDAG</div><div class="tag">03</div></div>
-            <div class="bucket liquid-glass" data-bucket="book"><div class="n">The Book of Oneness</div><div class="tag">04</div></div>
-            <div class="bucket liquid-glass" data-bucket="family"><div class="n">Family</div><div class="tag">05</div></div>
-            <div class="bucket liquid-glass" data-bucket="creative"><div class="n">Creative</div><div class="tag">06</div></div>
+            <div class="bucket liquid-glass" data-bucket="bodhi360"><div class="n">bodhi360</div><div class="tag bkt-count" id="bkc-bodhi360">0</div></div>
+            <div class="bucket liquid-glass" data-bucket="harmonic"><div class="n">Harmonic</div><div class="tag bkt-count" id="bkc-harmonic">0</div></div>
+            <div class="bucket liquid-glass" data-bucket="ldag"><div class="n">LDAG</div><div class="tag bkt-count" id="bkc-ldag">0</div></div>
+            <div class="bucket liquid-glass" data-bucket="book"><div class="n">THE BOOK OF ONENESS</div><div class="tag bkt-count" id="bkc-book">0</div></div>
+            <div class="bucket liquid-glass" data-bucket="family"><div class="n">Family</div><div class="tag bkt-count" id="bkc-family">0</div></div>
+            <div class="bucket liquid-glass" data-bucket="creative"><div class="n">Creative</div><div class="tag bkt-count" id="bkc-creative">0</div></div>
+            <div class="bucket liquid-glass" data-bucket="mirror"><div class="n">MIRROR</div><div class="tag bkt-count" id="bkc-mirror">0</div></div>
+            <div class="bucket liquid-glass" data-bucket="career"><div class="n">Career</div><div class="tag bkt-count" id="bkc-career">0</div></div>
+            <div class="bucket liquid-glass" data-bucket="command"><div class="n">Command</div><div class="tag bkt-count" id="bkc-command">0</div></div>
           </div>
           <div id="buckets-task-view"></div>
         </div>
@@ -302,6 +328,19 @@
       <div class="d-meta" id="drawerMeta"></div>
     </div>
     <button class="x" id="drawerClose" aria-label="Close">×</button>
+  </div>
+  <div style="position:relative; z-index:2; display:flex; align-items:center; gap:0.5rem; margin-bottom:0.25rem;">
+    <span class="section-label" style="margin:0;">Bucket</span>
+    <select class="bucket-sel" id="drawerBucketSel" style="height:30px; font-size:0.62rem;" aria-label="Change bucket">
+      <option value="bodhi360">bodhi360</option>
+      <option value="Harmonic">Harmonic</option>
+      <option value="MIRROR">MIRROR</option>
+      <option value="LDAG">LDAG</option>
+      <option value="FRAMEZERO">FRAMEZERO</option>
+      <option value="Family">Family</option>
+      <option value="Career">Career</option>
+      <option value="Command">Command</option>
+    </select>
   </div>
   <div style="position:relative; z-index:2; display:flex; flex-direction:column; gap:0.5rem; flex:1; min-height:0;">
     <div class="section-label">Context · for the agent</div>

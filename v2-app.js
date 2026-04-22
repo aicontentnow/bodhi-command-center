@@ -177,7 +177,7 @@ let state = {
   document.addEventListener('keydown', (e) => {
     if (e.target.matches('input, textarea')) return;
     if (e.metaKey || e.ctrlKey || e.altKey) return;
-    const map = { h: 'today', t: 'today', b: 'buckets', p: 'prompts', m: 'roadmap', s: 'share' };
+    const map = { h: 'today', t: 'today', b: 'buckets', k: 'bucket-view', p: 'prompts', m: 'roadmap', s: 'share' };
     const page = map[e.key.toLowerCase()];
     if (page) setPage(page);
     if (e.key.toLowerCase() === 'v') tweaksPanel.classList.toggle('is-open');
@@ -224,9 +224,14 @@ let state = {
     linePanel.setAttribute('aria-hidden', 'false');
     if (opts.tag) setTag(opts.tag);
     lineInput.value = opts.seed !== undefined ? opts.seed : '';
+    // FIX 7: always show start of pre-populated text, not middle
+    lineInput.scrollTop = 0;
+    lineInput.setSelectionRange(0, 0);
     lineLaunch.hidden = state.line.messages.length > 0;
     renderThread();
     if (opts.seed && opts.seed.trim().length > 0) lineEmpty.hidden = true;
+    // FIX 6: scroll thread to most recent message after panel is laid out
+    setTimeout(() => { lineThread.scrollTop = lineThread.scrollHeight; }, 80);
     await loadQueueSummary();
     setTimeout(() => lineInput.focus(), 180);
   }
@@ -452,11 +457,23 @@ let state = {
     confirmBtn(openRedPhoneBtn, 'ok', 'Line open');
   });
 
-  // --- Buckets · filter task view, long-press / alt-click to open line
+  // --- Brain Dump tiles · each opens the line with a brain_dump tag
   const BUCKET_LABELS = {
     bodhi360: 'bodhi360', harmonic: 'Harmonic', ldag: 'LDAG',
     book: 'THE BOOK OF ONENESS', family: 'Family', creative: 'Creative',
+    mirror: 'MIRROR', career: 'Career', command: 'Command',
   };
+  document.querySelectorAll('.bucket-dump').forEach(b => {
+    b.addEventListener('click', () => {
+      const key = b.dataset.bucket;
+      openLine({
+        tag: { kind: 'brain_dump', label: `Brain dump · ${BUCKET_LABELS[key] || key}`, bucket: key },
+        seed: '',
+      });
+    });
+  });
+
+  // --- Buckets page · clickable filter tiles
   let bucketFilter = null;
 
   document.querySelectorAll('.bucket').forEach(b => {
@@ -541,7 +558,7 @@ let state = {
       moveBtn.className = 'move-horizon';
       moveBtn.type = 'button';
       moveBtn.title = which === 'today' ? 'Move to this week' : 'Move to today';
-      moveBtn.textContent = which === 'today' ? 'W' : 'T';
+      moveBtn.textContent = which === 'today' ? 'week' : 'today';
       row.appendChild(boxEl);
       row.appendChild(lblEl);
       row.appendChild(noteEl);
@@ -595,6 +612,19 @@ let state = {
       const t = state.today; const d = t.filter(i => i.done).length;
       ni.textContent = `${d} / ${t.length}`;
     }
+    // Bucket page counts and nav badge
+    const all = [...state.today, ...state.week];
+    const bktCounts = {};
+    all.forEach(it => {
+      const k = (it.meta || 'bodhi360').toLowerCase();
+      bktCounts[k] = (bktCounts[k] || 0) + 1;
+    });
+    ['bodhi360','harmonic','ldag','book','family','creative','mirror','career','command'].forEach(k => {
+      const el = document.getElementById('bkc-' + k);
+      if (el) el.textContent = String(bktCounts[k] || 0);
+    });
+    const niBuckets = document.getElementById('ni-buckets');
+    if (niBuckets) niBuckets.textContent = String(all.length);
   }
 
   function renderBucketsPage() {
@@ -640,7 +670,7 @@ let state = {
       moveBtn.className = 'move-horizon';
       moveBtn.type = 'button';
       moveBtn.title = it.horizon === 'today' ? 'Move to this week' : 'Move to today';
-      moveBtn.textContent = it.horizon === 'today' ? 'W' : 'T';
+      moveBtn.textContent = it.horizon === 'today' ? 'week' : 'today';
 
       row.appendChild(boxEl);
       row.appendChild(lblEl);
@@ -719,6 +749,7 @@ let state = {
   const drawerClose = document.getElementById('drawerClose');
   const drawerDelete = document.getElementById('drawerDelete');
   const drawerCopy = document.getElementById('drawerCopy');
+  const drawerBucketSel = document.getElementById('drawerBucketSel');
   let drawerCtx = null; // { which, id }
 
   function findItem(which, id) { return state[which].find(i => i.id === id); }
@@ -731,6 +762,12 @@ let state = {
     drawerMeta.textContent = `${which === 'today' ? 'Today' : 'This week'} · ${it.meta || ''}${it.done ? ' · done' : ''}`;
     drawerEyebrow.textContent = 'Task context · for the agent';
     drawerNotes.value = it.notes || '';
+    // FIX 8: populate bucket selector with current bucket
+    if (drawerBucketSel) {
+      const currentBucket = it.meta || 'bodhi360';
+      const opt = drawerBucketSel.querySelector(`option[value="${currentBucket}"]`);
+      drawerBucketSel.value = opt ? currentBucket : 'bodhi360';
+    }
     drawer.inert = false;
     drawer.classList.add('is-open');
     drawerScrim.classList.add('is-open');
@@ -750,6 +787,25 @@ let state = {
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && drawer.classList.contains('is-open')) closeDrawer();
   });
+
+  // FIX 8: bucket change -- PATCH Supabase and update task in place
+  if (drawerBucketSel) {
+    drawerBucketSel.addEventListener('change', async () => {
+      if (!drawerCtx) return;
+      const it = findItem(drawerCtx.which, drawerCtx.id);
+      if (!it) return;
+      const newBucket = drawerBucketSel.value;
+      const { error } = await sb.from('tasks').update({ bucket: newBucket }).eq('id', it.id);
+      if (error) { toastErr('Bucket update failed'); drawerBucketSel.value = it.meta || 'bodhi360'; return; }
+      it.meta = newBucket;
+      drawerMeta.textContent = `${drawerCtx.which === 'today' ? 'Today' : 'This week'} · ${newBucket}${it.done ? ' · done' : ''}`;
+      // re-render list (order is preserved, state array order unchanged)
+      renderList(drawerCtx.which);
+      renderBucketsPage();
+      renderCounts();
+      toastOk(`Bucket changed to ${newBucket}`);
+    });
+  }
 
   // auto-save notes (in-memory on input, persist to Supabase on blur)
   drawerNotes.addEventListener('input', () => {
@@ -881,11 +937,12 @@ ${it.notes || '(no additional context yet)'}`;
 
     // Page pill
     const pages = [
-      {p:'today',   label:'Home · Today',   key:'H'},
-      {p:'buckets', label:'Brain dump',     key:'B'},
-      {p:'prompts', label:'Key prompts',    key:'P'},
-      {p:'roadmap', label:'Roadmap',        key:'M'},
-      {p:'share',   label:'Share with Cowork', key:'S'},
+      {p:'today',       label:'Home · Today',      key:'H'},
+      {p:'buckets',     label:'Brain dump',         key:'B'},
+      {p:'bucket-view', label:'Buckets',            key:'K'},
+      {p:'prompts',     label:'Key prompts',        key:'P'},
+      {p:'roadmap',     label:'Roadmap',            key:'M'},
+      {p:'share',       label:'Share with Cowork',  key:'S'},
     ];
     const currentPage = pages.find(x => x.p === state.page) || pages[0];
     const pagePill = makePill({
