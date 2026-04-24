@@ -910,6 +910,7 @@ ${it.notes || '(no additional context yet)'}`;
 
   // --- Key prompts
   const PROMPTS = {
+    cos_prompt: { label: 'Command Center CoS', text: `Load this skill and follow its instructions:\nskills/command-center-cos/SKILL.md\n\nRead the most recent handoff doc in _command-center/ for current state.\nSupabase MCP must be connected to Bodhi360 org (gcbvvausrmbbkfazojpl).\nCheck in with Bodhi before starting any build work.` },
     morning:    { label: 'Morning · where am I',          text: `Morning check-in. Read the current state of all brains (Harmonic, Creative, LDAG, Book/MIRROR, Family, Personal). Tell me where I am in one short paragraph, then give exactly one next action with the reason. No lists.` },
     ldag_prod:  { label: 'LDAG · pick up production',     text: `LDAG · pick up production. Read the LDAG brain: transcripts, episode briefs, dashboard status. Tell me which episode is closest to shippable and the one concrete next step to move it.` },
     ldag_draft: { label: 'LDAG · draft an episode',       text: `LDAG · draft an episode. Given the concept + moments below, produce an Opus Agent brief: title working options, cold open idea, 3–5 beats, and a CTA hypothesis.\n\n---\n[paste concept + moments here]` },
