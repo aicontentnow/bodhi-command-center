@@ -516,7 +516,8 @@ let state = {
 
   // --- Task filter and sort controls
   let taskFilter = { bucket: 'all', sort: 'oldest' };
-  let focusMode = false;
+  let focusSelection = new Set();
+  let focusSelectMode = false;
   let completedOpen = { today: false, week: false };
 
   const taskBucketFilter = document.getElementById('taskBucketFilter');
@@ -533,14 +534,88 @@ let state = {
     renderList('today'); renderList('week');
   });
 
+  function updateFocusBar() {
+    const bar = document.getElementById('focusSelectBar');
+    const startBtn = document.getElementById('focusStartBtn');
+    if (!bar || !startBtn) return;
+    bar.hidden = !focusSelectMode;
+    startBtn.disabled = focusSelection.size === 0;
+    startBtn.textContent = focusSelection.size > 0
+      ? 'Start Focus (' + focusSelection.size + ')'
+      : 'Start Focus';
+  }
+
+  function openFocusModal() {
+    const modal = document.getElementById('focusModal');
+    const tasksEl = document.getElementById('focusModalTasks');
+    if (!modal || !tasksEl) return;
+    while (tasksEl.firstChild) tasksEl.removeChild(tasksEl.firstChild);
+    const allTasks = [...state.today, ...state.week];
+    focusSelection.forEach(id => {
+      const it = allTasks.find(t => t.id === id);
+      if (!it) return;
+      const which = state.today.find(t => t.id === id) ? 'today' : 'week';
+      const row = document.createElement('div');
+      row.className = 'focus-modal-task' + (it.done ? ' done' : '');
+      const boxEl = document.createElement('div');
+      boxEl.className = 'box';
+      boxEl.title = 'check';
+      boxEl.addEventListener('click', async () => {
+        it.done = !it.done;
+        row.classList.toggle('done', it.done);
+        renderList(which); renderCounts();
+        const { error } = await sb.from('tasks').update({ done: it.done }).eq('id', it.id);
+        if (error) {
+          toastErr('Save failed');
+          it.done = !it.done;
+          row.classList.toggle('done', it.done);
+          renderList(which); renderCounts();
+        }
+      });
+      const lblEl = document.createElement('div');
+      lblEl.className = 'focus-modal-lbl';
+      lblEl.textContent = it.label;
+      const metaEl = document.createElement('div');
+      metaEl.className = 'focus-modal-meta';
+      metaEl.textContent = it.meta || '';
+      row.appendChild(boxEl);
+      row.appendChild(lblEl);
+      row.appendChild(metaEl);
+      tasksEl.appendChild(row);
+    });
+    modal.hidden = false;
+    document.body.classList.add('focus-modal-open');
+  }
+
+  function closeFocusModal() {
+    const modal = document.getElementById('focusModal');
+    if (modal) modal.hidden = true;
+    document.body.classList.remove('focus-modal-open');
+  }
+
   const focusModeToggle = document.getElementById('focusModeToggle');
   focusModeToggle.addEventListener('click', () => {
-    focusMode = !focusMode;
-    focusModeToggle.classList.toggle('is-active', focusMode);
-    focusModeToggle.textContent = focusMode ? 'Focus on' : 'Focus';
+    focusSelectMode = !focusSelectMode;
+    if (!focusSelectMode) focusSelection.clear();
+    focusModeToggle.classList.toggle('is-active', focusSelectMode);
+    focusModeToggle.textContent = focusSelectMode ? 'Cancel' : 'Focus';
+    updateFocusBar();
     renderList('today');
     renderList('week');
   });
+
+  const focusStartBtn = document.getElementById('focusStartBtn');
+  if (focusStartBtn) {
+    focusStartBtn.addEventListener('click', () => {
+      if (focusSelection.size === 0) return;
+      openFocusModal();
+    });
+  }
+
+  const focusExitBtn = document.getElementById('focusExitBtn');
+  if (focusExitBtn) {
+    focusExitBtn.addEventListener('click', closeFocusModal);
+  }
 
   // --- Today / This week render
   function renderList(which) {
@@ -549,7 +624,7 @@ let state = {
 
     function buildRow(it) {
       const row = document.createElement('div');
-      row.className = 'item' + (it.done ? ' done' : '') + (it.focus ? ' is-focus' : '') + (it.notes ? ' has-note' : '');
+      row.className = 'item' + (it.done ? ' done' : '') + (focusSelectMode && focusSelection.has(it.id) ? ' focus-selected' : '') + (it.notes ? ' has-note' : '');
       const boxEl = document.createElement('div');
       boxEl.className = 'box';
       boxEl.title = 'check';
@@ -601,7 +676,23 @@ let state = {
         renderCounts();
         toast(`Moved to ${newHorizon === 'today' ? 'today' : 'this week'}`);
       });
-      row.addEventListener('click', () => openDrawer(which, it.id));
+      row.addEventListener('click', () => {
+        if (focusSelectMode) {
+          if (focusSelection.has(it.id)) {
+            focusSelection.delete(it.id);
+          } else if (focusSelection.size < 3) {
+            focusSelection.add(it.id);
+          } else {
+            row.classList.add('focus-reject');
+            setTimeout(() => row.classList.remove('focus-reject'), 400);
+            return;
+          }
+          renderList(which);
+          updateFocusBar();
+          return;
+        }
+        openDrawer(which, it.id);
+      });
       row.draggable = true;
       row.addEventListener('dragstart', (e) => {
         e.dataTransfer.setData('text/plain', JSON.stringify({ id: it.id, which }));
@@ -642,10 +733,6 @@ let state = {
       return row;
     }
 
-    // P1: focus filter
-    if (focusMode) {
-      items = items.filter(it => it.focus === true);
-    }
     // Apply bucket filter
     if (taskFilter.bucket !== 'all') {
       items = items.filter(it => (it.meta || 'bodhi360') === taskFilter.bucket);
@@ -889,11 +976,6 @@ let state = {
       const opt = drawerBucketSel.querySelector(`option[value="${currentBucket}"]`);
       drawerBucketSel.value = opt ? currentBucket : 'bodhi360';
     }
-    const drawerFocusToggle = document.getElementById('drawerFocusToggle');
-    if (drawerFocusToggle) {
-      drawerFocusToggle.textContent = it.focus ? 'on' : 'off';
-      drawerFocusToggle.classList.toggle('is-active', !!it.focus);
-    }
     drawer.inert = false;
     drawer.classList.add('is-open');
     drawerScrim.classList.add('is-open');
@@ -912,6 +994,7 @@ let state = {
   drawerScrim.addEventListener('click', closeDrawer);
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && drawer.classList.contains('is-open')) closeDrawer();
+    if (e.key === 'Escape' && document.getElementById('focusModal') && !document.getElementById('focusModal').hidden) closeFocusModal();
   });
 
   // FIX 8: bucket change -- PATCH Supabase and update task in place
@@ -930,19 +1013,6 @@ let state = {
       renderBucketsPage();
       renderCounts();
       toastOk(`Bucket changed to ${newBucket}`);
-    });
-  }
-
-  const drawerFocusToggle = document.getElementById('drawerFocusToggle');
-  if (drawerFocusToggle) {
-    drawerFocusToggle.addEventListener('click', () => {
-      if (!drawerCtx) return;
-      const it = findItem(drawerCtx.which, drawerCtx.id);
-      if (!it) return;
-      it.focus = !it.focus;
-      drawerFocusToggle.textContent = it.focus ? 'on' : 'off';
-      drawerFocusToggle.classList.toggle('is-active', it.focus);
-      renderList(drawerCtx.which);
     });
   }
 

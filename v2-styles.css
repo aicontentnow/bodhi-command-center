@@ -1019,10 +1019,16 @@ body:has(.drawer.is-open) #tweaksBtn { opacity: 0; pointer-events: none; transit
   white-space: nowrap;
 }
 .ctrl-btn:hover { color: var(--t-1); background: rgba(255,255,255,0.09); }
-.ctrl-btn.is-active {
-  color: var(--cyan);
-  box-shadow: inset 0 0 0 1px hsla(var(--cyan-h), 90%, 65%, 0.35);
-  background: hsla(var(--cyan-h), 90%, 62%, 0.08);
+.ctrl-btn.focus-btn {
+  color: #F59E0B;
+  border: 1px solid rgba(245,158,11,0.28);
+  background: rgba(245,158,11,0.07);
+}
+.ctrl-btn.focus-btn:hover { color: #FBBF24; background: rgba(245,158,11,0.14); }
+.ctrl-btn.focus-btn.is-active {
+  color: #FBBF24;
+  background: rgba(245,158,11,0.16);
+  box-shadow: inset 0 0 0 1px rgba(245,158,11,0.38);
 }
 
 /* Today + This week lists */
@@ -1073,8 +1079,120 @@ body:has(.drawer.is-open) #tweaksBtn { opacity: 0; pointer-events: none; transit
   letter-spacing: 0.18em;
   color: var(--t-4);
 }
-.item.is-focus .lbl { color: var(--t-1); }
-.item.is-focus .meta-m { color: var(--cyan); }
+/* Focus selection mode */
+#focusSelectBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 0.9rem;
+  background: rgba(245,158,11,0.07);
+  border: 1px solid rgba(245,158,11,0.22);
+  border-radius: var(--radius);
+  margin-bottom: 0.5rem;
+  gap: 1rem;
+}
+#focusSelectBar[hidden] { display: none; }
+#focusSelectPrompt {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #F59E0B;
+}
+.focus-start-btn {
+  padding: 0.35rem 0.85rem;
+  border-radius: var(--radius);
+  border: 1px solid rgba(245,158,11,0.38);
+  background: rgba(245,158,11,0.12);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #F59E0B;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+.focus-start-btn:hover:not(:disabled) { background: rgba(245,158,11,0.22); }
+.focus-start-btn:disabled { opacity: 0.38; cursor: not-allowed; }
+.item.focus-selected {
+  outline: 2px solid #F59E0B;
+  outline-offset: -1px;
+  border-radius: 6px;
+  background: rgba(245,158,11,0.06);
+}
+@keyframes focus-shake {
+  0%,100% { transform: translateX(0); }
+  20% { transform: translateX(-5px); }
+  40% { transform: translateX(5px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+.item.focus-reject { animation: focus-shake 0.35s ease; }
+/* Focus modal */
+#focusModal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0,0,0,0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#focusModal[hidden] { display: none; }
+.focus-modal-card {
+  width: min(480px, calc(100vw - 2rem));
+  background: hsl(215 25% 10% / 0.96);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.65);
+}
+.focus-modal-eyebrow {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.55rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #F59E0B;
+}
+#focusModalTasks { display: flex; flex-direction: column; gap: 0.75rem; }
+.focus-modal-task {
+  display: grid;
+  grid-template-columns: 22px 1fr auto;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.85rem 0.5rem;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.focus-modal-task.done .focus-modal-lbl {
+  text-decoration: line-through;
+  color: var(--t-4);
+}
+.focus-modal-lbl { font-size: 1.1rem; color: var(--t-1); line-height: 1.35; }
+.focus-modal-meta {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.58rem;
+  letter-spacing: 0.18em;
+  color: var(--t-4);
+}
+.focus-exit-btn {
+  align-self: center;
+  padding: 0.55rem 1.5rem;
+  border-radius: var(--radius);
+  border: 1px solid rgba(255,255,255,0.25);
+  background: transparent;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--t-2);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.focus-exit-btn:hover { border-color: rgba(255,255,255,0.45); color: var(--t-1); }
 
 /* P4: done tasks collapse */
 .completed-toggle {

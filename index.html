@@ -146,8 +146,13 @@
             <option value="Command">Command</option>
           </select>
           <button type="button" class="ctrl-btn" id="taskSortToggle" data-sort="oldest">Oldest first</button>
-          <button type="button" class="ctrl-btn" id="focusModeToggle">Focus</button>
+          <button type="button" class="ctrl-btn focus-btn" id="focusModeToggle">Focus</button>
         </div>
+      </div>
+
+      <div id="focusSelectBar" hidden>
+        <span id="focusSelectPrompt">Tap up to 3 tasks to focus on.</span>
+        <button type="button" class="focus-start-btn" id="focusStartBtn" disabled>Start Focus</button>
       </div>
 
       <div class="list-card liquid-glass" data-tabpane="today">
@@ -344,10 +349,6 @@
       <option value="Command">Command</option>
     </select>
   </div>
-  <div style="position:relative; z-index:2; display:flex; align-items:center; gap:0.5rem; margin-bottom:0.25rem;">
-    <span class="section-label" style="margin:0;">Focus</span>
-    <button type="button" class="ctrl-btn" id="drawerFocusToggle" style="height:30px; font-size:0.62rem;">off</button>
-  </div>
   <div style="position:relative; z-index:2; display:flex; flex-direction:column; gap:0.5rem; flex:1; min-height:0;">
     <div class="section-label">Context · for the agent</div>
     <textarea class="d-notes" id="drawerNotes" placeholder="Add anything the chief of staff should know about this task — background, why it matters, blockers, links, previous attempts. Saved automatically."></textarea>
@@ -450,6 +451,16 @@
 </div>
 
 <div class="toast liquid-glass-strong" id="toast"></div>
+
+<!-- Focus mode modal -->
+<div id="focusModal" hidden aria-modal="true" role="dialog" aria-label="Focus mode">
+  <div class="focus-modal-card">
+    <div class="focus-modal-eyebrow">Focus mode</div>
+    <div id="focusModalTasks"></div>
+    <button type="button" class="focus-exit-btn" id="focusExitBtn">Exit Focus</button>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="v2-app.js"></script>
 </body>
