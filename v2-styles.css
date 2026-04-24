@@ -1019,6 +1019,11 @@ body:has(.drawer.is-open) #tweaksBtn { opacity: 0; pointer-events: none; transit
   white-space: nowrap;
 }
 .ctrl-btn:hover { color: var(--t-1); background: rgba(255,255,255,0.09); }
+.ctrl-btn.is-active {
+  color: var(--cyan);
+  box-shadow: inset 0 0 0 1px hsla(var(--cyan-h), 90%, 65%, 0.35);
+  background: hsla(var(--cyan-h), 90%, 62%, 0.08);
+}
 
 /* Today + This week lists */
 .lists { display: flex; flex-direction: column; gap: 1rem; min-height: 0; }
@@ -1036,6 +1041,9 @@ body:has(.drawer.is-open) #tweaksBtn { opacity: 0; pointer-events: none; transit
   position: relative;
 }
 .item:hover { color: var(--t-1); }
+.item[draggable="true"] { cursor: grab; }
+.item.is-dragging { opacity: 0.35; cursor: grabbing; }
+.item.drag-over { box-shadow: 0 -2px 0 0 var(--cyan); }
 .item .box {
   width: 16px; height: 16px;
   border-radius: 5px;
@@ -1067,6 +1075,36 @@ body:has(.drawer.is-open) #tweaksBtn { opacity: 0; pointer-events: none; transit
 }
 .item.is-focus .lbl { color: var(--t-1); }
 .item.is-focus .meta-m { color: var(--cyan); }
+
+/* P4: done tasks collapse */
+.completed-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: 100%;
+  padding: 0.5rem 0.25rem 0.35rem;
+  border: none;
+  background: none;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.55rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--t-4);
+  cursor: pointer;
+  margin-top: 0.25rem;
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
+.completed-toggle:hover { color: var(--t-3); }
+.completed-toggle-chevron { margin-left: auto; font-size: 0.5rem; opacity: 0.7; }
+.completed-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.28s ease;
+}
+.completed-section.is-open { max-height: 2000px; }
 
 /* Move-horizon button -- pill, visible only on row hover */
 .item .move-horizon {

@@ -516,6 +516,8 @@ let state = {
 
   // --- Task filter and sort controls
   let taskFilter = { bucket: 'all', sort: 'oldest' };
+  let focusMode = false;
+  let completedOpen = { today: false, week: false };
 
   const taskBucketFilter = document.getElementById('taskBucketFilter');
   const taskSortToggle = document.getElementById('taskSortToggle');
@@ -531,23 +533,23 @@ let state = {
     renderList('today'); renderList('week');
   });
 
+  const focusModeToggle = document.getElementById('focusModeToggle');
+  focusModeToggle.addEventListener('click', () => {
+    focusMode = !focusMode;
+    focusModeToggle.classList.toggle('is-active', focusMode);
+    focusModeToggle.textContent = focusMode ? 'Focus on' : 'Focus';
+    renderList('today');
+    renderList('week');
+  });
+
   // --- Today / This week render
   function renderList(which) {
     const root = document.getElementById(which + 'List');
     let items = [...state[which]];
-    // Apply bucket filter
-    if (taskFilter.bucket !== 'all') {
-      items = items.filter(it => (it.meta || 'bodhi360') === taskFilter.bucket);
-    }
-    // Apply sort
-    if (taskFilter.sort === 'newest') {
-      items = items.slice().reverse();
-    }
-    root.innerHTML = '';
-    items.forEach(it => {
+
+    function buildRow(it) {
       const row = document.createElement('div');
       row.className = 'item' + (it.done ? ' done' : '') + (it.focus ? ' is-focus' : '') + (it.notes ? ' has-note' : '');
-      // build row structure via DOM to avoid innerHTML security warnings on dynamic content
       const boxEl = document.createElement('div');
       boxEl.className = 'box';
       boxEl.title = 'check';
@@ -570,7 +572,6 @@ let state = {
       row.appendChild(noteEl);
       row.appendChild(metaEl);
       row.appendChild(moveBtn);
-      // click the checkbox → toggle done
       row.querySelector('.box').addEventListener('click', async (e) => {
         e.stopPropagation();
         it.done = !it.done;
@@ -578,7 +579,7 @@ let state = {
         const { error } = await sb.from('tasks').update({ done: it.done }).eq('id', it.id);
         if (error) {
           toastErr('Save failed');
-          it.done = !it.done; // revert
+          it.done = !it.done;
           renderList(which); renderCounts();
         } else {
           sb.from('interaction_log').insert({
@@ -588,7 +589,6 @@ let state = {
           }).then(({ error: e }) => { if (e) console.warn('interaction_log write failed:', e); });
         }
       });
-      // move button → swap horizon
       moveBtn.addEventListener('click', async (e) => {
         e.stopPropagation();
         const newHorizon = which === 'today' ? 'week' : 'today';
@@ -601,10 +601,87 @@ let state = {
         renderCounts();
         toast(`Moved to ${newHorizon === 'today' ? 'today' : 'this week'}`);
       });
-      // click anywhere else → open drawer
       row.addEventListener('click', () => openDrawer(which, it.id));
-      root.appendChild(row);
-    });
+      row.draggable = true;
+      row.addEventListener('dragstart', (e) => {
+        e.dataTransfer.setData('text/plain', JSON.stringify({ id: it.id, which }));
+        e.dataTransfer.effectAllowed = 'move';
+        setTimeout(() => row.classList.add('is-dragging'), 0);
+      });
+      row.addEventListener('dragend', () => {
+        row.classList.remove('is-dragging');
+        document.querySelectorAll('.item.drag-over').forEach(r => r.classList.remove('drag-over'));
+      });
+      row.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        document.querySelectorAll('.item.drag-over').forEach(r => r.classList.remove('drag-over'));
+        row.classList.add('drag-over');
+      });
+      row.addEventListener('dragleave', () => {
+        row.classList.remove('drag-over');
+      });
+      row.addEventListener('drop', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        row.classList.remove('drag-over');
+        let src;
+        try { src = JSON.parse(e.dataTransfer.getData('text/plain')); } catch { return; }
+        if (!src || src.which !== which || src.id === it.id) return;
+        const srcIdx = state[which].findIndex(t => t.id === src.id);
+        const dstIdx = state[which].findIndex(t => t.id === it.id);
+        if (srcIdx === -1 || dstIdx === -1) return;
+        const [moved] = state[which].splice(srcIdx, 1);
+        state[which].splice(dstIdx, 0, moved);
+        renderList(which);
+        const patches = state[which].map((t, i) =>
+          sb.from('tasks').update({ sort_order: i }).eq('id', t.id)
+        );
+        try { await Promise.all(patches); } catch { toastErr('Reorder save failed'); }
+      });
+      return row;
+    }
+
+    // P1: focus filter
+    if (focusMode) {
+      items = items.filter(it => it.focus === true);
+    }
+    // Apply bucket filter
+    if (taskFilter.bucket !== 'all') {
+      items = items.filter(it => (it.meta || 'bodhi360') === taskFilter.bucket);
+    }
+    // Apply sort
+    if (taskFilter.sort === 'newest') {
+      items = items.slice().reverse();
+    }
+    while (root.firstChild) root.removeChild(root.firstChild);
+    // P4: split active / done
+    const activeItems = items.filter(i => !i.done);
+    const doneItems   = items.filter(i =>  i.done);
+
+    activeItems.forEach(it => root.appendChild(buildRow(it)));
+
+    if (doneItems.length > 0) {
+      const toggleBtn = document.createElement('button');
+      toggleBtn.type = 'button';
+      toggleBtn.className = 'completed-toggle';
+      const chevron = document.createElement('span');
+      chevron.className = 'completed-toggle-chevron';
+      chevron.textContent = completedOpen[which] ? '▴' : '▾';
+      toggleBtn.appendChild(document.createTextNode('Completed (' + doneItems.length + ')'));
+      toggleBtn.appendChild(chevron);
+      toggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        completedOpen[which] = !completedOpen[which];
+        renderList(which);
+      });
+      root.appendChild(toggleBtn);
+
+      const doneSection = document.createElement('div');
+      doneSection.className = 'completed-section' + (completedOpen[which] ? ' is-open' : '');
+      doneItems.forEach(it => doneSection.appendChild(buildRow(it)));
+      root.appendChild(doneSection);
+    }
   }
   function renderCounts() {
     ['today','week'].forEach(which => {
@@ -812,6 +889,11 @@ let state = {
       const opt = drawerBucketSel.querySelector(`option[value="${currentBucket}"]`);
       drawerBucketSel.value = opt ? currentBucket : 'bodhi360';
     }
+    const drawerFocusToggle = document.getElementById('drawerFocusToggle');
+    if (drawerFocusToggle) {
+      drawerFocusToggle.textContent = it.focus ? 'on' : 'off';
+      drawerFocusToggle.classList.toggle('is-active', !!it.focus);
+    }
     drawer.inert = false;
     drawer.classList.add('is-open');
     drawerScrim.classList.add('is-open');
@@ -848,6 +930,19 @@ let state = {
       renderBucketsPage();
       renderCounts();
       toastOk(`Bucket changed to ${newBucket}`);
+    });
+  }
+
+  const drawerFocusToggle = document.getElementById('drawerFocusToggle');
+  if (drawerFocusToggle) {
+    drawerFocusToggle.addEventListener('click', () => {
+      if (!drawerCtx) return;
+      const it = findItem(drawerCtx.which, drawerCtx.id);
+      if (!it) return;
+      it.focus = !it.focus;
+      drawerFocusToggle.textContent = it.focus ? 'on' : 'off';
+      drawerFocusToggle.classList.toggle('is-active', it.focus);
+      renderList(drawerCtx.which);
     });
   }
 
@@ -1271,6 +1366,7 @@ VIEWS (Views button, bottom-right : hidden while the Direct Line panel is open)
         .select('id, title, bucket, horizon, done, sort_order, created_at')
         .eq('user_id', 'bodhi')
         .in('horizon', ['today', 'week'])
+        .order('sort_order', { ascending: true })
         .order('created_at', { ascending: true });
 
       if (error) throw error;
