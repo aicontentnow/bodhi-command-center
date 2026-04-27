@@ -248,11 +248,8 @@ let state = {
     // FIX 7: always show start of pre-populated text, not middle
     lineInput.scrollTop = 0;
     lineInput.setSelectionRange(0, 0);
-    lineLaunch.hidden = state.line.messages.length > 0;
-    renderThread();
-    if (opts.seed && opts.seed.trim().length > 0) lineEmpty.hidden = true;
-    // FIX 6: scroll thread to most recent message after panel is laid out
-    setTimeout(() => { lineThread.scrollTop = lineThread.scrollHeight; }, 80);
+    // P5: load full conversation thread from Supabase on every open
+    loadConversationThread();
     await loadQueueSummary();
     setTimeout(() => lineInput.focus(), 180);
   }
@@ -352,6 +349,77 @@ let state = {
     return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
   }
 
+  // ── P5: Conversation thread ────────────────────────────────────
+  function buildUserBubble(item) {
+    const wrap = document.createElement('div');
+    wrap.className = 'dl-bubble-wrap dl-bubble-wrap--user';
+    const bubble = document.createElement('div');
+    bubble.className = 'dl-bubble user';
+    bubble.textContent = item.content;
+    const time = document.createElement('div');
+    time.className = 'dl-bubble-time';
+    time.textContent = timeFmt(new Date(item.created_at));
+    bubble.appendChild(time);
+    wrap.appendChild(bubble);
+    return wrap;
+  }
+
+  function buildCosBubble(item) {
+    const wrap = document.createElement('div');
+    wrap.className = 'dl-bubble-wrap dl-bubble-wrap--cos';
+    const label = document.createElement('div');
+    label.className = 'dl-bubble-label';
+    label.textContent = item.agent || 'CoS';
+    const bubble = document.createElement('div');
+    bubble.className = 'dl-bubble cos';
+    bubble.textContent = item.content;
+    const time = document.createElement('div');
+    time.className = 'dl-bubble-time';
+    time.textContent = timeFmt(new Date(item.created_at));
+    bubble.appendChild(time);
+    wrap.appendChild(label);
+    wrap.appendChild(bubble);
+    return wrap;
+  }
+
+  function renderConversationThread(items) {
+    lineThread.querySelectorAll('.dl-bubble-wrap').forEach(n => n.remove());
+    if (!items || items.length === 0) {
+      lineEmpty.hidden = false;
+      lineLaunch.hidden = false;
+      return;
+    }
+    lineEmpty.hidden = true;
+    lineLaunch.hidden = true;
+    items.forEach(item => {
+      lineThread.appendChild(item.type === 'user' ? buildUserBubble(item) : buildCosBubble(item));
+    });
+    setTimeout(() => { lineThread.scrollTop = lineThread.scrollHeight; }, 40);
+  }
+
+  async function loadConversationThread() {
+    if (!sbLive) return;
+    try {
+      const [{ data: msgs, error: me }, { data: resps, error: re }] = await Promise.all([
+        sb.from('direct_line_messages')
+          .select('id, content, kind, tag, processed, created_at')
+          .eq('user_id', 'bodhi')
+          .order('created_at', { ascending: true }),
+        sb.from('direct_line_responses')
+          .select('id, message_id, agent, content, created_at')
+          .order('created_at', { ascending: true }),
+      ]);
+      if (me || re) { console.warn('[DL] thread load error', me || re); return; }
+      const userItems = (msgs || []).map(m => ({ type: 'user', id: m.id, content: m.content, kind: m.kind, created_at: m.created_at }));
+      const cosItems  = (resps || []).map(r => ({ type: 'cos',  id: r.id, message_id: r.message_id, agent: r.agent, content: r.content, created_at: r.created_at }));
+      const unified = [...userItems, ...cosItems].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+      renderConversationThread(unified);
+    } catch (err) {
+      console.warn('[DL] loadConversationThread failed:', err);
+    }
+  }
+  // ── end P5 ───────────────────────────────────────────────────
+
   function renderThread() {
     // clear
     const msgs = state.line.messages;
@@ -424,7 +492,12 @@ let state = {
 
     if (error) { toastErr('Send failed · try again'); return; }
 
-    pushMessage({ text: t, kind, tag, status: 'pending' });
+    // P5: optimistically append user bubble to thread immediately
+    const _dlMsg = { type: 'user', content: t, kind, created_at: new Date().toISOString() };
+    lineThread.appendChild(buildUserBubble(_dlMsg));
+    lineThread.scrollTop = lineThread.scrollHeight;
+    lineEmpty.hidden = true;
+    lineLaunch.hidden = true;
     lineInput.value = '';
     setTag(null);
     toastOk('Sent · Chief of Staff picks this up on next run.');
@@ -1536,15 +1609,14 @@ VIEWS (Views button, bottom-right : hidden while the Direct Line panel is open)
         }, (payload) => {
           const resp = payload.new;
           if (!resp) return;
-          pushMessage({
-            role: 'cos',
-            kind: 'freeform',
-            tag: null,
-            text: resp.content,
-            ts: new Date(resp.created_at).getTime(),
-            status: 'replied',
-          });
-          if (!linePanel.classList.contains('is-open')) {
+          // P5: append CoS bubble directly; toast if panel is closed
+          const cosItem = { type: 'cos', id: resp.id, message_id: resp.message_id, agent: resp.agent, content: resp.content, created_at: resp.created_at };
+          if (linePanel.classList.contains('is-open')) {
+            lineThread.appendChild(buildCosBubble(cosItem));
+            lineThread.scrollTop = lineThread.scrollHeight;
+            lineEmpty.hidden = true;
+            lineLaunch.hidden = true;
+          } else {
             toastOk('Chief of Staff replied · open the line');
           }
         })
@@ -1612,19 +1684,8 @@ VIEWS (Views button, bottom-right : hidden while the Direct Line panel is open)
           })
         .subscribe();
 
-      // Reload unprocessed direct_line_messages into thread on refresh
-      const { data: queuedMsgs } = await sb
-        .from('direct_line_messages')
-        .select('id, content, kind, tag, created_at')
-        .eq('user_id', 'bodhi')
-        .eq('processed', false)
-        .order('created_at', { ascending: true });
-      if (queuedMsgs && queuedMsgs.length > 0) {
-        queuedMsgs.forEach(m => {
-          pushMessage({ role: 'me', kind: m.kind || 'freeform', tag: m.tag || '', text: m.content, ts: m.created_at, status: 'pending' });
-        });
-        lineEmpty.hidden = true;
-      }
+      // P5: load full conversation thread (all messages + responses, chronological)
+      await loadConversationThread();
 
       // Log app_opened
       sb.from('interaction_log').insert({
