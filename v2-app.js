@@ -210,6 +210,7 @@ let state = {
       const on = p.dataset.tabpane === name;
       p.hidden = !on;
     });
+    if (sbLive) persistState('active_tab', name, 'tab_changed');
   }
   document.querySelectorAll('.tab').forEach(t => {
     t.addEventListener('click', () => setTab(t.dataset.tab));
@@ -521,6 +522,7 @@ let state = {
       }
       syncAllBtn();
       renderBucketsPage();
+      if (sbLive) persistState('bucket_filter', bucketFilter, 'bucket_filter_changed');
     });
   });
 
@@ -535,6 +537,7 @@ let state = {
       document.querySelectorAll('.bucket').forEach(x => x.classList.remove('is-active'));
       syncAllBtn();
       renderBucketsPage();
+      if (sbLive) persistState('bucket_filter', bucketFilter, 'bucket_filter_changed');
     });
   }
 
@@ -565,6 +568,7 @@ let state = {
     taskSortToggle.dataset.sort = taskFilter.sort;
     taskSortToggle.classList.toggle('is-sort-active', taskFilter.sort === 'newest');
     renderList('today'); renderList('week');
+    if (sbLive) persistState('sort_preference', taskFilter.sort, 'sort_changed');
   });
 
   function updateFocusBar() {
@@ -1491,7 +1495,7 @@ VIEWS (Views button, bottom-right : hidden while the Direct Line panel is open)
       // Load portfolio state (energy, view, page, tab) before tasks so shell is correct
       const { data: ps, error: psErr } = await sb
         .from('portfolio_state')
-        .select('energy_state, active_view, active_page, active_tab')
+        .select('energy_state, active_view, active_page, active_tab, sort_preference, bucket_filter')
         .eq('user_id', 'bodhi')
         .single();
 
@@ -1504,6 +1508,23 @@ VIEWS (Views button, bottom-right : hidden while the Direct Line panel is open)
         setPage(state.page);
         setTab(state.tab);
         applyVariant();
+        // Restore sort preference
+        if (ps.sort_preference) {
+          taskFilter.sort = ps.sort_preference;
+          if (taskSortToggle) {
+            taskSortToggle.textContent = taskFilter.sort === 'oldest' ? 'Oldest first' : 'Newest first';
+            taskSortToggle.dataset.sort = taskFilter.sort;
+            taskSortToggle.classList.toggle('is-sort-active', taskFilter.sort === 'newest');
+          }
+        }
+        // Restore bucket filter (null is valid -- empty canvas)
+        bucketFilter = (ps.bucket_filter !== undefined) ? ps.bucket_filter : null;
+        document.querySelectorAll('.bucket').forEach(x => x.classList.remove('is-active'));
+        if (bucketFilter && bucketFilter !== 'ALL') {
+          const tile = document.querySelector(`.bucket[data-bucket="${bucketFilter}"]`);
+          if (tile) tile.classList.add('is-active');
+        }
+        syncAllBtn();
       }
 
       // Realtime: push CoS replies into the panel thread
@@ -1565,6 +1586,7 @@ VIEWS (Views button, bottom-right : hidden while the Direct Line panel is open)
         state.week  = tasks.filter(t => t.horizon === 'week').map(rowToTask);
         ['today', 'week'].forEach(w => renderList(w));
         renderCounts();
+        if (bucketFilter !== null) renderBucketsPage();
         setLineStatus(true);
       }
 
