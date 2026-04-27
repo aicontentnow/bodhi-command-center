@@ -782,6 +782,7 @@ body:has(.drawer.is-open) #tweaksBtn { opacity: 0; pointer-events: none; transit
 
 /* P7: Direct Line notification bell */
 .dl-notif-btn {
+  display: none;
   background: rgba(74, 158, 255, 0.15);
   border: 1px solid rgba(74, 158, 255, 0.35);
   color: #4A9EFF;

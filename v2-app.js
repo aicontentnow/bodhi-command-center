@@ -250,9 +250,9 @@ let state = {
     if (!btn || !countEl) return;
     if (dlUnread > 0) {
       countEl.textContent = dlUnread;
-      btn.hidden = false;
+      btn.style.display = 'flex';
     } else {
-      btn.hidden = true;
+      btn.style.display = 'none';
     }
   }
 
