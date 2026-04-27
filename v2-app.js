@@ -190,6 +190,13 @@ let state = {
       openAddTaskModal('today');
       return;
     }
+    // F: toggle Focus mode (close modal if open, otherwise toggle selection mode)
+    if (key === 'f') {
+      const fModal = document.getElementById('focusModal');
+      if (fModal && !fModal.hidden) { closeFocusModal(); return; }
+      focusModeToggle.click();
+      return;
+    }
     // Page nav map
     const map = { h: 'today', b: 'buckets', k: 'bucket-view', p: 'prompts', m: 'roadmap', s: 'share' };
     const page = map[key];
@@ -624,6 +631,7 @@ let state = {
 
   // --- Task filter and sort controls
   let taskFilter = { bucket: 'all', sort: 'oldest' };
+  let subtaskMap = {}; // keyed by task_id; value: array of subtask objects {id, title, done, sort_order}
   let focusSelection = new Set();
   let focusSelectMode = false;
   let completedOpen = { today: false, week: false };
@@ -748,6 +756,18 @@ let state = {
       const tsText = formatTaskTs(it.createdAt);
       if (tsText) tsEl.textContent = tsText;
       lblWrap.appendChild(lblEl);
+      // Subtask badge: show count + progress if this task has subtasks
+      const _subs = subtaskMap[it.id];
+      if (_subs && _subs.length > 0) {
+        const _total = _subs.length;
+        const _done  = _subs.filter(s => s.done).length;
+        const _badge = document.createElement('span');
+        _badge.className = 'subtask-badge' + (_done === _total ? ' all-done' : '');
+        _badge.textContent = _done === 0
+          ? _total + ' subtask' + (_total > 1 ? 's' : '')
+          : _done + '/' + _total + ' done';
+        lblWrap.appendChild(_badge);
+      }
       if (tsText) lblWrap.appendChild(tsEl);
       const noteEl = document.createElement('div');
       noteEl.className = 'note-ind';
@@ -1656,6 +1676,24 @@ VIEWS (Views button, bottom-right : hidden while the Direct Line panel is open)
       } else {
         state.today = tasks.filter(t => t.horizon === 'today').map(rowToTask);
         state.week  = tasks.filter(t => t.horizon === 'week').map(rowToTask);
+        // Fetch subtasks for all loaded tasks in one request, build map
+        const allTaskIds = tasks.map(t => t.id);
+        if (allTaskIds.length > 0) {
+          const { data: subs, error: subErr } = await sb
+            .from('subtasks')
+            .select('id, task_id, title, done, sort_order')
+            .in('task_id', allTaskIds)
+            .order('sort_order', { ascending: true });
+          if (subErr) {
+            console.warn('[Supabase] subtasks fetch failed:', subErr);
+          } else if (subs) {
+            subtaskMap = {};
+            subs.forEach(s => {
+              if (!subtaskMap[s.task_id]) subtaskMap[s.task_id] = [];
+              subtaskMap[s.task_id].push(s);
+            });
+          }
+        }
         ['today', 'week'].forEach(w => renderList(w));
         renderCounts();
         if (bucketFilter !== null) renderBucketsPage();
