@@ -116,7 +116,17 @@
               <h2>One <em>next action.</em> Nothing more.</h2>
               <p class="sub">Opens the line. Your message goes into the queue; the chief of staff replies in the panel.</p>
             </div>
-            <div class="actions" style="display:flex; flex-direction:column; align-items:flex-end; gap:0;">
+            <div class="actions" style="display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem;">
+              <button class="btn dl-notif-btn" id="dlNotifBtn" title="Chief of Staff replied" aria-label="New CoS responses" hidden>
+                <span class="ico">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                  </svg>
+                </span>
+                <span id="dlNotifCount">0</span>
+                <span>replied</span>
+              </button>
               <button class="btn red-phone-btn" id="openRedPhone">
                 <span class="ico">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.86 19.86 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.86 19.86 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92Z"/></svg>

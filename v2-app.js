@@ -242,6 +242,31 @@ let state = {
   const lineLaunch = document.getElementById('lineLaunch');
 
   let pendingTag = null; // {kind, label, seed?}
+  let dlUnread = 0;
+
+  function updateBell() {
+    const btn = document.getElementById('dlNotifBtn');
+    const countEl = document.getElementById('dlNotifCount');
+    if (!btn || !countEl) return;
+    if (dlUnread > 0) {
+      countEl.textContent = dlUnread;
+      btn.hidden = false;
+    } else {
+      btn.hidden = true;
+    }
+  }
+
+  function fireCoSNotif(content) {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    try {
+      new Notification('Chief of Staff replied', {
+        body: (content || '').slice(0, 120),
+        silent: false,
+      });
+    } catch (e) {
+      console.warn('Browser notification failed:', e);
+    }
+  }
 
   async function openLine(opts = {}) {
     // FIX 2: only one panel open at a time
@@ -249,6 +274,8 @@ let state = {
     linePanel.inert = false;
     linePanel.classList.add('is-open');
     document.body.classList.add('line-open');
+    dlUnread = 0;
+    updateBell();
     linePanel.setAttribute('aria-hidden', 'false');
     if (opts.tag) setTag(opts.tag);
     lineInput.value = opts.seed !== undefined ? opts.seed : '';
@@ -483,7 +510,10 @@ let state = {
   async function send(text, kindOverride) {
     const t = (text || lineInput.value || '').trim();
     if (!t) return;
-    const kind = kindOverride || (pendingTag?.kind ?? 'freeform');
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission().catch(() => {});
+    }
+    const kind = kindOverride || (pendingTag?.kind ?? 'redphone');
     const tag = pendingTag;
     const tagValue = tag?.label || tag?.bucket || tag?.taskId || null;
 
@@ -557,6 +587,11 @@ let state = {
     });
     confirmBtn(openRedPhoneBtn, 'ok', 'Line open');
   });
+
+  const dlNotifBtn = document.getElementById('dlNotifBtn');
+  if (dlNotifBtn) {
+    dlNotifBtn.addEventListener('click', () => { openLine(); });
+  }
 
   // --- Brain Dump tiles · each opens the line with a brain_dump tag
   const BUCKET_LABELS = {
@@ -1637,7 +1672,10 @@ VIEWS (Views button, bottom-right : hidden while the Direct Line panel is open)
             lineEmpty.hidden = true;
             lineLaunch.hidden = true;
           } else {
+            dlUnread++;
+            updateBell();
             toastOk('Chief of Staff replied · open the line');
+            fireCoSNotif(resp.content);
           }
         })
         .subscribe();
