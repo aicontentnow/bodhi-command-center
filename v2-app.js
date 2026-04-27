@@ -917,31 +917,75 @@ let state = {
     }
   }
 
-  function bindAdder(which) {
-    const form = document.getElementById(which + 'Add');
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const input = form.querySelector('input[type="text"]');
-      const bucketSel = form.querySelector('select.bucket-sel');
-      const v = input.value.trim();
-      if (!v) return;
-      input.value = '';
-      const rawBucket = bucketSel ? bucketSel.value : 'bodhi360';
-      const bucket = normalizeBucket(rawBucket);
+  // P3: Add task modal
+  let addTaskHorizon = null;
+
+  function openAddTaskModal(horizon) {
+    addTaskHorizon = horizon;
+    const modal = document.getElementById('addTaskModal');
+    const titleInput = document.getElementById('addTaskTitle');
+    const errEl = document.getElementById('addTaskErr');
+    if (!modal) return;
+    titleInput.value = '';
+    errEl.hidden = true;
+    modal.hidden = false;
+    setTimeout(() => titleInput.focus(), 60);
+  }
+
+  function closeAddTaskModal() {
+    const modal = document.getElementById('addTaskModal');
+    if (modal) modal.hidden = true;
+    addTaskHorizon = null;
+  }
+
+  document.querySelectorAll('.add-task-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openAddTaskModal(btn.dataset.horizon);
+    });
+  });
+
+  const addTaskCancel = document.getElementById('addTaskCancel');
+  if (addTaskCancel) addTaskCancel.addEventListener('click', closeAddTaskModal);
+
+  // Enter key in title input triggers save
+  const addTaskTitleInput = document.getElementById('addTaskTitle');
+  if (addTaskTitleInput) {
+    addTaskTitleInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); document.getElementById('addTaskSave').click(); }
+    });
+  }
+
+  const addTaskSave = document.getElementById('addTaskSave');
+  if (addTaskSave) {
+    addTaskSave.addEventListener('click', async () => {
+      const titleInput = document.getElementById('addTaskTitle');
+      const bucketSel = document.getElementById('addTaskBucket');
+      const errEl = document.getElementById('addTaskErr');
+      const v = titleInput.value.trim();
+      if (!v) {
+        titleInput.classList.add('is-shaking');
+        setTimeout(() => titleInput.classList.remove('is-shaking'), 400);
+        errEl.hidden = false;
+        return;
+      }
+      errEl.hidden = true;
+      const which = addTaskHorizon || 'today';
+      const bucket = normalizeBucket(bucketSel ? bucketSel.value : 'bodhi360');
       const { data, error } = await sb.from('tasks').insert({
         title: v,
         bucket,
         horizon: which,
         done: false,
+        sort_order: 0,
         user_id: 'bodhi',
       }).select().single();
-      if (error) {
-        toastErr('Add failed');
-        return;
-      }
-      state[which].push({ id: data.id, label: data.title, done: false, meta: data.bucket || '', notes: '' });
+      if (error) { toastErr('Add failed'); return; }
+      state[which].unshift({ id: data.id, label: data.title, done: false, meta: data.bucket || '', notes: '' });
+      closeAddTaskModal();
       renderList(which); renderCounts();
       renderBucketsPage();
+      toastOk('Task added');
     });
   }
 
@@ -995,6 +1039,7 @@ let state = {
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && drawer.classList.contains('is-open')) closeDrawer();
     if (e.key === 'Escape' && document.getElementById('focusModal') && !document.getElementById('focusModal').hidden) closeFocusModal();
+    if (e.key === 'Escape' && document.getElementById('addTaskModal') && !document.getElementById('addTaskModal').hidden) closeAddTaskModal();
   });
 
   // FIX 8: bucket change -- PATCH Supabase and update task in place
@@ -1515,7 +1560,7 @@ VIEWS (Views button, bottom-right : hidden while the Direct Line panel is open)
   document.body.classList.add('is-loading');
   renderStates();
   buildOrbit; teardownOrbit; // keep references live
-  ['today','week'].forEach(w => { renderList(w); bindAdder(w); });
+  ['today','week'].forEach(w => { renderList(w); });
   renderCounts();
   setPage(state.page);
   setTab(state.tab);

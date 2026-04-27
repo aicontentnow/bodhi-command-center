@@ -157,45 +157,19 @@
 
       <div class="list-card liquid-glass" data-tabpane="today">
         <div class="card-inner">
+          <div class="list-hdr">
+            <button type="button" class="add-task-btn" data-horizon="today" aria-label="Add task to today">+</button>
+          </div>
           <div class="list-items" id="todayList"></div>
-          <form class="add-row" id="todayAdd" autocomplete="off">
-            <input class="add-input" type="text" placeholder="Add to today…" />
-            <select class="bucket-sel" aria-label="Bucket">
-              <option value="bodhi360">360</option>
-              <option value="Harmonic">Harmonic</option>
-              <option value="MIRROR">Mirror</option>
-              <option value="LDAG">LDAG</option>
-              <option value="FRAMEZERO">FZ</option>
-              <option value="Family">Family</option>
-              <option value="Career">Career</option>
-              <option value="Command">Command</option>
-            </select>
-            <button class="add-btn" type="submit" aria-label="Add">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-            </button>
-          </form>
         </div>
       </div>
 
       <div class="list-card liquid-glass" data-tabpane="week" hidden>
         <div class="card-inner">
+          <div class="list-hdr">
+            <button type="button" class="add-task-btn" data-horizon="week" aria-label="Add task to this week">+</button>
+          </div>
           <div class="list-items" id="weekList"></div>
-          <form class="add-row" id="weekAdd" autocomplete="off">
-            <input class="add-input" type="text" placeholder="Add to this week…" />
-            <select class="bucket-sel" aria-label="Bucket">
-              <option value="bodhi360">360</option>
-              <option value="Harmonic">Harmonic</option>
-              <option value="MIRROR">Mirror</option>
-              <option value="LDAG">LDAG</option>
-              <option value="FRAMEZERO">FZ</option>
-              <option value="Family">Family</option>
-              <option value="Career">Career</option>
-              <option value="Command">Command</option>
-            </select>
-            <button class="add-btn" type="submit" aria-label="Add">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-            </button>
-          </form>
         </div>
       </div>
 
@@ -470,6 +444,29 @@
 </div>
 
 <div class="toast liquid-glass-strong" id="toast"></div>
+
+<!-- P3: Add task modal -->
+<div id="addTaskModal" hidden aria-modal="true" role="dialog" aria-label="Add task">
+  <div class="add-task-modal-card">
+    <div class="add-task-modal-eyebrow">Add Task</div>
+    <input type="text" class="add-task-title-input" id="addTaskTitle" placeholder="Task title" autocomplete="off" />
+    <div class="add-task-modal-err" id="addTaskErr" hidden>Title is required</div>
+    <select class="add-task-bucket-sel" id="addTaskBucket" aria-label="Bucket">
+      <option value="bodhi360">bodhi360</option>
+      <option value="MIRROR">MIRROR</option>
+      <option value="Harmonic">Harmonic</option>
+      <option value="FRAMEZERO">FRAMEZERØ</option>
+      <option value="Career">Career</option>
+      <option value="LDAG">LDAG</option>
+      <option value="Family">Family</option>
+      <option value="Command">Command</option>
+    </select>
+    <div class="add-task-modal-actions">
+      <button type="button" class="add-task-cancel-btn" id="addTaskCancel">Cancel</button>
+      <button type="button" class="add-task-save-btn" id="addTaskSave">Save</button>
+    </div>
+  </div>
+</div>
 
 <!-- Focus mode modal -->
 <div id="focusModal" hidden aria-modal="true" role="dialog" aria-label="Focus mode">
