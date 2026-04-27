@@ -1034,7 +1034,7 @@ body:has(.drawer.is-open) #tweaksBtn { opacity: 0; pointer-events: none; transit
 .focus-pill-btn {
   padding: 0.45rem 1.1rem;
   border-radius: 999px;
-  background: #F59E0B;
+  background: rgba(245, 158, 11, 0.82);
   color: #1a1200;
   font-weight: 600;
   font-size: 0.82rem;
@@ -1045,7 +1045,7 @@ body:has(.drawer.is-open) #tweaksBtn { opacity: 0; pointer-events: none; transit
   transition: background 0.15s, opacity 0.15s;
   flex-shrink: 0;
 }
-.focus-pill-btn:hover { background: #FBBF24; }
+.focus-pill-btn:hover { background: rgba(245, 158, 11, 0.95); }
 .focus-pill-btn.is-active {
   background: rgba(245,158,11,0.18);
   color: #F59E0B;
