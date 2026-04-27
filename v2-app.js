@@ -628,28 +628,32 @@ let state = {
       const boxEl = document.createElement('div');
       boxEl.className = 'box';
       boxEl.title = 'check';
+      const lblWrap = document.createElement('div');
+      lblWrap.className = 'lbl-wrap';
       const lblEl = document.createElement('div');
       lblEl.className = 'lbl';
       lblEl.textContent = it.label;
+      const tsEl = document.createElement('div');
+      tsEl.className = 'lbl-date';
+      const tsText = formatTaskTs(it.createdAt);
+      if (tsText) tsEl.textContent = tsText;
+      lblWrap.appendChild(lblEl);
+      if (tsText) lblWrap.appendChild(tsEl);
       const noteEl = document.createElement('div');
       noteEl.className = 'note-ind';
       noteEl.textContent = '◈';
       const metaEl = document.createElement('div');
       metaEl.className = 'meta-m';
       metaEl.textContent = it.meta || '';
-      const tsEl = document.createElement('div');
-      tsEl.className = 'meta-m';
-      tsEl.textContent = formatTaskTs(it.createdAt);
       const moveBtn = document.createElement('button');
       moveBtn.className = 'move-horizon';
       moveBtn.type = 'button';
       moveBtn.title = which === 'today' ? 'Move to this week' : 'Move to today';
       moveBtn.textContent = which === 'today' ? 'week >' : '< today';
       row.appendChild(boxEl);
-      row.appendChild(lblEl);
+      row.appendChild(lblWrap);
       row.appendChild(noteEl);
       row.appendChild(metaEl);
-      row.appendChild(tsEl);
       row.appendChild(moveBtn);
       row.querySelector('.box').addEventListener('click', async (e) => {
         e.stopPropagation();
@@ -1419,12 +1423,9 @@ VIEWS (Views button, bottom-right : hidden while the Direct Line panel is open)
         timeZone: 'America/Los_Angeles',
         month: 'short',
         day: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true,
       }).formatToParts(d);
       const get = t => (parts.find(p => p.type === t) || {}).value || '';
-      return `${get('month')} ${get('day')}, ${get('hour')}:${get('minute')}${get('dayPeriod').toLowerCase()}`;
+      return `${get('month')} ${get('day')}`;
     } catch { return ''; }
   }
 

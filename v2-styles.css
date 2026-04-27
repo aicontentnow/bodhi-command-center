@@ -505,7 +505,7 @@ html, body {
 }
 
 /* Item rows now clickable-for-context; add chevron and note indicator */
-.item { grid-template-columns: 22px 1fr auto auto auto auto; }
+.item { grid-template-columns: 22px 1fr auto auto auto; }
 .item .note-ind {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
   font-size: 0.55rem;
@@ -1094,6 +1094,15 @@ body:has(.drawer.is-open) #tweaksBtn { opacity: 0; pointer-events: none; transit
   filter: drop-shadow(0 0 4px var(--cyan-glow));
 }
 .item.done .lbl { color: var(--t-4); text-decoration: line-through; text-decoration-color: rgba(255,255,255,0.25); }
+.item .lbl-wrap { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
+.item .lbl-date {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
+  color: var(--t-4);
+  opacity: 0.5;
+  line-height: 1;
+}
 .item .meta-m {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
   font-size: 0.58rem;
