@@ -2366,8 +2366,8 @@ body.variant-orbit #tweaks { z-index: 90; } /* keep tweaks usable */
   white-space: pre-wrap;
 }
 .dl-bubble.user {
-  background: rgba(245, 158, 11, 0.88);
-  color: #1a0e00;
+  background: #4A9EFF;
+  color: #fff;
   border-bottom-right-radius: 4px;
 }
 .dl-bubble.cos {
@@ -2387,7 +2387,7 @@ body.variant-orbit #tweaks { z-index: 90; } /* keep tweaks usable */
 }
 .dl-bubble-time {
   font-size: 0.6rem;
-  color: rgba(0, 0, 0, 0.35);
+  color: rgba(255, 255, 255, 0.5);
   margin-top: 5px;
   text-align: right;
 }
