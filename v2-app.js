@@ -183,14 +183,14 @@ let state = {
     ) return;
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     const key = e.key.toLowerCase();
-    // N or T: open add-task modal for Today (takes priority over page nav)
-    if (key === 'n' || key === 't') {
+    // N: open add-task modal for Today
+    if (key === 'n') {
       const modal = document.getElementById('addTaskModal');
       if (!modal || !modal.hidden) return; // already open, do nothing
       openAddTaskModal('today');
       return;
     }
-    // Page nav map (T removed; now handled above as add-task shortcut)
+    // Page nav map
     const map = { h: 'today', b: 'buckets', k: 'bucket-view', p: 'prompts', m: 'roadmap', s: 'share' };
     const page = map[key];
     if (page) setPage(page);
@@ -496,6 +496,16 @@ let state = {
   // --- Buckets page · clickable filter tiles
   let bucketFilter = null;
 
+  const bfAllBtn = document.getElementById('bucketFilterAll');
+
+  // Sync All button active state to match current filter (null = all tasks showing)
+  function syncAllBtn() {
+    if (bfAllBtn) bfAllBtn.classList.toggle('is-active', bucketFilter === null);
+  }
+
+  // Initialize: All button starts highlighted (no filter on load)
+  syncAllBtn();
+
   document.querySelectorAll('.bucket').forEach(b => {
     b.addEventListener('click', () => {
       const key = b.dataset.bucket;
@@ -509,15 +519,17 @@ let state = {
         bucketFilter = key;
         b.classList.add('is-active');
       }
+      syncAllBtn();
       renderBucketsPage();
     });
   });
 
-  const bfAllBtn = document.getElementById('bucketFilterAll');
   if (bfAllBtn) {
     bfAllBtn.addEventListener('click', () => {
+      if (bucketFilter === null) return; // already showing all, nothing to do
       bucketFilter = null;
       document.querySelectorAll('.bucket').forEach(x => x.classList.remove('is-active'));
+      syncAllBtn();
       renderBucketsPage();
     });
   }
