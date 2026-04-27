@@ -637,6 +637,9 @@ let state = {
       const metaEl = document.createElement('div');
       metaEl.className = 'meta-m';
       metaEl.textContent = it.meta || '';
+      const tsEl = document.createElement('div');
+      tsEl.className = 'meta-m';
+      tsEl.textContent = formatTaskTs(it.createdAt);
       const moveBtn = document.createElement('button');
       moveBtn.className = 'move-horizon';
       moveBtn.type = 'button';
@@ -646,6 +649,7 @@ let state = {
       row.appendChild(lblEl);
       row.appendChild(noteEl);
       row.appendChild(metaEl);
+      row.appendChild(tsEl);
       row.appendChild(moveBtn);
       row.querySelector('.box').addEventListener('click', async (e) => {
         e.stopPropagation();
@@ -981,7 +985,7 @@ let state = {
         user_id: 'bodhi',
       }).select().single();
       if (error) { toastErr('Add failed'); return; }
-      state[which].unshift({ id: data.id, label: data.title, done: false, meta: data.bucket || '', notes: '' });
+      state[which].unshift({ id: data.id, label: data.title, done: false, meta: data.bucket || '', notes: '', createdAt: data.created_at || null });
       closeAddTaskModal();
       renderList(which); renderCounts();
       renderBucketsPage();
@@ -1407,14 +1411,32 @@ VIEWS (Views button, bottom-right : hidden while the Direct Line panel is open)
   // ============================================================
 
   // Map a Supabase tasks row to the internal task object
+  function formatTaskTs(isoString) {
+    if (!isoString) return '';
+    try {
+      const d = new Date(isoString);
+      const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'America/Los_Angeles',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      }).formatToParts(d);
+      const get = t => (parts.find(p => p.type === t) || {}).value || '';
+      return `${get('month')} ${get('day')}, ${get('hour')}:${get('minute')}${get('dayPeriod').toLowerCase()}`;
+    } catch { return ''; }
+  }
+
   function rowToTask(row) {
     return {
-      id:    row.id,
-      label: row.title,
-      done:  row.done === true,
-      focus: false,
-      meta:  row.bucket || 'SELF',
-      notes: '',  // loaded separately in Stage 3
+      id:        row.id,
+      label:     row.title,
+      done:      row.done === true,
+      focus:     false,
+      meta:      row.bucket || 'SELF',
+      notes:     '',  // loaded separately in Stage 3
+      createdAt: row.created_at || null,
     };
   }
 

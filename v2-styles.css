@@ -505,7 +505,7 @@ html, body {
 }
 
 /* Item rows now clickable-for-context; add chevron and note indicator */
-.item { grid-template-columns: 22px 1fr auto auto auto; }
+.item { grid-template-columns: 22px 1fr auto auto auto auto; }
 .item .note-ind {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
   font-size: 0.55rem;
@@ -1384,7 +1384,7 @@ body:has(.drawer.is-open) #tweaksBtn { opacity: 0; pointer-events: none; transit
 /* P3: list header with add button */
 .list-hdr {
   display: flex;
-  justify-content: flex-end;
+  justify-content: flex-start;
   margin-bottom: 0.4rem;
 }
 .add-task-btn {
