@@ -526,8 +526,12 @@ let state = {
 
   if (bfAllBtn) {
     bfAllBtn.addEventListener('click', () => {
-      if (bucketFilter === 'ALL') return; // already showing all, nothing to do
-      bucketFilter = 'ALL';
+      // Toggle: ALL -> null (empty), anything else -> ALL
+      if (bucketFilter === 'ALL') {
+        bucketFilter = null;
+      } else {
+        bucketFilter = 'ALL';
+      }
       document.querySelectorAll('.bucket').forEach(x => x.classList.remove('is-active'));
       syncAllBtn();
       renderBucketsPage();
