@@ -498,12 +498,12 @@ let state = {
 
   const bfAllBtn = document.getElementById('bucketFilterAll');
 
-  // Sync All button active state to match current filter (null = all tasks showing)
+  // Sync All button active state: highlighted only when showing ALL tasks
   function syncAllBtn() {
-    if (bfAllBtn) bfAllBtn.classList.toggle('is-active', bucketFilter === null);
+    if (bfAllBtn) bfAllBtn.classList.toggle('is-active', bucketFilter === 'ALL');
   }
 
-  // Initialize: All button starts highlighted (no filter on load)
+  // Initialize: null state -- no filter, no highlight, empty canvas
   syncAllBtn();
 
   document.querySelectorAll('.bucket').forEach(b => {
@@ -526,8 +526,8 @@ let state = {
 
   if (bfAllBtn) {
     bfAllBtn.addEventListener('click', () => {
-      if (bucketFilter === null) return; // already showing all, nothing to do
-      bucketFilter = null;
+      if (bucketFilter === 'ALL') return; // already showing all, nothing to do
+      bucketFilter = 'ALL';
       document.querySelectorAll('.bucket').forEach(x => x.classList.remove('is-active'));
       syncAllBtn();
       renderBucketsPage();
@@ -918,19 +918,11 @@ let state = {
       return row;
     }
 
-    if (bucketFilter) {
-      // Filtered view: flat list for the active bucket
-      const visible = all.filter(t => (t.meta || 'bodhi360').toLowerCase() === bucketFilter.toLowerCase());
-      if (visible.length === 0) {
-        const empty = document.createElement('div');
-        empty.className = 'bt-empty';
-        empty.textContent = 'No tasks in this bucket.';
-        container.appendChild(empty);
-        return;
-      }
-      visible.forEach(it => container.appendChild(makeBucketRow(it)));
-    } else {
-      // FIX 1: Grouped view -- one section per bucket with tasks
+    if (bucketFilter === null) {
+      // State 1: no filter selected -- empty canvas, nothing to show
+      return;
+    } else if (bucketFilter === 'ALL') {
+      // State 2: show all tasks grouped by bucket
       if (all.length === 0) {
         const empty = document.createElement('div');
         empty.className = 'bt-empty';
@@ -945,7 +937,6 @@ let state = {
         if (!grouped[k]) grouped[k] = [];
         grouped[k].push(it);
       });
-      // Known buckets first, then any extras not in the canonical list
       const keys = [
         ...BUCKET_ORDER.filter(k => grouped[k]),
         ...Object.keys(grouped).filter(k => !BUCKET_ORDER.includes(k)),
@@ -961,6 +952,17 @@ let state = {
         container.appendChild(hdr);
         tasks.forEach(it => container.appendChild(makeBucketRow(it)));
       });
+    } else {
+      // State 3: single bucket filter -- flat list
+      const visible = all.filter(t => (t.meta || 'bodhi360').toLowerCase() === bucketFilter.toLowerCase());
+      if (visible.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'bt-empty';
+        empty.textContent = 'No tasks in this bucket.';
+        container.appendChild(empty);
+        return;
+      }
+      visible.forEach(it => container.appendChild(makeBucketRow(it)));
     }
   }
 
