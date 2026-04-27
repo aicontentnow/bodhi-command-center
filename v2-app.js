@@ -175,14 +175,28 @@ let state = {
     n.addEventListener('click', () => setPage(n.dataset.page));
   });
   document.addEventListener('keydown', (e) => {
-    if (e.target.matches('input, textarea')) return;
+    // Input guard: never fire hotkeys when a text field has focus
+    if (
+      document.activeElement.tagName === 'INPUT' ||
+      document.activeElement.tagName === 'TEXTAREA' ||
+      document.activeElement.isContentEditable
+    ) return;
     if (e.metaKey || e.ctrlKey || e.altKey) return;
-    const map = { h: 'today', t: 'today', b: 'buckets', k: 'bucket-view', p: 'prompts', m: 'roadmap', s: 'share' };
-    const page = map[e.key.toLowerCase()];
+    const key = e.key.toLowerCase();
+    // N or T: open add-task modal for Today (takes priority over page nav)
+    if (key === 'n' || key === 't') {
+      const modal = document.getElementById('addTaskModal');
+      if (!modal || !modal.hidden) return; // already open, do nothing
+      openAddTaskModal('today');
+      return;
+    }
+    // Page nav map (T removed; now handled above as add-task shortcut)
+    const map = { h: 'today', b: 'buckets', k: 'bucket-view', p: 'prompts', m: 'roadmap', s: 'share' };
+    const page = map[key];
     if (page) setPage(page);
-    if (e.key.toLowerCase() === 'v') tweaksPanel.classList.toggle('is-open');
-    // FIX 4: O toggles Direct Line panel
-    if (e.key.toLowerCase() === 'o') {
+    if (key === 'v') tweaksPanel.classList.toggle('is-open');
+    // O toggles Direct Line panel
+    if (key === 'o') {
       if (linePanel.classList.contains('is-open')) { closeLine(); } else { openLine(); }
     }
   });
@@ -485,12 +499,14 @@ let state = {
   document.querySelectorAll('.bucket').forEach(b => {
     b.addEventListener('click', () => {
       const key = b.dataset.bucket;
+      // Always clear all tile active states first (prevents stale highlights)
+      document.querySelectorAll('.bucket').forEach(x => x.classList.remove('is-active'));
       if (bucketFilter === key) {
+        // Clicking the active tile deselects it
         bucketFilter = null;
-        b.classList.remove('is-active');
       } else {
+        // Select the new tile
         bucketFilter = key;
-        document.querySelectorAll('.bucket').forEach(x => x.classList.remove('is-active'));
         b.classList.add('is-active');
       }
       renderBucketsPage();
@@ -531,6 +547,7 @@ let state = {
     taskFilter.sort = taskFilter.sort === 'oldest' ? 'newest' : 'oldest';
     taskSortToggle.textContent = taskFilter.sort === 'oldest' ? 'Oldest first' : 'Newest first';
     taskSortToggle.dataset.sort = taskFilter.sort;
+    taskSortToggle.classList.toggle('is-sort-active', taskFilter.sort === 'newest');
     renderList('today'); renderList('week');
   });
 
@@ -745,9 +762,19 @@ let state = {
     if (taskFilter.bucket !== 'all') {
       items = items.filter(it => (it.meta || 'bodhi360') === taskFilter.bucket);
     }
-    // Apply sort
+    // Apply sort by created_at timestamp
     if (taskFilter.sort === 'newest') {
-      items = items.slice().reverse();
+      items = items.slice().sort((a, b) => {
+        const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return tb - ta; // descending: largest timestamp (newest) at top
+      });
+    } else {
+      items = items.slice().sort((a, b) => {
+        const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return ta - tb; // ascending: smallest timestamp (oldest) at top
+      });
     }
     while (root.firstChild) root.removeChild(root.firstChild);
     // P4: split active / done
