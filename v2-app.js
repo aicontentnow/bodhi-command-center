@@ -538,6 +538,7 @@ let state = {
     lineInput.value = '';
     setTag(null);
     toastOk('Sent · Chief of Staff picks this up on next run.');
+    closeLine();
 
     sb.from('interaction_log').insert({
       user_id: 'bodhi',
