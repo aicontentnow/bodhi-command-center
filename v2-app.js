@@ -277,7 +277,7 @@ let state = {
     dlUnread = 0;
     updateBell();
     linePanel.setAttribute('aria-hidden', 'false');
-    if (opts.tag) setTag(opts.tag);
+    setTag(opts.tag || null);
     lineInput.value = opts.seed !== undefined ? opts.seed : '';
     // FIX 7: always show start of pre-populated text, not middle
     lineInput.scrollTop = 0;
@@ -289,6 +289,8 @@ let state = {
   }
   function closeLine() {
     lineClose.blur();
+    setTag(null);
+    lineInput.value = '';
     linePanel.classList.remove('is-open');
     document.body.classList.remove('line-open');
     linePanel.setAttribute('aria-hidden', 'true');
