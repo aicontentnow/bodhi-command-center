@@ -374,9 +374,9 @@ let state = {
 
   function setTag(t) {
     pendingTag = t;
-    if (!t) { lineTagBar.hidden = true; return; }
+    if (!t) { lineTagBar.style.display = 'none'; return; }
     lineTag.innerHTML = `<span class="pip"></span><span>${escapeHtml(t.label)}</span>`;
-    lineTagBar.hidden = false;
+    lineTagBar.style.display = 'flex';
   }
   lineTagClear.addEventListener('click', () => { setTag(null); lineInput.value = ''; lineInput.focus(); });
 
@@ -580,14 +580,10 @@ let state = {
     });
   });
 
-  // --- Red Phone · opens the line with ritual opener
-  const RED_PHONE = `Red Phone · session start. Read my current state from the Bodhi 360 brains, then give me exactly one next action. No preamble. No lists. One action, with the reason it matters right now. If something has shifted since last session, name it in one line first.`;
+  // --- Red Phone · opens a clean blank line
   const openRedPhoneBtn = document.getElementById('openRedPhone');
   openRedPhoneBtn.addEventListener('click', () => {
-    openLine({
-      tag: { kind: 'redphone', label: 'Red Phone' },
-      seed: RED_PHONE,
-    });
+    openLine();
     confirmBtn(openRedPhoneBtn, 'ok', 'Line open');
   });
 
