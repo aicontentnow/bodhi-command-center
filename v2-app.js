@@ -376,7 +376,7 @@ let state = {
     lineTag.innerHTML = `<span class="pip"></span><span>${escapeHtml(t.label)}</span>`;
     lineTagBar.hidden = false;
   }
-  lineTagClear.addEventListener('click', () => setTag(null));
+  lineTagClear.addEventListener('click', () => { setTag(null); lineInput.value = ''; lineInput.focus(); });
 
   function timeFmt(ts) {
     const d = new Date(ts);
