@@ -198,7 +198,7 @@ let state = {
       return;
     }
     // Page nav map
-    const map = { h: 'today', b: 'buckets', k: 'bucket-view', p: 'prompts', m: 'roadmap', s: 'share' };
+    const map = { h: 'today', b: 'buckets', k: 'bucket-view', p: 'prompts', m: 'roadmap', s: 'share', e: 'mirror-episodes' };
     const page = map[key];
     if (page) setPage(page);
     if (key === 'v') tweaksPanel.classList.toggle('is-open');
@@ -374,9 +374,9 @@ let state = {
 
   function setTag(t) {
     pendingTag = t;
-    if (!t) { lineTagBar.style.display = 'none'; return; }
+    if (!t) { lineTagBar.classList.add('tag-bar--hidden'); return; }
     lineTag.innerHTML = `<span class="pip"></span><span>${escapeHtml(t.label)}</span>`;
-    lineTagBar.style.display = 'flex';
+    lineTagBar.classList.remove('tag-bar--hidden');
   }
   lineTagClear.addEventListener('click', () => { setTag(null); lineInput.value = ''; lineInput.focus(); });
 
@@ -1778,6 +1778,193 @@ VIEWS (Views button, bottom-right : hidden while the Direct Line panel is open)
       document.body.classList.remove('is-loading');
     }
   }
+
+  // ============================================================
+  // MIRRØR EPISODES MODULE
+  // ============================================================
+  let _episodes = [];
+  let currentFilter = 'pending';
+
+  async function fetchEpisodes() {
+    const { data, error } = await sb
+      .from('mirror_episode_anchors')
+      .select('id, number, title, cluster, door_in, charge, threads, status, recorded_at')
+      .order('number', { ascending: true });
+    if (error) { toastErr('Could not load episodes: ' + error.message); return; }
+    _episodes = data || [];
+  }
+
+  function makeEpField(label, value) {
+    const wrap = document.createElement('div');
+    wrap.className = 'ep-field';
+    const eyebrow = document.createElement('span');
+    eyebrow.className = 'eyebrow';
+    eyebrow.textContent = label;
+    const p = document.createElement('p');
+    p.textContent = value || '';
+    wrap.appendChild(eyebrow);
+    wrap.appendChild(p);
+    return wrap;
+  }
+
+  function buildEpCard(ep) {
+    const card = document.createElement('div');
+    card.className = 'card liquid-glass ep-card';
+    card.dataset.id = ep.id;
+    card.dataset.status = ep.status;
+    card.style.overflow = 'hidden';
+
+    const summary = document.createElement('div');
+    summary.className = 'ep-card-summary';
+    summary.style.cssText = 'cursor:pointer; padding:1rem;';
+
+    const titleRow = document.createElement('div');
+    titleRow.style.cssText = 'display:flex; justify-content:space-between; align-items:baseline;';
+    const titleSpan = document.createElement('span');
+    titleSpan.style.fontWeight = '600';
+    titleSpan.textContent = ep.number + '. ' + ep.title;
+    const clusterSpan = document.createElement('span');
+    clusterSpan.style.cssText = 'font-size:.75rem; opacity:.55;';
+    clusterSpan.textContent = ep.cluster || '';
+    titleRow.appendChild(titleSpan);
+    titleRow.appendChild(clusterSpan);
+
+    const statusPill = document.createElement('div');
+    statusPill.className = 'ep-status-pill';
+    statusPill.style.cssText = 'font-size:.7rem; margin-top:.3rem; opacity:.6;';
+    statusPill.textContent = ep.status === 'recorded' ? 'Recorded' : 'Pending';
+
+    summary.appendChild(titleRow);
+    summary.appendChild(statusPill);
+
+    const detail = document.createElement('div');
+    detail.className = 'ep-card-detail';
+    detail.style.cssText = 'display:none; padding:0 1rem 1rem; border-top:1px solid rgba(255,255,255,.08);';
+    detail.appendChild(makeEpField('Door In', ep.door_in));
+    detail.appendChild(makeEpField('Charge', ep.charge));
+    detail.appendChild(makeEpField('Threads', ep.threads));
+
+    if (ep.status !== 'recorded') {
+      const btn = document.createElement('button');
+      btn.className = 'ep-record-btn';
+      btn.dataset.id = ep.id;
+      btn.style.marginTop = '.75rem';
+      btn.textContent = 'Mark Recorded';
+      detail.appendChild(btn);
+    }
+
+    card.appendChild(summary);
+    card.appendChild(detail);
+    return card;
+  }
+
+  function renderEpisodes(filter) {
+    const list = document.getElementById('episodes-list');
+    if (!list) return;
+    const filtered = filter === 'all'
+      ? _episodes
+      : _episodes.filter(e => e.status === filter);
+    while (list.firstChild) list.removeChild(list.firstChild);
+    if (filtered.length === 0) {
+      const empty = document.createElement('div');
+      empty.style.cssText = 'color:var(--t-4,rgba(255,255,255,.4));font-size:.85rem;padding:1rem 0;';
+      empty.textContent = filter === 'recorded' ? 'None recorded yet.' : 'All episodes recorded.';
+      list.appendChild(empty);
+      return;
+    }
+    filtered.forEach(ep => list.appendChild(buildEpCard(ep)));
+  }
+
+  async function markRecorded(id) {
+    const { error } = await sb
+      .from('mirror_episode_anchors')
+      .update({ status: 'recorded', recorded_at: new Date().toISOString() })
+      .eq('id', id);
+    if (error) { toastErr('Could not mark recorded: ' + error.message); return; }
+    const ep = _episodes.find(e => e.id === id);
+    if (ep) { ep.status = 'recorded'; ep.recorded_at = new Date().toISOString(); }
+    renderEpisodes(currentFilter);
+    updateEpisodeBadge();
+    renderNextEpisodeWidget();
+    toastOk('Episode marked recorded');
+  }
+
+  function updateEpisodeBadge() {
+    const badge = document.getElementById('ni-episodes');
+    if (!badge) return;
+    badge.textContent = String(_episodes.filter(e => e.status === 'pending').length);
+  }
+
+  function renderNextEpisodeWidget() {
+    const titleEl = document.getElementById('next-episode-title');
+    const metaEl = document.getElementById('next-episode-meta');
+    if (!titleEl || !metaEl) return;
+    const next = _episodes
+      .filter(e => e.status === 'pending')
+      .sort((a, b) => a.number - b.number)[0];
+    if (next) {
+      titleEl.textContent = next.number + '. ' + next.title;
+      metaEl.textContent = next.cluster || '';
+    } else {
+      titleEl.textContent = 'All recorded';
+      metaEl.textContent = '';
+    }
+  }
+
+  // Filter bar clicks
+  document.querySelectorAll('.ep-filter').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.ep-filter').forEach(b => b.classList.remove('is-on'));
+      btn.classList.add('is-on');
+      currentFilter = btn.dataset.filter;
+      renderEpisodes(currentFilter);
+    });
+  });
+
+  // Next Episode widget click
+  const nextEpWidget = document.getElementById('next-episode-widget');
+  if (nextEpWidget) {
+    nextEpWidget.addEventListener('click', () => {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('is-on'));
+      document.querySelectorAll('.navitem').forEach(n => n.classList.remove('is-on'));
+      document.querySelector('.page[data-page="mirror-episodes"]').classList.add('is-on');
+      document.querySelector('.navitem[data-page="mirror-episodes"]').classList.add('is-on');
+      if (_episodes.length > 0) renderEpisodes(currentFilter);
+    });
+    nextEpWidget.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') nextEpWidget.click();
+    });
+  }
+
+  // Event delegation: expand card summary + mark recorded
+  const epListEl = document.getElementById('episodes-list');
+  if (epListEl) {
+    epListEl.addEventListener('click', e => {
+      const recordBtn = e.target.closest('.ep-record-btn');
+      if (recordBtn) { markRecorded(recordBtn.dataset.id); return; }
+      const summary = e.target.closest('.ep-card-summary');
+      if (summary) {
+        const detail = summary.nextElementSibling;
+        if (detail) detail.style.display = detail.style.display === 'none' ? 'block' : 'none';
+      }
+    });
+  }
+
+  // Render list when episodes navitem is clicked (fires after setPage, which runs first)
+  const epNavItem = document.querySelector('.navitem[data-page="mirror-episodes"]');
+  if (epNavItem) {
+    epNavItem.addEventListener('click', () => {
+      if (_episodes.length > 0) renderEpisodes(currentFilter);
+    });
+  }
+
+  // Episodes init
+  fetchEpisodes().then(() => {
+    updateEpisodeBadge();
+    renderNextEpisodeWidget();
+    const epPage = document.querySelector('.page[data-page="mirror-episodes"]');
+    if (epPage && epPage.classList.contains('is-on')) renderEpisodes(currentFilter);
+  });
 
   // ============================================================
   // BOOT

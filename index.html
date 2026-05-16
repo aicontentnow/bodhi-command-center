@@ -77,6 +77,7 @@
           <button class="navitem" data-page="prompts"><span class="ni-key">P</span><span>Key prompts</span><span class="ni-badge">9</span></button>
           <button class="navitem" data-page="roadmap"><span class="ni-key">M</span><span>Roadmap</span><span class="ni-badge">12</span></button>
           <button class="navitem" data-page="share"><span class="ni-key">S</span><span>Share with Cowork</span><span class="ni-badge">kit</span></button>
+          <button class="navitem" data-page="mirror-episodes"><span class="ni-key">E</span><span>MIRRØR Episodes</span><span class="ni-badge" id="ni-episodes">0</span></button>
         </nav>
       </div>
     </div>
@@ -183,6 +184,14 @@
         </div>
       </div>
 
+      <div id="next-episode-widget" class="card liquid-glass" style="cursor:pointer; margin-top:1rem;" role="button" tabindex="0" aria-label="Next episode up">
+        <div class="card-inner">
+          <div class="eyebrow">MIRRØR Episodes · Next Up</div>
+          <div id="next-episode-title" style="font-size:1.1rem; font-weight:600; margin:.25rem 0;">Loading...</div>
+          <div id="next-episode-meta" style="font-size:.8rem; opacity:.6;"></div>
+        </div>
+      </div>
+
       <div style="font-size:0.7rem; color:var(--t-4); font-family:'JetBrains Mono',monospace; letter-spacing:0.15em;">
         Click an item to check · click its label area to open context
       </div>
@@ -269,6 +278,19 @@
             <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></span>
           </button>
         </div>
+      </div>
+    </div>
+
+    <!-- PAGE: MIRRØR Episodes -->
+    <div class="page" data-page="mirror-episodes">
+      <div class="page-inner">
+        <h2 class="page-title">MIRRØR Episodes</h2>
+        <div class="ep-filter-bar" style="display:flex; gap:.5rem; margin-bottom:1.25rem;">
+          <button class="ep-filter is-on" data-filter="pending">Pending</button>
+          <button class="ep-filter" data-filter="all">All</button>
+          <button class="ep-filter" data-filter="recorded">Recorded</button>
+        </div>
+        <div id="episodes-list" style="display:flex; flex-direction:column; gap:.75rem;"></div>
       </div>
     </div>
 
@@ -442,7 +464,7 @@
 
   <!-- Composer -->
   <form class="line-composer" id="lineComposer" autocomplete="off">
-    <div class="tag-bar" id="lineTagBar" hidden>
+    <div class="tag-bar tag-bar--hidden" id="lineTagBar">
       <span class="tag-label">Context</span>
       <span class="tag" id="lineTag"></span>
       <button type="button" class="tag-x" id="lineTagClear" aria-label="Clear context">×</button>
@@ -506,6 +528,18 @@
   </div>
 </div>
 
+<style>
+  .page-inner { min-height: 0; }
+  .page-title { color: var(--t-1, rgba(255,255,255,.95)); font-size: 1.15rem; font-weight: 600; margin: 0 0 1rem; letter-spacing: -0.01em; }
+  .ep-filter { background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.12); border-radius: 20px; color: var(--t-2, rgba(255,255,255,.7)); cursor: pointer; font-family: inherit; font-size: .75rem; letter-spacing: .08em; padding: .3rem .9rem; transition: background .15s; }
+  .ep-filter.is-on { background: hsl(188 90% 62% / .22); border-color: hsl(188 90% 62% / .5); color: hsl(188 90% 72%); }
+  .ep-filter:hover:not(.is-on) { background: rgba(255,255,255,.12); }
+  .ep-field { margin-bottom: .75rem; }
+  .ep-field p { margin: .25rem 0 0; line-height: 1.5; font-size: .85rem; color: var(--t-2, rgba(255,255,255,.75)); }
+  .ep-record-btn { background: hsl(188 90% 62% / .18); border: 1px solid hsl(188 90% 62% / .4); border-radius: 8px; color: hsl(188 90% 72%); cursor: pointer; font-family: inherit; font-size: .78rem; letter-spacing: .06em; padding: .4rem 1rem; transition: background .15s; }
+  .ep-record-btn:hover { background: hsl(188 90% 62% / .28); }
+  #next-episode-widget .eyebrow { font-size: .65rem; opacity: .6; letter-spacing: .12em; margin-bottom: .25rem; }
+</style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="v2-app.js"></script>
 </body>
