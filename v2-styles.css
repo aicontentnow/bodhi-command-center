@@ -2445,6 +2445,7 @@ body.variant-orbit #tweaks { z-index: 90; } /* keep tweaks usable */
   display: flex; align-items: center; gap: 0.4rem;
   padding: 0.25rem 0.35rem;
 }
+.tag-bar--hidden { display: none !important; }
 .tag-label {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
   font-size: 0.58rem;
