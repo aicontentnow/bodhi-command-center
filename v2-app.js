@@ -1788,7 +1788,7 @@ VIEWS (Views button, bottom-right : hidden while the Direct Line panel is open)
   async function fetchEpisodes() {
     const { data, error } = await sb
       .from('mirror_episode_anchors')
-      .select('id, number, title, cluster, door_in, charge, threads, status, recorded_at')
+      .select('id, number, title, cluster, door_in, charge, threads, status, recorded_at, intro_tease, talking_points, sound_bites, facts_stats, references_list')
       .order('number', { ascending: true });
     if (error) { toastErr('Could not load episodes: ' + error.message); return; }
     _episodes = data || [];
@@ -1843,6 +1843,37 @@ VIEWS (Views button, bottom-right : hidden while the Direct Line panel is open)
     detail.appendChild(makeEpField('Door In', ep.door_in));
     detail.appendChild(makeEpField('Charge', ep.charge));
     detail.appendChild(makeEpField('Threads', ep.threads));
+
+    function makeEpFieldLines(label, value) {
+      if (!value || !value.trim()) return null;
+      const wrap = document.createElement('div');
+      wrap.className = 'ep-field';
+      const eyebrow = document.createElement('span');
+      eyebrow.className = 'eyebrow';
+      eyebrow.textContent = label;
+      wrap.appendChild(eyebrow);
+      value.split('\n').forEach(function(line) {
+        if (!line.trim()) return;
+        const p = document.createElement('p');
+        p.textContent = line.trim();
+        wrap.appendChild(p);
+      });
+      return wrap;
+    }
+
+    if (ep.intro_tease && ep.intro_tease.trim()) {
+      detail.appendChild(makeEpField('INTRO TEASE', ep.intro_tease));
+    }
+    const tpEl = makeEpFieldLines('TALKING POINTS', ep.talking_points);
+    if (tpEl) detail.appendChild(tpEl);
+    const sbEl = makeEpFieldLines('SOUND BITES', ep.sound_bites);
+    if (sbEl) detail.appendChild(sbEl);
+    if (ep.facts_stats && ep.facts_stats.trim()) {
+      detail.appendChild(makeEpField('FACTS + STATS', ep.facts_stats));
+    }
+    if (ep.references_list && ep.references_list.trim()) {
+      detail.appendChild(makeEpField('REFERENCES', ep.references_list));
+    }
 
     if (ep.status !== 'recorded') {
       const btn = document.createElement('button');
