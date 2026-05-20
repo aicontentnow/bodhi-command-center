@@ -78,6 +78,7 @@
           <button class="navitem" data-page="roadmap"><span class="ni-key">M</span><span>Roadmap</span><span class="ni-badge">12</span></button>
           <button class="navitem" data-page="share"><span class="ni-key">S</span><span>Share with Cowork</span><span class="ni-badge">kit</span></button>
           <button class="navitem" data-page="mirror-episodes"><span class="ni-key">E</span><span>MIRRØR Episodes</span><span class="ni-badge" id="ni-episodes">0</span></button>
+          <button class="navitem" data-page="booe-episodes"><span class="ni-key">G</span><span>BOOE · Fractures</span><span class="ni-badge" id="ni-booe-episodes">0</span></button>
         </nav>
       </div>
     </div>
@@ -192,6 +193,20 @@
         </div>
       </div>
 
+      <div class="card liquid-glass next-booe-card" id="nextBooeCard" role="button" tabindex="0" aria-label="Next BOOE fracture">
+        <div class="card-inner">
+          <div class="card-head">
+            <span class="eyebrow">Next · BOOE Fracture</span>
+          </div>
+          <div class="booe-next">
+            <div class="booe-next-number">Fracture <span id="booeNextNumber">--</span></div>
+            <div class="booe-next-title" id="booeNextTitle">Loading...</div>
+            <div class="booe-next-step-preview" id="booeNextStepPreview"></div>
+            <div class="booe-next-progress" id="booeNextProgress"></div>
+          </div>
+        </div>
+      </div>
+
       <div style="font-size:0.7rem; color:var(--t-4); font-family:'JetBrains Mono',monospace; letter-spacing:0.15em;">
         Click an item to check · click its label area to open context
       </div>
@@ -291,6 +306,20 @@
           <button class="ep-filter" data-filter="recorded">Recorded</button>
         </div>
         <div id="episodes-list" style="display:flex; flex-direction:column; gap:.75rem;"></div>
+      </div>
+    </div>
+
+    <!-- PAGE: BOOE Fractures -->
+    <div class="page" data-page="booe-episodes">
+      <div class="page-inner">
+        <h2 class="page-title">THE BOOK OF ONENESS EXPOSED</h2>
+        <p style="font-size:.82rem; color:var(--t-3); margin:0 0 1.25rem; line-height:1.5;">Fracture-by-fracture deep dive. New episode every Monday.</p>
+        <div class="booe-filter-bar">
+          <button class="booe-filter is-on" data-booe-filter="queued">Queued</button>
+          <button class="booe-filter" data-booe-filter="all">All</button>
+          <button class="booe-filter" data-booe-filter="shipped">Shipped</button>
+        </div>
+        <div id="booe-list" style="display:flex; flex-direction:column; gap:.75rem;"></div>
       </div>
     </div>
 

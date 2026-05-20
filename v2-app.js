@@ -1998,6 +1998,687 @@ VIEWS (Views button, bottom-right : hidden while the Direct Line panel is open)
   });
 
   // ============================================================
+  // BOOE · BOOK OF ONENESS EXPOSED FRACTURE TRACKER
+  // ============================================================
+
+  const BOOE_ASSETS = [
+    { key: 'agent_opus_video_done',            label: 'Agent Opus contemplative video produced',                                   urlKey: 'agent_opus_video_url' },
+    { key: 'notebooklm_podcast_done',          label: 'NotebookLM Audio Overview podcast generated',                               urlKey: 'notebooklm_podcast_audio_url' },
+    { key: 'notebooklm_video_overview_done',   label: 'NotebookLM Video Overview generated',                                       urlKey: 'notebooklm_video_overview_url' },
+    { key: 'notebooklm_slide_deck_done',       label: 'NotebookLM slide deck generated',                                           urlKey: 'notebooklm_slide_deck_pdf_url' },
+    { key: 'readthrough_audio_extracted',      label: 'Readthrough audio extracted from Agent Opus video',                         urlKey: 'readthrough_audio_path' },
+    { key: 'episode_assembled',                label: 'Episode audio assembled (stinger + narration + readthrough + Deep Dive + stinger)', urlKey: 'episode_audio_path' },
+    { key: 'carousels_generated',              label: 'Instagram carousels generated from slide deck (1:1 and 4:5)',               urlKey: null },
+    { key: 'youtube_descriptions_written',     label: 'YouTube descriptions rendered from templates',                              urlKey: null },
+    { key: 'rss_uploaded',                     label: 'Episode uploaded to rss.com',                                               urlKey: null },
+    { key: 'youtube_podcast_uploaded',         label: 'Podcast video uploaded to YouTube',                                         urlKey: null },
+    { key: 'youtube_video_overview_uploaded',  label: 'Video Overview uploaded to YouTube',                                        urlKey: null },
+    { key: 'fracture_page_deployed',           label: 'Fracture page deployed on thebookofoneness.com',                           urlKey: null },
+    { key: 'social_post_made',                 label: 'Coordinated social post made (Threads + Instagram)',                        urlKey: null },
+  ];
+
+  const BOOE_DIST_FIELDS = [
+    { key: 'rss_com_episode_url',               label: 'rss.com episode URL' },
+    { key: 'spotify_episode_url',               label: 'Spotify episode URL' },
+    { key: 'apple_episode_url',                 label: 'Apple Podcasts URL' },
+    { key: 'youtube_music_episode_url',         label: 'YouTube Music episode URL' },
+    { key: 'youtube_podcast_video_url',         label: 'YouTube podcast video URL' },
+    { key: 'youtube_video_overview_video_url',  label: 'YouTube Video Overview URL' },
+    { key: 'fracture_page_url',                 label: 'Fracture page URL (thebookofoneness.com)' },
+  ];
+
+  let _booeEpisodes = [];
+  let currentBooeFilter = 'queued';
+
+  // Derive next-step label from a fracture row
+  function booeNextStep(fracture) {
+    const assets = fracture.assets || {};
+    const found = BOOE_ASSETS.find(a => !assets[a.key]);
+    return found ? found.label : 'All assets complete';
+  }
+
+  // Count done assets
+  function booeDoneCount(fracture) {
+    const assets = fracture.assets || {};
+    return BOOE_ASSETS.filter(a => assets[a.key]).length;
+  }
+
+  // Fetch all fractures
+  async function fetchBooeEpisodes() {
+    const { data, error } = await sb
+      .from('book_of_oneness_exposed_episodes')
+      .select('*')
+      .order('fracture_number', { ascending: true });
+    if (error) { toastErr('Could not load BOOE fractures: ' + error.message); return; }
+    _booeEpisodes = data || [];
+  }
+
+  // Build the full fracture card (collapsed + expanded workspace)
+  function buildBooeCard(fr) {
+    const card = document.createElement('div');
+    card.className = 'card liquid-glass booe-card';
+    card.dataset.id = fr.id;
+
+    const doneCount = booeDoneCount(fr);
+    const total = BOOE_ASSETS.length;
+    const nextStepLabel = booeNextStep(fr);
+
+    // ---- SUMMARY (collapsed view)
+    const summary = document.createElement('div');
+    summary.className = 'booe-card-summary';
+
+    const row1 = document.createElement('div');
+    row1.className = 'booe-card-summary-row';
+    const numEl = document.createElement('span');
+    numEl.className = 'booe-card-number';
+    numEl.textContent = 'FRACTURE ' + fr.fracture_number;
+    const titleEl = document.createElement('span');
+    titleEl.className = 'booe-card-title';
+    titleEl.textContent = fr.fracture_title;
+    const statusEl = document.createElement('span');
+    statusEl.className = 'booe-card-status status-' + fr.status;
+    statusEl.textContent = fr.status === 'in_progress' ? 'in progress' : fr.status;
+    row1.appendChild(numEl);
+    row1.appendChild(titleEl);
+    row1.appendChild(statusEl);
+
+    const metaEl = document.createElement('div');
+    metaEl.className = 'booe-card-meta';
+    const progEl = document.createElement('span');
+    progEl.className = 'booe-card-progress';
+    progEl.textContent = doneCount + ' of ' + total + ' assets done';
+    metaEl.appendChild(progEl);
+    if (fr.drop_date) {
+      const dateEl = document.createElement('span');
+      dateEl.className = 'booe-card-date';
+      dateEl.textContent = 'drops ' + fr.drop_date;
+      metaEl.appendChild(dateEl);
+    }
+
+    summary.appendChild(row1);
+    summary.appendChild(metaEl);
+
+    // ---- DETAIL (expanded workspace)
+    const detail = document.createElement('div');
+    detail.className = 'booe-card-detail';
+
+    // SECTION 1: Context
+    const ctxSection = document.createElement('div');
+    ctxSection.className = 'booe-section';
+    const ctxLabel = document.createElement('div');
+    ctxLabel.className = 'booe-section-label';
+    ctxLabel.textContent = 'Context';
+    ctxSection.appendChild(ctxLabel);
+
+    if (fr.excerpt) {
+      const excF = document.createElement('div');
+      excF.className = 'booe-context-field';
+      const excEy = document.createElement('span');
+      excEy.className = 'eyebrow';
+      excEy.textContent = 'Excerpt';
+      const excP = document.createElement('p');
+      excP.textContent = fr.excerpt;
+      excF.appendChild(excEy);
+      excF.appendChild(excP);
+      ctxSection.appendChild(excF);
+    }
+    if (fr.pull_quote) {
+      const pqF = document.createElement('div');
+      pqF.className = 'booe-context-field';
+      const pqEy = document.createElement('span');
+      pqEy.className = 'eyebrow';
+      pqEy.textContent = 'Pull Quote';
+      const pqP = document.createElement('blockquote');
+      pqP.className = 'booe-pull-quote';
+      pqP.textContent = fr.pull_quote;
+      pqF.appendChild(pqEy);
+      pqF.appendChild(pqP);
+      ctxSection.appendChild(pqF);
+    }
+    if (fr.structural_move) {
+      const smF = document.createElement('div');
+      smF.className = 'booe-context-field';
+      const smEy = document.createElement('span');
+      smEy.className = 'eyebrow';
+      smEy.textContent = 'Structural Move';
+      const smP = document.createElement('p');
+      smP.textContent = fr.structural_move;
+      smF.appendChild(smEy);
+      smF.appendChild(smP);
+      ctxSection.appendChild(smF);
+    }
+    detail.appendChild(ctxSection);
+
+    // SECTION 2: Next Step callout
+    const nsBox = document.createElement('div');
+    nsBox.className = 'booe-next-step';
+    const nsEy = document.createElement('span');
+    nsEy.className = 'eyebrow';
+    nsEy.textContent = 'Next Step';
+    const nsLbl = document.createElement('div');
+    nsLbl.className = 'booe-next-step-label';
+    nsLbl.textContent = nextStepLabel;
+    const nsBtn = document.createElement('button');
+    nsBtn.className = 'booe-cowork-btn';
+    nsBtn.type = 'button';
+    nsBtn.textContent = 'Open in Cowork';
+    nsBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const payload = buildCoworkPayload(fr, nextStepLabel);
+      copyWithFeedback(nsBtn, payload, 'Cowork prompt copied', 'Copied');
+    });
+    nsBox.appendChild(nsEy);
+    nsBox.appendChild(nsLbl);
+    nsBox.appendChild(nsBtn);
+    detail.appendChild(nsBox);
+
+    // SECTION 3: Assets
+    const assSection = document.createElement('div');
+    assSection.className = 'booe-section';
+    const assLabel = document.createElement('div');
+    assLabel.className = 'booe-section-label';
+    assLabel.textContent = 'Production Assets (' + doneCount + ' / ' + total + ')';
+    assSection.appendChild(assLabel);
+
+    BOOE_ASSETS.forEach(asset => {
+      const isDone = !!(fr.assets && fr.assets[asset.key]);
+      const urlVal = asset.urlKey ? (fr.asset_urls && fr.asset_urls[asset.urlKey]) || '' : null;
+
+      const row = document.createElement('div');
+      row.className = 'booe-asset-row' + (isDone ? ' is-done' : '');
+      row.dataset.key = asset.key;
+
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.className = 'booe-asset-cb';
+      cb.checked = isDone;
+      cb.addEventListener('change', async (e) => {
+        e.stopPropagation();
+        await booeToggleAsset(fr, asset.key, cb.checked, card);
+      });
+
+      const lbl = document.createElement('span');
+      lbl.className = 'booe-asset-label';
+      lbl.textContent = asset.label;
+
+      row.appendChild(cb);
+      row.appendChild(lbl);
+
+      if (asset.urlKey !== null) {
+        const urlInput = document.createElement('input');
+        urlInput.type = 'url';
+        urlInput.placeholder = 'URL or path';
+        urlInput.value = urlVal || '';
+        urlInput.addEventListener('click', e => e.stopPropagation());
+        urlInput.addEventListener('blur', async () => {
+          await booeUpdateAssetUrl(fr, asset.urlKey, urlInput.value.trim());
+        });
+        row.appendChild(urlInput);
+      } else {
+        const noUrl = document.createElement('span');
+        noUrl.className = 'booe-asset-no-url';
+        row.appendChild(noUrl);
+      }
+
+      assSection.appendChild(row);
+    });
+    detail.appendChild(assSection);
+
+    // SECTION 4: Generated Outputs
+    const outSection = document.createElement('div');
+    outSection.className = 'booe-section';
+    const outLabel = document.createElement('div');
+    outLabel.className = 'booe-section-label';
+    outLabel.textContent = 'Generated Outputs';
+    outSection.appendChild(outLabel);
+
+    const OUTPUT_DEFS = [
+      { key: 'youtube_podcast_description',       title: 'Podcast YouTube description',       template: 'mirror/music/BOOK_OF_ONENESS_EXPOSED_Podcast_YouTube_Template_Instructions.md' },
+      { key: 'youtube_video_overview_description', title: 'Video Overview YouTube description', template: 'mirror/music/NotebookLM_VideoOverview_YouTube_Template_Instructions.md' },
+      { key: 'social_post_copy',                  title: 'Social post copy (Threads + Instagram)', template: null },
+    ];
+    OUTPUT_DEFS.forEach(def => {
+      outSection.appendChild(buildOutputBlock(fr, def));
+    });
+    detail.appendChild(outSection);
+
+    // SECTION 5: Distribution
+    const distSection = document.createElement('div');
+    distSection.className = 'booe-section';
+    const distLabel = document.createElement('div');
+    distLabel.className = 'booe-section-label';
+    distLabel.textContent = 'Distribution URLs';
+    distSection.appendChild(distLabel);
+
+    BOOE_DIST_FIELDS.forEach(field => {
+      const distRow = document.createElement('div');
+      distRow.className = 'booe-distribution-row';
+      const lbl = document.createElement('span');
+      lbl.className = 'booe-dist-label';
+      lbl.textContent = field.label;
+      const inp = document.createElement('input');
+      inp.type = 'url';
+      inp.className = 'booe-dist-input';
+      inp.placeholder = 'https://';
+      inp.value = (fr.distribution && fr.distribution[field.key]) || '';
+      inp.addEventListener('click', e => e.stopPropagation());
+      inp.addEventListener('blur', async () => {
+        await booeUpdateDistribution(fr, field.key, inp.value.trim());
+      });
+      distRow.appendChild(lbl);
+      distRow.appendChild(inp);
+      distSection.appendChild(distRow);
+    });
+    detail.appendChild(distSection);
+
+    // SECTION 6: Action buttons
+    const actSection = document.createElement('div');
+    actSection.className = 'booe-section';
+    const actLabel = document.createElement('div');
+    actLabel.className = 'booe-section-label';
+    actLabel.textContent = 'Open in Claude / Cowork';
+    actSection.appendChild(actLabel);
+
+    const ACTION_BTNS = [
+      { label: 'Ship this fracture in Cowork', fn: () => buildCoworkPayload(fr, nextStepLabel) },
+      { label: 'Optimize YouTube SEO in Claude', fn: () => buildYouTubeSeoPrompt(fr) },
+      { label: 'Generate Instagram carousels from slide deck', fn: () => buildCarouselPrompt(fr) },
+      { label: 'Build the fracture page on thebookofoneness.com', fn: () => buildFracturePagePrompt(fr) },
+    ];
+    ACTION_BTNS.forEach(ab => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'booe-action-button';
+      btn.textContent = ab.label;
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const text = ab.fn();
+        copyWithFeedback(btn, text, 'Prompt copied', 'Copied');
+      });
+      actSection.appendChild(btn);
+    });
+    detail.appendChild(actSection);
+
+    // SECTION 7: Drop date + Mark Shipped
+    const shipSection = document.createElement('div');
+    shipSection.className = 'booe-section';
+    const shipLabel = document.createElement('div');
+    shipLabel.className = 'booe-section-label';
+    shipLabel.textContent = 'Release';
+    shipSection.appendChild(shipLabel);
+
+    const shipRow = document.createElement('div');
+    shipRow.className = 'booe-ship-row';
+
+    const dateInput = document.createElement('input');
+    dateInput.type = 'date';
+    dateInput.className = 'booe-date-input';
+    dateInput.value = fr.drop_date || '';
+    dateInput.addEventListener('click', e => e.stopPropagation());
+    dateInput.addEventListener('change', async () => {
+      const { error } = await sb.from('book_of_oneness_exposed_episodes')
+        .update({ drop_date: dateInput.value || null, updated_at: new Date().toISOString() })
+        .eq('id', fr.id);
+      if (error) { toastErr('Date save failed'); } else {
+        fr.drop_date = dateInput.value;
+        toastOk('Drop date saved');
+      }
+    });
+
+    const shipBtn = document.createElement('button');
+    shipBtn.type = 'button';
+    shipBtn.className = 'booe-ship-btn';
+    shipBtn.textContent = fr.status === 'shipped' ? 'Shipped' : 'Mark Shipped';
+    shipBtn.disabled = fr.status === 'shipped' || doneCount < total;
+    if (fr.shipped_at) {
+      const stamp = document.createElement('span');
+      stamp.className = 'booe-shipped-stamp';
+      stamp.textContent = 'Shipped ' + new Date(fr.shipped_at).toLocaleDateString();
+      shipRow.appendChild(stamp);
+    }
+    shipBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      if (fr.status === 'shipped') return;
+      const allAssets = {};
+      BOOE_ASSETS.forEach(a => { allAssets[a.key] = true; });
+      const { error } = await sb.from('book_of_oneness_exposed_episodes')
+        .update({ assets: allAssets })
+        .eq('id', fr.id);
+      if (error) { toastErr('Mark shipped failed'); return; }
+      toastOk('Fracture shipped');
+    });
+
+    shipRow.appendChild(dateInput);
+    shipRow.appendChild(shipBtn);
+    shipSection.appendChild(shipRow);
+    detail.appendChild(shipSection);
+
+    // Assemble card
+    card.appendChild(summary);
+    card.appendChild(detail);
+    return card;
+  }
+
+  function buildOutputBlock(fr, def) {
+    const block = document.createElement('div');
+    block.className = 'booe-output-block';
+
+    const hdr = document.createElement('div');
+    hdr.className = 'output-header';
+    const titleEl = document.createElement('span');
+    titleEl.className = 'output-title';
+    titleEl.textContent = def.title;
+    const actionsEl = document.createElement('div');
+    actionsEl.className = 'output-actions';
+
+    const genBtn = document.createElement('button');
+    genBtn.type = 'button';
+    genBtn.className = 'booe-out-btn';
+    genBtn.textContent = 'Generate';
+
+    const copyBtn = document.createElement('button');
+    copyBtn.type = 'button';
+    copyBtn.className = 'booe-out-btn';
+    copyBtn.textContent = 'Copy';
+
+    actionsEl.appendChild(genBtn);
+    actionsEl.appendChild(copyBtn);
+    hdr.appendChild(titleEl);
+    hdr.appendChild(actionsEl);
+
+    const textEl = document.createElement('pre');
+    textEl.className = 'output-text';
+    const savedText = (fr.outputs && fr.outputs[def.key]) || '';
+    textEl.textContent = savedText || '(not yet generated)';
+
+    block.appendChild(hdr);
+    block.appendChild(textEl);
+
+    genBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const prompt = buildOutputPrompt(fr, def);
+      copyWithFeedback(genBtn, prompt, 'Generation prompt copied -- paste into Claude.ai', 'Copied');
+    });
+
+    copyBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const text = (fr.outputs && fr.outputs[def.key]) || '';
+      if (!text) { toastWarn('Nothing saved yet -- generate first'); return; }
+      copyWithFeedback(copyBtn, text, 'Output copied', 'Copied');
+    });
+
+    return block;
+  }
+
+  // Prompt builders
+  function buildCoworkPayload(fr, nextStepLabel) {
+    return `Load this skill and follow its instructions:
+skills/book-of-oneness-exposed-episode/SKILL.md
+
+Episode: Fracture ${fr.fracture_number}: ${fr.fracture_title}
+Next physical action: ${nextStepLabel}
+
+When the step is complete, update the Supabase row (book_of_oneness_exposed_episodes, fracture_number=${fr.fracture_number}) by setting assets->>'${(BOOE_ASSETS.find(a => a.label === nextStepLabel) || {}).key || ''}' to true and writing the resulting URL/path into asset_urls.`;
+  }
+
+  function buildOutputPrompt(fr, def) {
+    const urls = fr.asset_urls || {};
+    const dist = fr.distribution || {};
+    if (def.key === 'social_post_copy') {
+      return `Write a short Threads/Instagram post (1 to 3 lines) for THE BOOK OF ONENESS EXPOSED Fracture ${fr.fracture_number}: ${fr.fracture_title}.
+
+Pull quote: "${fr.pull_quote || ''}"
+Fracture page: ${dist.fracture_page_url || 'https://thebookofoneness.com/fracture/${fr.fracture_number}/'}
+
+The post should include the pull quote and the fracture page URL. No commentary, no preamble. Just the post.`;
+    }
+    return `Render the ${def.title} for THE BOOK OF ONENESS EXPOSED Fracture ${fr.fracture_number}: ${fr.fracture_title}.
+
+Template file: ${def.template}
+
+Fracture data:
+- Excerpt: ${fr.excerpt || ''}
+- Pull quote: ${fr.pull_quote || ''}
+- Structural move: ${fr.structural_move || ''}
+- Drop date: ${fr.drop_date || 'TBD'}
+- Asset URLs:
+  - Agent Opus video: ${urls.agent_opus_video_url || 'not yet'}
+  - rss.com episode: ${dist.rss_com_episode_url || 'not yet'}
+  - Spotify: ${dist.spotify_episode_url || 'not yet'}
+  - Apple Podcasts: ${dist.apple_episode_url || 'not yet'}
+  - YouTube podcast video: ${dist.youtube_podcast_video_url || 'not yet'}
+  - YouTube Video Overview: ${dist.youtube_video_overview_video_url || 'not yet'}
+
+Output the fully rendered description. No commentary, no preamble. Just the description ready to paste into YouTube.`;
+  }
+
+  function buildYouTubeSeoPrompt(fr) {
+    const outputs = fr.outputs || {};
+    return `Review and optimize the YouTube descriptions for THE BOOK OF ONENESS EXPOSED Fracture ${fr.fracture_number}: ${fr.fracture_title}.
+
+Current podcast episode description:
+${outputs.youtube_podcast_description || 'not yet generated'}
+
+Current Video Overview description:
+${outputs.youtube_video_overview_description || 'not yet generated'}
+
+Optimize for:
+- First 157 characters as the search snippet
+- Pull quote integration as the SEO anchor
+- 15 hashtag count exactly (first 3 above the title: #${fr.fracture_title.replace(/\s+/g, '')} #TheBookOfOneness #BookOfOnenessExposed)
+- Discovery on YouTube + Spotify + Apple Podcasts simultaneously
+
+Output the two refined descriptions. No commentary.`;
+  }
+
+  function buildCarouselPrompt(fr) {
+    const urls = fr.asset_urls || {};
+    return `Take the NotebookLM slide deck PDF at this URL:
+${urls.notebooklm_slide_deck_pdf_url || '[slide deck URL not yet saved]'}
+
+For each of the 13 slides, generate two PNG versions via Nano Banana Pro 2:
+- 1:1 (1080x1080) for Instagram feed
+- 4:5 (1080x1350) for Instagram secondary and Facebook
+
+Add a cover slide (slide 0) with fracture number and title set in Abril Fatface on cream paper.
+Add a final slide (slide 14) with a CTA pointing to https://thebookofoneness.com/fracture/${fr.fracture_number}/
+
+Output the 30 PNG file paths. Save under mirror/podcast-episodes/fracture-${fr.fracture_number}-inputs/carousels/.`;
+  }
+
+  function buildFracturePagePrompt(fr) {
+    const urls = fr.asset_urls || {};
+    const dist = fr.distribution || {};
+    const N = fr.fracture_number;
+    return `Read and execute the build prompt at mirror/oneness-website/CLAUDE_CODE_PROMPT_Fracture_Pages.md.
+
+Build Fracture ${N}: ${fr.fracture_title} using the per-fracture data manifest at public/fracture/_data/fracture-${N}.json.
+
+If the manifest does not exist yet, create it from this fracture's Supabase row data:
+- Fracture number: ${N}
+- Title: ${fr.fracture_title}
+- Excerpt: ${fr.excerpt || ''}
+- Pull quote: ${fr.pull_quote || ''}
+- Embed URLs:
+  - Agent Opus YouTube: ${urls.agent_opus_video_url || 'not yet'}
+  - Podcast episode (Spotify): ${dist.spotify_episode_url || 'not yet'}
+  - Video Overview YouTube: ${dist.youtube_video_overview_video_url || 'not yet'}
+  - Slide deck PDF: ${urls.notebooklm_slide_deck_pdf_url || 'not yet'}
+- Date published: ${fr.drop_date || 'TBD'}
+- Previous fracture: ${N > 1 ? N - 1 : 'null'}
+- Next fracture: ${N + 1}
+
+Deploy via git push when QA passes.`;
+  }
+
+  // Asset checkbox toggle
+  async function booeToggleAsset(fr, assetKey, newVal, card) {
+    const newAssets = Object.assign({}, fr.assets || {}, { [assetKey]: newVal });
+    const { data, error } = await sb.from('book_of_oneness_exposed_episodes')
+      .update({ assets: newAssets })
+      .eq('id', fr.id)
+      .select()
+      .single();
+    if (error) { toastErr('Asset save failed'); return; }
+    // Update local copy
+    const idx = _booeEpisodes.findIndex(e => e.id === fr.id);
+    if (idx >= 0) _booeEpisodes[idx] = data;
+    Object.assign(fr, data);
+    // Refresh the asset row state and Next Step label
+    const assetRow = card.querySelector(`.booe-asset-row[data-key="${assetKey}"]`);
+    if (assetRow) assetRow.classList.toggle('is-done', newVal);
+    const nsLbl = card.querySelector('.booe-next-step-label');
+    if (nsLbl) nsLbl.textContent = booeNextStep(data);
+    const progEl = card.querySelector('.booe-card-progress');
+    if (progEl) progEl.textContent = booeDoneCount(data) + ' of ' + BOOE_ASSETS.length + ' assets done';
+    // Update section label
+    const assLabel = card.querySelector('.booe-section-label');
+    if (assLabel && assLabel.textContent.startsWith('Production Assets')) {
+      assLabel.textContent = 'Production Assets (' + booeDoneCount(data) + ' / ' + BOOE_ASSETS.length + ')';
+    }
+    updateBooeBadge();
+    renderNextBooeWidget();
+    toastOk(newVal ? 'Asset checked' : 'Asset unchecked');
+  }
+
+  async function booeUpdateAssetUrl(fr, urlKey, val) {
+    const newUrls = Object.assign({}, fr.asset_urls || {}, { [urlKey]: val || null });
+    const { error } = await sb.from('book_of_oneness_exposed_episodes')
+      .update({ asset_urls: newUrls })
+      .eq('id', fr.id);
+    if (error) { toastErr('URL save failed'); return; }
+    fr.asset_urls = newUrls;
+    toastOk('URL saved');
+  }
+
+  async function booeUpdateDistribution(fr, distKey, val) {
+    const newDist = Object.assign({}, fr.distribution || {}, { [distKey]: val || null });
+    const { error } = await sb.from('book_of_oneness_exposed_episodes')
+      .update({ distribution: newDist })
+      .eq('id', fr.id);
+    if (error) { toastErr('Distribution URL save failed'); return; }
+    fr.distribution = newDist;
+    toastOk('Distribution URL saved');
+  }
+
+  function renderBooeEpisodes(filter) {
+    const list = document.getElementById('booe-list');
+    if (!list) return;
+    let filtered;
+    if (filter === 'all') {
+      filtered = _booeEpisodes;
+    } else if (filter === 'shipped') {
+      filtered = _booeEpisodes.filter(e => e.status === 'shipped');
+    } else {
+      filtered = _booeEpisodes.filter(e => e.status !== 'shipped');
+    }
+    while (list.firstChild) list.removeChild(list.firstChild);
+    if (filtered.length === 0) {
+      const empty = document.createElement('div');
+      empty.style.cssText = 'color:var(--t-4);font-size:.85rem;padding:1rem 0;';
+      empty.textContent = filter === 'shipped' ? 'None shipped yet.' : 'No fractures in queue.';
+      list.appendChild(empty);
+      return;
+    }
+    filtered.forEach(fr => list.appendChild(buildBooeCard(fr)));
+  }
+
+  function updateBooeBadge() {
+    const badge = document.getElementById('ni-booe-episodes');
+    if (!badge) return;
+    badge.textContent = String(_booeEpisodes.filter(e => e.status !== 'shipped').length);
+  }
+
+  function renderNextBooeWidget() {
+    const numEl = document.getElementById('booeNextNumber');
+    const titleEl = document.getElementById('booeNextTitle');
+    const stepEl = document.getElementById('booeNextStepPreview');
+    const progEl = document.getElementById('booeNextProgress');
+    if (!numEl || !titleEl) return;
+    const next = _booeEpisodes
+      .filter(e => e.status !== 'shipped')
+      .sort((a, b) => a.fracture_number - b.fracture_number)[0];
+    if (next) {
+      numEl.textContent = next.fracture_number;
+      titleEl.textContent = next.fracture_title;
+      if (stepEl) stepEl.textContent = 'Next: ' + booeNextStep(next);
+      if (progEl) progEl.textContent = booeDoneCount(next) + ' of ' + BOOE_ASSETS.length + ' assets done';
+    } else {
+      numEl.textContent = '--';
+      titleEl.textContent = 'All fractures shipped';
+      if (stepEl) stepEl.textContent = '';
+      if (progEl) progEl.textContent = '';
+    }
+  }
+
+  // Filter bar clicks
+  document.querySelectorAll('.booe-filter').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.booe-filter').forEach(b => b.classList.remove('is-on'));
+      btn.classList.add('is-on');
+      currentBooeFilter = btn.dataset.booeFilter;
+      renderBooeEpisodes(currentBooeFilter);
+    });
+  });
+
+  // Event delegation: expand/collapse + inner buttons (already handled per-element above)
+  const booeListEl = document.getElementById('booe-list');
+  if (booeListEl) {
+    booeListEl.addEventListener('click', e => {
+      // Only toggle on the summary itself (not inner buttons/inputs)
+      const summary = e.target.closest('.booe-card-summary');
+      if (!summary) return;
+      if (e.target.closest('button') || e.target.closest('input')) return;
+      const detail = summary.nextElementSibling;
+      if (detail && detail.classList.contains('booe-card-detail')) {
+        detail.style.display = detail.style.display === 'none' || !detail.style.display ? 'block' : 'none';
+      }
+    });
+  }
+
+  // Home widget click
+  const nextBooeCard = document.getElementById('nextBooeCard');
+  if (nextBooeCard) {
+    nextBooeCard.addEventListener('click', () => setPage('booe-episodes'));
+    nextBooeCard.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') nextBooeCard.click(); });
+  }
+
+  // Navitem: render list when BOOE page is activated
+  const booeNavItem = document.querySelector('.navitem[data-page="booe-episodes"]');
+  if (booeNavItem) {
+    booeNavItem.addEventListener('click', () => {
+      if (_booeEpisodes.length > 0) renderBooeEpisodes(currentBooeFilter);
+    });
+  }
+
+  // BOOE init
+  fetchBooeEpisodes().then(() => {
+    updateBooeBadge();
+    renderNextBooeWidget();
+    const booePage = document.querySelector('.page[data-page="booe-episodes"]');
+    if (booePage && booePage.classList.contains('is-on')) renderBooeEpisodes(currentBooeFilter);
+    // Realtime: subscribe to BOOE table changes
+    sb.channel('booe-episodes-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'book_of_oneness_exposed_episodes' },
+        async (payload) => {
+          const updated = payload.new;
+          if (!updated) return;
+          const idx = _booeEpisodes.findIndex(e => e.id === updated.id);
+          if (idx >= 0) {
+            _booeEpisodes[idx] = updated;
+          } else {
+            _booeEpisodes.push(updated);
+            _booeEpisodes.sort((a, b) => a.fracture_number - b.fracture_number);
+          }
+          updateBooeBadge();
+          renderNextBooeWidget();
+          const booePage2 = document.querySelector('.page[data-page="booe-episodes"]');
+          if (booePage2 && booePage2.classList.contains('is-on')) renderBooeEpisodes(currentBooeFilter);
+        })
+      .subscribe();
+  });
+
+  // ============================================================
   // BOOT
   // ============================================================
   // Apply loading state BEFORE renderList so hardcoded tasks are hidden during Supabase fetch
