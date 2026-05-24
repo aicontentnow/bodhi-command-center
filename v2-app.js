@@ -2413,7 +2413,7 @@ VIEWS (Views button, bottom-right : hidden while the Direct Line panel is open)
   // Prompt builders
   function buildCoworkPayload(fr, nextStepLabel) {
     return `Load this skill and follow its instructions:
-skills/book-of-oneness-exposed-episode/SKILL.md
+/Users/bodhivalentine/Library/Mobile Documents/com~apple~CloudDocs/Claude-Workspace/skills/book-of-oneness-exposed-episode/SKILL.md
 
 Episode: Fracture ${fr.fracture_number}: ${fr.fracture_title}
 Next physical action: ${nextStepLabel}
