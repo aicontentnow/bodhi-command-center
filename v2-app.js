@@ -2014,7 +2014,7 @@ VIEWS (Views button, bottom-right : hidden while the Direct Line panel is open)
     { key: 'youtube_podcast_uploaded',         label: 'Podcast video uploaded to YouTube',                                         urlKey: null },
     { key: 'youtube_video_overview_uploaded',  label: 'Video Overview uploaded to YouTube',                                        urlKey: null },
     { key: 'fracture_page_deployed',           label: 'Fracture page deployed on thebookofoneness.com',                           urlKey: null },
-    { key: 'social_post_made',                 label: 'Coordinated social post made (Threads + Instagram)',                        urlKey: null },
+    { key: 'social_post_made',                 label: 'Coordinated social post made (TikTok + Instagram)',                        urlKey: null },
   ];
 
   const BOOE_DIST_FIELDS = [
@@ -2235,7 +2235,7 @@ VIEWS (Views button, bottom-right : hidden while the Direct Line panel is open)
     const OUTPUT_DEFS = [
       { key: 'youtube_podcast_description',       title: 'Podcast YouTube description',       template: 'mirror/music/BOOK_OF_ONENESS_EXPOSED_Podcast_YouTube_Template_Instructions.md' },
       { key: 'youtube_video_overview_description', title: 'Video Overview YouTube description', template: 'mirror/music/NotebookLM_VideoOverview_YouTube_Template_Instructions.md' },
-      { key: 'social_post_copy',                  title: 'Social post copy (Threads + Instagram)', template: null },
+      { key: 'social_post_copy',                  title: 'Social post copy (TikTok + Instagram)', template: null },
     ];
     OUTPUT_DEFS.forEach(def => {
       outSection.appendChild(buildOutputBlock(fr, def));
@@ -2425,7 +2425,7 @@ When the step is complete, update the Supabase row (book_of_oneness_exposed_epis
     const urls = fr.asset_urls || {};
     const dist = fr.distribution || {};
     if (def.key === 'social_post_copy') {
-      return `Write a short Threads/Instagram post (1 to 3 lines) for THE BOOK OF ONENESS EXPOSED Fracture ${fr.fracture_number}: ${fr.fracture_title}.
+      return `Write a short TikTok/Instagram post (1 to 3 lines) for THE BOOK OF ONENESS EXPOSED Fracture ${fr.fracture_number}: ${fr.fracture_title}.
 
 Pull quote: "${fr.pull_quote || ''}"
 Fracture page: ${dist.fracture_page_url || 'https://thebookofoneness.com/fracture/${fr.fracture_number}/'}
