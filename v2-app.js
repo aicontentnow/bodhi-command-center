@@ -2673,7 +2673,24 @@ Deploy via git push when QA passes.`;
           updateBooeBadge();
           renderNextBooeWidget();
           const booePage2 = document.querySelector('.page[data-page="booe-episodes"]');
-          if (booePage2 && booePage2.classList.contains('is-on')) renderBooeEpisodes(currentBooeFilter);
+          if (booePage2 && booePage2.classList.contains('is-on')) {
+            // Preserve expanded card state before re-render
+            const expandedIds = new Set();
+            document.querySelectorAll('.booe-card').forEach(c => {
+              const d = c.querySelector('.booe-card-detail');
+              if (d && d.style.display === 'block') expandedIds.add(c.dataset.id);
+            });
+            renderBooeEpisodes(currentBooeFilter);
+            // Re-expand cards that were open before the re-render
+            if (expandedIds.size > 0) {
+              document.querySelectorAll('.booe-card').forEach(c => {
+                if (expandedIds.has(c.dataset.id)) {
+                  const d = c.querySelector('.booe-card-detail');
+                  if (d) d.style.display = 'block';
+                }
+              });
+            }
+          }
         })
       .subscribe();
   });
